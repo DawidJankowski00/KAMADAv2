@@ -1,5 +1,6 @@
 using System.Globalization;
 using Kamada.Shared.Contracts.Customers;
+using Kamada.Shared.Contracts.Delivery;
 using Kamada.Shared.Contracts.Ordering;
 using Kamada.Shared.Contracts.Payments;
 using Kamada.Shared.Contracts.Workforce;
@@ -82,4 +83,75 @@ public static class Labels
 
     public static string Format(ShippingAddressDto a) =>
         $"{a.Street} {a.BuildingNumber}{(a.ApartmentNumber is null ? string.Empty : "/" + a.ApartmentNumber)}, {a.PostalCode} {a.City}";
+
+    public static string Date(DateOnly value) => value.ToString("dd.MM.yyyy", Polish);
+
+    /// <summary>"45 min", "1 h 05 min".</summary>
+    public static string Duration(double seconds)
+    {
+        var minutes = (int)Math.Round(seconds / 60, MidpointRounding.AwayFromZero);
+        return minutes < 60 ? $"{minutes} min" : $"{minutes / 60} h {minutes % 60:00} min";
+    }
+
+    /// <summary>"850 m", "19,0 km".</summary>
+    public static string Distance(double meters) =>
+        meters < 1000 ? $"{Math.Round(meters):0} m" : (meters / 1000).ToString("0.0", Polish) + " km";
+
+    public static string Of(DeliveryRunStatus status) => status switch
+    {
+        DeliveryRunStatus.Draft => "Robocza",
+        DeliveryRunStatus.Planned => "Zaplanowana",
+        DeliveryRunStatus.InProgress => "W realizacji",
+        DeliveryRunStatus.Completed => "Zakończona",
+        DeliveryRunStatus.Cancelled => "Anulowana",
+        _ => status.ToString(),
+    };
+
+    public static Color ColorOf(DeliveryRunStatus status) => status switch
+    {
+        DeliveryRunStatus.Draft => Color.Default,
+        DeliveryRunStatus.Planned => Color.Primary,
+        DeliveryRunStatus.InProgress => Color.Warning,
+        DeliveryRunStatus.Completed => Color.Success,
+        DeliveryRunStatus.Cancelled => Color.Dark,
+        _ => Color.Default,
+    };
+
+    public static string Of(DeliveryStopStatus status) => status switch
+    {
+        DeliveryStopStatus.Pending => "Oczekuje",
+        DeliveryStopStatus.Delivered => "Dostarczone",
+        DeliveryStopStatus.Failed => "Nieudane",
+        _ => status.ToString(),
+    };
+
+    public static Color ColorOf(DeliveryStopStatus status) => status switch
+    {
+        DeliveryStopStatus.Delivered => Color.Success,
+        DeliveryStopStatus.Failed => Color.Error,
+        _ => Color.Default,
+    };
+
+    /// <summary>Algorithm names reported by the route optimizer.</summary>
+    public static string Algorithm(string algorithm) => algorithm switch
+    {
+        "BruteForce" => "Przegląd wszystkich kolejności",
+        "HeldKarp" => "Held-Karp (programowanie dynamiczne)",
+        "NearestNeighbor+2opt+OrOpt" => "Heurystyka: najbliższy sąsiad + 2-opt + Or-opt",
+        "Manual" => "Kolejność ustalona ręcznie",
+        _ => algorithm,
+    };
+
+    public static string MatrixProvider(string provider) => provider switch
+    {
+        "OSRM" => "OSRM (sieć dróg OpenStreetMap)",
+        "Google" => "Google Routes API",
+        "Haversine" => "Szacunek w linii prostej",
+        _ => provider,
+    };
+
+    public static string Format(RouteLocationDto l) => $"{l.Street} {l.BuildingNumber}, {l.PostalCode} {l.City}";
+
+    public static string Format(DeliveryStopDto s) =>
+        $"{s.Street} {s.BuildingNumber}{(s.ApartmentNumber is null ? string.Empty : "/" + s.ApartmentNumber)}, {s.PostalCode} {s.City}";
 }

@@ -23,6 +23,9 @@ public sealed class ApiClient(HttpClient http)
     public Task<ApiResult> PutAsync(string url, object body, CancellationToken cancellationToken = default) =>
         SendAsync(() => http.PutAsJsonAsync(url, body, KamadaJson.Options, cancellationToken), cancellationToken);
 
+    public Task<ApiResult<T>> DeleteAsync<T>(string url, CancellationToken cancellationToken = default) =>
+        SendAsync<T>(() => http.DeleteAsync(url, cancellationToken), cancellationToken);
+
     public Task<ApiResult> DeleteAsync(string url, CancellationToken cancellationToken = default) =>
         SendAsync(() => http.DeleteAsync(url, cancellationToken), cancellationToken);
 

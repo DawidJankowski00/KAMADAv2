@@ -1,0 +1,35 @@
+@if (Links.Count == 0)
+{
+    <MudText Typo="Typo.body2" Class="mud-text-secondary">Linki pojawią się po zaplanowaniu kolejności przystanków.</MudText>
+}
+else
+{
+    <div class="d-flex flex-column gap-2">
+        @foreach (var link in Links)
+        {
+            <MudButton Href="@link.Url" Target="_blank" Rel="noopener" Variant="Variant.Outlined" Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Navigation" FullWidth="true" Class="justify-start">
+                @if (link.TotalParts > 1)
+                {
+                    @($"Część {link.Part}/{link.TotalParts}: {RunMap.PointName(link.FromPoint, StopCount)} → {RunMap.PointName(link.ToPoint, StopCount)}")
+                }
+                else
+                {
+                    @("Cała trasa w Google Maps")
+                }
+            </MudButton>
+        }
+        @if (Links.Count > 1)
+        {
+            <MudText Typo="Typo.caption" Class="mud-text-secondary">
+                Google Maps przyjmuje ograniczoną liczbę punktów w jednym linku, dlatego trasa jest podzielona na kolejne odcinki.
+            </MudText>
+        }
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<NavigationLinkDto> Links { get; set; } = [];
+
+    [Parameter, EditorRequired] public int StopCount { get; set; }
+}

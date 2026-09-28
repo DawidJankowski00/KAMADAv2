@@ -1,0 +1,34 @@
+@* Algorithm, optimality and data-source flags of a route plan. *@
+<div class="d-flex flex-wrap gap-1">
+    <MudChip T="string" Size="Size.Small" Icon="@Icons.Material.Filled.Functions" Variant="Variant.Outlined">@Labels.Algorithm(Algorithm)</MudChip>
+    @if (Algorithm != "Manual")
+    {
+        @if (IsOptimal)
+        {
+            <MudChip T="string" Size="Size.Small" Color="Color.Success" Icon="@Icons.Material.Filled.Verified" Variant="Variant.Outlined">Rozwiązanie optymalne</MudChip>
+        }
+        else
+        {
+            <MudTooltip Text="Przy wielu przystankach heurystyka daje bardzo dobre, ale nie zawsze najlepsze możliwe rozwiązanie.">
+                <MudChip T="string" Size="Size.Small" Color="Color.Info" Icon="@Icons.Material.Filled.AutoGraph" Variant="Variant.Outlined">Rozwiązanie przybliżone</MudChip>
+            </MudTooltip>
+        }
+    }
+    <MudChip T="string" Size="Size.Small" Icon="@Icons.Material.Filled.Map" Variant="Variant.Outlined">@Labels.MatrixProvider(MatrixProvider)</MudChip>
+</div>
+@if (IsApproximate)
+{
+    <MudAlert Severity="Severity.Warning" Dense="true" Class="mt-2">
+        Czasy i odległości są szacowane w linii prostej (brak danych z sieci dróg dla części lub wszystkich odcinków) – wynik jest przybliżony.
+    </MudAlert>
+}
+
+@code {
+    [Parameter, EditorRequired] public string Algorithm { get; set; } = string.Empty;
+
+    [Parameter] public bool IsOptimal { get; set; }
+
+    [Parameter] public bool IsApproximate { get; set; }
+
+    [Parameter, EditorRequired] public string MatrixProvider { get; set; } = string.Empty;
+}

@@ -1,0 +1,112 @@
+@inject ApiClient Api
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        @if (_orders is null)
+        {
+            <MudProgressLinear Indeterminate="true" />
+        }
+        else
+        {
+            <MudTextField T="string" @bind-Value="_filter" Label="Numer, odbiorca lub miasto" Immediate="true" Clearable="true"
+                          Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Class="mb-2" />
+            <MudTable T="OrderSummaryDto" Items="_orders" Filter="Matches" MultiSelection="true" @bind-SelectedItems="_selected"
+                      Hover="true" Dense="true" Elevation="0" Height="420px" FixedHeader="true" SelectOnRowClick="true">
+                <HeaderContent>
+                    <MudTh>Numer</MudTh>
+                    <MudTh>Odbiorca</MudTh>
+                    <MudTh>Miasto</MudTh>
+                    <MudTh>Złożone</MudTh>
+                    <MudTh Style="text-align:right">Wartość</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Numer"><b>#@context.Number</b></MudTd>
+                    <MudTd DataLabel="Odbiorca">@context.RecipientName</MudTd>
+                    <MudTd DataLabel="Miasto">@context.City</MudTd>
+                    <MudTd DataLabel="Złożone">@Labels.DateTime(context.CreatedAt)</MudTd>
+                    <MudTd DataLabel="Wartość" Style="text-align:right">@Labels.Money(context.TotalAmount)</MudTd>
+                </RowTemplate>
+                <NoRecordsContent>
+                    <MudText Class="pa-4">Brak zamówień gotowych do wysyłki. Zamówienie trafia tutaj po opłaceniu i oznaczeniu jako „Gotowe do wysyłki”.</MudText>
+                </NoRecordsContent>
+            </MudTable>
+            @if (_totalReady > _orders.Count)
+            {
+                <MudText Typo="Typo.caption" Class="mud-text-secondary d-block mt-1">
+                    Pokazano @_orders.Count najstarszych z @_totalReady gotowych zamówień.
+                </MudText>
+            }
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudText Typo="Typo.body2" Class="@($"mr-auto ml-4 {(TooMany ? "mud-error-text" : "mud-text-secondary")}")">
+            Zaznaczono: @_selected.Count · wolnych miejsc na trasie: @FreeSlots
+        </MudText>
+        <MudButton OnClick="() => Dialog.Cancel()">Anuluj</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="AddAsync" Disabled="_selected.Count == 0 || TooMany || _busy">
+            Dodaj do trasy
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    /// <summary>Same limit as the API (<c>DeliveryRun.MaxStops</c>).</summary>
+    private const int MaxStops = 60;
+
+    private List<OrderSummaryDto>? _orders;
+    private HashSet<OrderSummaryDto> _selected = [];
+    private string? _filter;
+    private int _totalReady;
+    private bool _busy;
+
+    [CascadingParameter] private IMudDialogInstance Dialog { get; set; } = default!;
+
+    [Parameter, EditorRequired] public Guid RunId { get; set; }
+
+    [Parameter, EditorRequired] public int CurrentStopCount { get; set; }
+
+    private int FreeSlots => Math.Max(0, MaxStops - CurrentStopCount);
+
+    private bool TooMany => _selected.Count > FreeSlots;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var query = QueryString.Build(("status", OrderStatus.ReadyForDelivery), ("pageSize", Paging.MaxPageSize));
+        var result = await Api.GetAsync<PagedResult<OrderSummaryDto>>($"api/orders{query}");
+        if (Snackbar.Report(result))
+        {
+            _orders = result.Value.Items.OrderBy(o => o.CreatedAt).ToList();
+            _totalReady = result.Value.TotalCount;
+        }
+        else
+        {
+            _orders = [];
+        }
+    }
+
+    private bool Matches(OrderSummaryDto order)
+    {
+        if (string.IsNullOrWhiteSpace(_filter))
+        {
+            return true;
+        }
+
+        var filter = _filter.Trim().TrimStart('#');
+        return order.Number.ToString(System.Globalization.CultureInfo.InvariantCulture).Contains(filter, StringComparison.Ordinal)
+            || order.RecipientName.Contains(filter, StringComparison.CurrentCultureIgnoreCase)
+            || order.City.Contains(filter, StringComparison.CurrentCultureIgnoreCase);
+    }
+
+    private async Task AddAsync()
+    {
+        _busy = true;
+        var ids = _selected.OrderBy(o => o.CreatedAt).Select(o => o.Id).ToList();
+        var result = await Api.PostAsync<DeliveryRunDto>($"api/delivery-runs/{RunId}/orders", new AddRunOrdersRequest(ids));
+        _busy = false;
+        if (Snackbar.Report(result, ids.Count == 1 ? "Dodano zamówienie do trasy." : $"Dodano {ids.Count} zamówień do trasy."))
+        {
+            Dialog.Close(DialogResult.Ok(result.Value));
+        }
+    }
+}

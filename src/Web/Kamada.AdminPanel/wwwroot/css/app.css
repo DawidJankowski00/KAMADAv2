@@ -105,3 +105,16 @@ code {
 h1:focus {
     outline: none;
 }
+
+/* Delivery run stops: drag & drop reordering */
+.kamada-stop-zone {
+    min-height: 48px;
+}
+
+.kamada-stop {
+    cursor: grab;
+}
+
+.kamada-stop:active {
+    cursor: grabbing;
+}

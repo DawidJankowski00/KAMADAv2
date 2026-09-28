@@ -1,0 +1,212 @@
+@page "/delivery-runs/new"
+@page "/delivery-runs/{Id:guid}/edit"
+@inject ApiClient Api
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+
+<PageTitle>@(IsNew ? "Nowa trasa" : "Edycja trasy") – KAMADA</PageTitle>
+
+<MudBreadcrumbs Items="Breadcrumbs" Class="px-0 pt-0" />
+<PageHeader Title="@(IsNew ? "Nowa trasa" : $"Edycja: {_run?.Name}")"
+            Subtitle="Kurier, pojazd i punkty startu/końca. Zamówienia dodasz w kolejnym kroku." />
+
+@if (!_loaded)
+{
+    <MudProgressLinear Indeterminate="true" />
+}
+else
+{
+    @if (_locations.Count == 0)
+    {
+        <MudAlert Severity="Severity.Warning" Class="mb-4">
+            Brak aktywnych lokalizacji. <MudLink Href="route-locations">Dodaj magazyn lub bazę</MudLink>, z której kurier wyrusza.
+        </MudAlert>
+    }
+    @if (_couriers.Count == 0)
+    {
+        <MudAlert Severity="Severity.Warning" Class="mb-4">
+            Brak aktywnych kurierów. <MudLink Href="workers">Dodaj konto kuriera</MudLink>.
+        </MudAlert>
+    }
+
+    <MudPaper Class="pa-4" Elevation="1" Style="max-width:900px">
+        <MudForm @ref="_form" @bind-IsValid="_valid">
+            <MudGrid Spacing="3">
+                <MudItem xs="12" sm="8">
+                    <MudTextField @bind-Value="_name" Label="Nazwa trasy" Required="true" MaxLength="100" Placeholder="np. Fordon – popołudnie" />
+                </MudItem>
+                <MudItem xs="12" sm="4">
+                    <MudDatePicker @bind-Date="_date" Label="Data" Required="true" DateFormat="dd.MM.yyyy"
+                                   Culture="@System.Globalization.CultureInfo.GetCultureInfo("pl-PL")" />
+                </MudItem>
+                <MudItem xs="12" sm="8">
+                    <MudSelect T="Guid?" @bind-Value="_courierId" Label="Kurier" Required="true" RequiredError="Wybierz kuriera">
+                        @foreach (var courier in _couriers)
+                        {
+                            <MudSelectItem T="Guid?" Value="courier.Id">@courier.Name @courier.Surname (@courier.PhoneNumber)</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="4">
+                    <MudTextField @bind-Value="_vehiclePlate" Label="Nr rejestracyjny" Required="true" MaxLength="20" Placeholder="CB 12345"
+                                  Validation="@(new Func<string, string?>(ValidatePlate))" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="Guid?" Value="_startLocationId" ValueChanged="OnStartChanged" Label="Start" Required="true" RequiredError="Wybierz lokalizację startową">
+                        @foreach (var location in _locations)
+                        {
+                            <MudSelectItem T="Guid?" Value="location.Id">@location.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="Guid?" @bind-Value="_endLocationId" Label="Koniec" Required="true" RequiredError="Wybierz lokalizację końcową"
+                               HelperText="Zwykle ta sama co start (powrót do bazy)">
+                        @foreach (var location in _locations)
+                        {
+                            <MudSelectItem T="Guid?" Value="location.Id">@location.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+        @if (_run?.RoutePlan is not null)
+        {
+            <MudAlert Severity="Severity.Info" Dense="true" Class="mt-4">
+                Zmiana startu lub końca usunie zapisany plan trasy – trzeba będzie ją ponownie zoptymalizować.
+            </MudAlert>
+        }
+        @if (MissingCoordinates.Count > 0)
+        {
+            <MudAlert Severity="Severity.Info" Dense="true" Class="mt-4">
+                @string.Join(", ", MissingCoordinates) – brak współrzędnych. Trasę można zapisać, ale przed optymalizacją wskaż lokalizację na mapie.
+            </MudAlert>
+        }
+        <div class="d-flex justify-end gap-2 mt-4">
+            <MudButton Href="@(IsNew ? "delivery-runs" : $"delivery-runs/{Id}")">Anuluj</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveAsync" Disabled="_busy"
+                       StartIcon="@(IsNew ? Icons.Material.Filled.ArrowForward : Icons.Material.Filled.Save)">
+                @(IsNew ? "Utwórz i dodaj zamówienia" : "Zapisz zmiany")
+            </MudButton>
+        </div>
+    </MudPaper>
+}
+
+@code {
+    private MudForm? _form;
+    private bool _valid;
+    private bool _busy;
+    private bool _loaded;
+    private DeliveryRunDto? _run;
+    private List<RouteLocationDto> _locations = [];
+    private List<WorkerDto> _couriers = [];
+
+    private string _name = string.Empty;
+    private DateTime? _date = DateTime.Today;
+    private Guid? _courierId;
+    private string _vehiclePlate = string.Empty;
+    private Guid? _startLocationId;
+    private Guid? _endLocationId;
+
+    [Parameter] public Guid? Id { get; set; }
+
+    private bool IsNew => Id is null;
+
+    private List<BreadcrumbItem> Breadcrumbs =>
+        IsNew
+            ? [new("Trasy", "delivery-runs"), new("Nowa", null, disabled: true)]
+            : [new("Trasy", "delivery-runs"), new(_run?.Name ?? "Trasa", $"delivery-runs/{Id}"), new("Edycja", null, disabled: true)];
+
+    private List<string> MissingCoordinates =>
+        _locations
+            .Where(l => (l.Id == _startLocationId || l.Id == _endLocationId) && !l.HasCoordinates)
+            .Select(l => l.Name)
+            .ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var locations = await Api.GetAsync<List<RouteLocationDto>>("api/route-locations");
+        _locations = locations.IsSuccess ? locations.Value : [];
+        var couriers = await Api.GetAsync<PagedResult<WorkerDto>>(
+            $"api/workers{QueryString.Build(("role", WorkerRole.Courier), ("isActive", true), ("pageSize", Paging.MaxPageSize))}");
+        _couriers = couriers.IsSuccess ? [.. couriers.Value.Items] : [];
+
+        if (Id is { } id)
+        {
+            var run = await Api.GetAsync<DeliveryRunDto>($"api/delivery-runs/{id}");
+            if (!Snackbar.Report(run))
+            {
+                return;
+            }
+
+            _run = run.Value;
+            if (_run.Status != DeliveryRunStatus.Draft)
+            {
+                Snackbar.Add("Można edytować tylko trasy w wersji roboczej.", Severity.Warning);
+                Navigation.NavigateTo($"delivery-runs/{id}");
+                return;
+            }
+
+            _name = _run.Name;
+            _date = _run.PlannedDate.ToDateTime(TimeOnly.MinValue);
+            _courierId = _run.Courier.Id;
+            _vehiclePlate = _run.VehiclePlate;
+            _startLocationId = _run.StartLocation.Id;
+            _endLocationId = _run.EndLocation.Id;
+            // A deactivated endpoint stays selectable for the run that already uses it.
+            foreach (var location in new[] { _run.StartLocation, _run.EndLocation }.Where(l => _locations.All(x => x.Id != l.Id)).DistinctBy(l => l.Id))
+            {
+                _locations.Add(location);
+            }
+        }
+        else
+        {
+            _name = $"Trasa {Labels.Date(DateOnly.FromDateTime(DateTime.Today))}";
+            if (_locations.Count == 1)
+            {
+                _startLocationId = _endLocationId = _locations[0].Id;
+            }
+        }
+
+        _loaded = true;
+    }
+
+    private void OnStartChanged(Guid? value)
+    {
+        // Most runs return to the base they started from.
+        if (_endLocationId is null || _endLocationId == _startLocationId)
+        {
+            _endLocationId = value;
+        }
+
+        _startLocationId = value;
+    }
+
+    private static string? ValidatePlate(string value) =>
+        System.Text.RegularExpressions.Regex.IsMatch(value ?? string.Empty, "^[A-Za-z0-9 ]+$") ? null : "Tylko litery, cyfry i spacje";
+
+    private async Task SaveAsync()
+    {
+        await _form!.ValidateAsync();
+        if (!_valid || _date is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        var date = DateOnly.FromDateTime(_date.Value);
+        var result = Id is { } id
+            ? await Api.PutAsync<DeliveryRunDto>(
+                $"api/delivery-runs/{id}",
+                new UpdateDeliveryRunRequest(_name, date, _courierId!.Value, _vehiclePlate, _startLocationId!.Value, _endLocationId!.Value))
+            : await Api.PostAsync<DeliveryRunDto>(
+                "api/delivery-runs",
+                new CreateDeliveryRunRequest(_name, date, _courierId!.Value, _vehiclePlate, _startLocationId!.Value, _endLocationId!.Value));
+        _busy = false;
+
+        if (Snackbar.Report(result, IsNew ? "Trasa utworzona. Dodaj zamówienia." : "Zmiany zapisane."))
+        {
+            Navigation.NavigateTo($"delivery-runs/{result.Value.Id}");
+        }
+    }
+}

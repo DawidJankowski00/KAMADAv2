@@ -249,3 +249,11 @@ Record small decisions here (date — decision — reason).
   and cancelled runs return 404. "Today" for the Current/Upcoming lists uses `Delivery:TimeZone` (Europe/Warsaw).
   Completing a run early fails pending stops with `DeliveryRun.NotVisitedReason` (Polish text stored as data).
 - 2026-09-28 — The public OSRM demo server returns 403 without a User-Agent: `RouteOptimization:Osrm:UserAgent`.
+- 2026-09-28 — Admin run planning UI (`Pages/DeliveryRuns`): run details page is the workspace (add orders, optimize,
+  reorder, approve, cancel). Manual order: `MudDropContainer` + up/down buttons, kept locally until "Zapisz kolejność"
+  (`PUT sequence`); the container is re-keyed after each move so it always renders the list order. The optimization
+  dialog only previews (`POST optimize`) and applies via `apply-optimization`. Map route = straight segments
+  (no road geometry, the navigation link shows the real road). Parameterised API errors (order numbers) get generic Polish
+  messages; the page shows per-stop coordinate warnings itself.
+- 2026-09-28 — `QueryString` formats `DateOnly` as `yyyy-MM-dd` (invariant `DateOnly.ToString()` is `MM/dd/yyyy`).
+  Formatting helpers of `Kamada.Web.Shared` are unit tested in `tests/Kamada.Web.Shared.UnitTests`.

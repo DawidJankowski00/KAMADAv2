@@ -1,0 +1,85 @@
+@inject ApiClient Api
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="_form" @bind-IsValid="_valid">
+            <MudGrid Spacing="2">
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="_name" Label="Nazwa" Required="true" MaxLength="100" Placeholder="np. Magazyn Fordon" />
+                </MudItem>
+                <MudItem xs="8">
+                    <MudTextField @bind-Value="_street" Label="Ulica" Required="true" MaxLength="200" />
+                </MudItem>
+                <MudItem xs="4">
+                    <MudTextField @bind-Value="_buildingNumber" Label="Numer" Required="true" MaxLength="20" />
+                </MudItem>
+                <MudItem xs="4">
+                    <MudTextField @bind-Value="_postalCode" Label="Kod pocztowy" Required="true" MaxLength="6" Placeholder="85-001"
+                                  Validation="@(new Func<string, string?>(ValidatePostalCode))" />
+                </MudItem>
+                <MudItem xs="8">
+                    <MudTextField @bind-Value="_city" Label="Miejscowość" Required="true" MaxLength="100" />
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+        <MudText Typo="Typo.caption" Class="mud-text-secondary mt-3 d-block">
+            Współrzędne zostaną ustalone automatycznie na podstawie adresu. Jeśli się nie uda, wskażesz punkt na mapie.
+        </MudText>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="() => Dialog.Cancel()">Anuluj</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="SaveAsync" Disabled="_busy">Zapisz</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private MudForm? _form;
+    private bool _valid;
+    private bool _busy;
+    private string _name = string.Empty;
+    private string _street = string.Empty;
+    private string _buildingNumber = string.Empty;
+    private string _postalCode = string.Empty;
+    private string _city = "Bydgoszcz";
+
+    [CascadingParameter] private IMudDialogInstance Dialog { get; set; } = default!;
+
+    [Parameter] public RouteLocationDto? Location { get; set; }
+
+    protected override void OnInitialized()
+    {
+        if (Location is not null)
+        {
+            _name = Location.Name;
+            _street = Location.Street;
+            _buildingNumber = Location.BuildingNumber;
+            _postalCode = Location.PostalCode;
+            _city = Location.City;
+        }
+    }
+
+    private static string? ValidatePostalCode(string value) =>
+        System.Text.RegularExpressions.Regex.IsMatch(value ?? string.Empty, @"^\d{2}-\d{3}$") ? null : "Format: 00-000";
+
+    private async Task SaveAsync()
+    {
+        await _form!.ValidateAsync();
+        if (!_valid)
+        {
+            return;
+        }
+
+        _busy = true;
+        var request = new RouteLocationRequest(_name, _street, _buildingNumber, _city, _postalCode);
+        var result = Location is null
+            ? await Api.PostAsync<RouteLocationDto>("api/route-locations", request)
+            : await Api.PutAsync<RouteLocationDto>($"api/route-locations/{Location.Id}", request);
+        _busy = false;
+
+        if (Snackbar.Report(result, Location is null ? "Lokalizacja dodana." : "Zmiany zapisane."))
+        {
+            Dialog.Close(DialogResult.Ok(result.Value));
+        }
+    }
+}

@@ -55,5 +55,6 @@
     <Project Path="tests/Kamada.Modules.RouteOptimization.UnitTests/Kamada.Modules.RouteOptimization.UnitTests.csproj" />
     <Project Path="tests/Kamada.Modules.Workforce.UnitTests/Kamada.Modules.Workforce.UnitTests.csproj" />
     <Project Path="tests/Kamada.Shared.UnitTests/Kamada.Shared.UnitTests.csproj" />
+    <Project Path="tests/Kamada.Web.Shared.UnitTests/Kamada.Web.Shared.UnitTests.csproj" />
   </Folder>
 </Solution>

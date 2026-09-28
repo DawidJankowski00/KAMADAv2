@@ -1,0 +1,157 @@
+@page "/delivery-runs"
+@inject ApiClient Api
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+
+<PageTitle>Trasy – KAMADA</PageTitle>
+
+<PageHeader Title="Trasy dostaw" Subtitle="Filtruj po statusie, kurierze, dacie lub nazwie / numerze rejestracyjnym">
+    <Actions>
+        <MudButton Href="delivery-runs/new" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.AddRoad">Nowa trasa</MudButton>
+    </Actions>
+</PageHeader>
+
+<MudPaper Class="pa-4 mb-4" Elevation="1">
+    <MudGrid Spacing="2">
+        <MudItem xs="12" md="3">
+            <MudTextField T="string" Value="_search" ValueChanged="OnSearchChanged" Label="Nazwa lub rejestracja"
+                          Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" DebounceInterval="300" Clearable="true" />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="2">
+            <MudSelect T="DeliveryRunStatus?" Value="_status" ValueChanged="OnStatusChanged" Label="Status" Clearable="true">
+                @foreach (var status in Enum.GetValues<DeliveryRunStatus>())
+                {
+                    <MudSelectItem T="DeliveryRunStatus?" Value="status">@Labels.Of(status)</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudSelect T="Guid?" Value="_courierId" ValueChanged="OnCourierChanged" Label="Kurier" Clearable="true">
+                @foreach (var courier in _couriers)
+                {
+                    <MudSelectItem T="Guid?" Value="courier.Id">@courier.Name @courier.Surname</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" md="4">
+            <MudDateRangePicker DateRange="_dateRange" DateRangeChanged="OnDateRangeChanged" Label="Data trasy" Clearable="true"
+                                Culture="@System.Globalization.CultureInfo.GetCultureInfo("pl-PL")" />
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+<MudTable T="DeliveryRunSummaryDto" @ref="_table" ServerData="LoadAsync" Hover="true" Elevation="1" Dense="true" RowsPerPage="20"
+          OnRowClick="@(args => Navigation.NavigateTo($"delivery-runs/{args.Item!.Id}"))" RowClass="kamada-clickable-row">
+    <HeaderContent>
+        <MudTh>Data</MudTh>
+        <MudTh>Nazwa</MudTh>
+        <MudTh>Kurier</MudTh>
+        <MudTh>Pojazd</MudTh>
+        <MudTh>Start → koniec</MudTh>
+        <MudTh Style="text-align:right">Przystanki</MudTh>
+        <MudTh Style="text-align:right">Czas / dystans</MudTh>
+        <MudTh>Status</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Data">@Labels.Date(context.PlannedDate)</MudTd>
+        <MudTd DataLabel="Nazwa"><b>@context.Name</b></MudTd>
+        <MudTd DataLabel="Kurier">@context.CourierName</MudTd>
+        <MudTd DataLabel="Pojazd"><code>@context.VehiclePlate</code></MudTd>
+        <MudTd DataLabel="Start → koniec">
+            @(context.StartLocationName == context.EndLocationName ? context.StartLocationName : $"{context.StartLocationName} → {context.EndLocationName}")
+        </MudTd>
+        <MudTd DataLabel="Przystanki" Style="text-align:right">
+            @if (context.Status is DeliveryRunStatus.InProgress or DeliveryRunStatus.Completed)
+            {
+                <span title="dostarczone / nieudane / wszystkie">@context.DeliveredCount / @context.FailedCount / @context.StopCount</span>
+            }
+            else
+            {
+                @context.StopCount
+            }
+        </MudTd>
+        <MudTd DataLabel="Czas / dystans" Style="text-align:right">
+            @if (context.PlannedDurationSeconds is { } seconds)
+            {
+                @($"{Labels.Duration(seconds)} · {Labels.Distance(context.PlannedDistanceMeters ?? 0)}")
+            }
+            else
+            {
+                <span class="mud-text-secondary">nie zaplanowano</span>
+            }
+        </MudTd>
+        <MudTd DataLabel="Status"><RunStatusChip Status="context.Status" /></MudTd>
+    </RowTemplate>
+    <NoRecordsContent><MudText Class="pa-4">Brak tras spełniających kryteria.</MudText></NoRecordsContent>
+    <PagerContent><MudTablePager RowsPerPageString="Na stronie:" InfoFormat="{first_item}–{last_item} z {all_items}" /></PagerContent>
+</MudTable>
+
+@code {
+    private MudTable<DeliveryRunSummaryDto>? _table;
+    private IReadOnlyList<WorkerDto> _couriers = [];
+    private string? _search;
+    private DeliveryRunStatus? _status;
+    private Guid? _courierId;
+    private DateRange? _dateRange;
+
+    [SupplyParameterFromQuery(Name = "status")] public string? StatusParameter { get; set; }
+
+    [SupplyParameterFromQuery(Name = "date")] public string? DateParameter { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _status = Enum.TryParse<DeliveryRunStatus>(StatusParameter, out var status) ? status : null;
+        if (DateOnly.TryParse(DateParameter, System.Globalization.CultureInfo.InvariantCulture, out var date))
+        {
+            _dateRange = new DateRange(date.ToDateTime(TimeOnly.MinValue), date.ToDateTime(TimeOnly.MinValue));
+        }
+
+        var couriers = await Api.GetAsync<PagedResult<WorkerDto>>(
+            $"api/workers{QueryString.Build(("role", WorkerRole.Courier), ("pageSize", Paging.MaxPageSize))}");
+        _couriers = couriers.IsSuccess ? couriers.Value.Items : [];
+    }
+
+    private async Task<TableData<DeliveryRunSummaryDto>> LoadAsync(TableState state, CancellationToken cancellationToken)
+    {
+        DateOnly? from = _dateRange?.Start is { } start ? DateOnly.FromDateTime(start) : null;
+        DateOnly? to = _dateRange?.End is { } end ? DateOnly.FromDateTime(end) : null;
+
+        var query = QueryString.Build(
+            ("search", _search),
+            ("status", _status),
+            ("courierId", _courierId),
+            ("from", from),
+            ("to", to),
+            ("page", state.Page + 1),
+            ("pageSize", state.PageSize));
+
+        var result = await Api.GetAsync<PagedResult<DeliveryRunSummaryDto>>($"api/delivery-runs{query}", cancellationToken);
+        return Snackbar.Report(result)
+            ? new TableData<DeliveryRunSummaryDto> { Items = result.Value.Items, TotalItems = result.Value.TotalCount }
+            : new TableData<DeliveryRunSummaryDto> { Items = [], TotalItems = 0 };
+    }
+
+    private Task OnSearchChanged(string? value)
+    {
+        _search = value;
+        return _table!.ReloadServerData();
+    }
+
+    private Task OnStatusChanged(DeliveryRunStatus? value)
+    {
+        _status = value;
+        return _table!.ReloadServerData();
+    }
+
+    private Task OnCourierChanged(Guid? value)
+    {
+        _courierId = value;
+        return _table!.ReloadServerData();
+    }
+
+    private Task OnDateRangeChanged(DateRange? value)
+    {
+        _dateRange = value;
+        return _table!.ReloadServerData();
+    }
+}

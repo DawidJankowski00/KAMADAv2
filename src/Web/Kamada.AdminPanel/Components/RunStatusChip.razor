@@ -1,0 +1,5 @@
+<MudChip T="string" Size="Size.Small" Color="Labels.ColorOf(Status)" Variant="Variant.Filled">@Labels.Of(Status)</MudChip>
+
+@code {
+    [Parameter, EditorRequired] public DeliveryRunStatus Status { get; set; }
+}

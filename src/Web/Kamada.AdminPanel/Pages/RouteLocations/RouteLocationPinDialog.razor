@@ -1,0 +1,49 @@
+@inject ApiClient Api
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudText Typo="Typo.body2" Class="mb-2">@Labels.Format(Location)</MudText>
+        <MudText Typo="Typo.caption" Class="mud-text-secondary mb-3 d-block">Kliknij na mapie, aby wskazać dokładne miejsce (np. wjazd do magazynu).</MudText>
+        <LeafletMap Markers="Markers" Height="420px" OnMapClick="OnPicked" Zoom="14" />
+        @if (_picked is not null)
+        {
+            <MudText Typo="Typo.caption" Class="mt-2 d-block">Wybrano: @Labels.Coordinates(_picked.Latitude, _picked.Longitude)</MudText>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="() => Dialog.Cancel()">Anuluj</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="SaveAsync" Disabled="_picked is null || _busy">Zapisz lokalizację</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private MapPoint? _picked;
+    private bool _busy;
+
+    [CascadingParameter] private IMudDialogInstance Dialog { get; set; } = default!;
+
+    [Parameter, EditorRequired] public RouteLocationDto Location { get; set; } = default!;
+
+    private IReadOnlyList<MapMarker> Markers =>
+        _picked is not null
+            ? [new MapMarker(_picked.Latitude, _picked.Longitude, "Nowa lokalizacja", MapMarkerKind.Pin)]
+            : Location.HasCoordinates
+                ? [new MapMarker(Location.Latitude!.Value, Location.Longitude!.Value, "Obecna lokalizacja", MapMarkerKind.Start)]
+                : [];
+
+    private void OnPicked(MapPoint point) => _picked = point;
+
+    private async Task SaveAsync()
+    {
+        _busy = true;
+        var result = await Api.PutAsync<RouteLocationDto>(
+            $"api/route-locations/{Location.Id}/location",
+            new SetRouteLocationPinRequest(_picked!.Latitude, _picked.Longitude));
+        _busy = false;
+        if (Snackbar.Report(result, "Lokalizacja zapisana."))
+        {
+            Dialog.Close(DialogResult.Ok(result.Value));
+        }
+    }
+}

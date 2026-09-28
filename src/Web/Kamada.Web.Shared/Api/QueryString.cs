@@ -23,6 +23,7 @@ public static class QueryString
         bool b => b ? "true" : "false",
         DateTimeOffset d => d.ToString("O", CultureInfo.InvariantCulture),
         DateTime d => new DateTimeOffset(d).ToString("O", CultureInfo.InvariantCulture),
+        DateOnly d => d.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
         IFormattable f => f.ToString(null, CultureInfo.InvariantCulture),
         _ => value.ToString(),
     };
