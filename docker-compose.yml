@@ -24,6 +24,9 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
       ConnectionStrings__Kamada: Host=postgres;Port=5432;Database=kamada;Username=${POSTGRES_USER:-kamada};Password=${POSTGRES_PASSWORD:-kamada_dev};Gss Encryption Mode=Disable
+      RouteOptimization__MatrixProvider: ${ROUTE_MATRIX_PROVIDER:-Osrm}
+      RouteOptimization__Osrm__BaseUrl: ${OSRM_BASE_URL:-https://router.project-osrm.org/}
+      RouteOptimization__Google__ApiKey: ${GOOGLE_ROUTES_API_KEY:-}
     ports:
       - "5080:8080"
     depends_on:

@@ -1,3 +1,4 @@
+using Kamada.Shared.Infrastructure.Http;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

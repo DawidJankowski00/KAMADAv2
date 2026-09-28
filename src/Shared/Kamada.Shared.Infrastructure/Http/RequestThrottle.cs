@@ -1,7 +1,7 @@
-namespace Kamada.Shared.Infrastructure.Geocoding;
+namespace Kamada.Shared.Infrastructure.Http;
 
 /// <summary>
-/// Process-wide gate that spaces outgoing requests by a minimum delay (e.g. Nominatim: 1 request/second).
+/// Process-wide gate that spaces outgoing requests by a minimum delay (e.g. Nominatim or the public OSRM demo server: 1 request/second).
 /// Registered as a singleton; consumed by <see cref="ThrottlingHandler"/>.
 /// </summary>
 public sealed class RequestThrottle(TimeSpan minDelay, TimeProvider clock) : IDisposable
@@ -34,7 +34,7 @@ public sealed class RequestThrottle(TimeSpan minDelay, TimeProvider clock) : IDi
 /// <summary>
 /// Placed inside the resilience pipeline so that every attempt (including retries) is throttled.
 /// </summary>
-internal sealed class ThrottlingHandler(RequestThrottle throttle) : DelegatingHandler
+public sealed class ThrottlingHandler(RequestThrottle throttle) : DelegatingHandler
 {
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {

@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Modules\RouteOptimization\Kamada.Modules.RouteOptimization\Kamada.Modules.RouteOptimization.csproj" />
+  </ItemGroup>
+
+</Project>

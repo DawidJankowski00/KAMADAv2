@@ -29,6 +29,7 @@ public sealed class KamadaApiFactory : WebApplicationFactory<Program>, IAsyncLif
         builder.UseSetting("Jwt:SigningKey", "integration-tests-signing-key-0123456789");
         builder.UseSetting("RateLimiting:Login:PermitLimit", "100000");
         builder.UseSetting("Geocoding:Provider", "None");
+        builder.UseSetting("RouteOptimization:MatrixProvider", "Haversine");
 
         builder.ConfigureTestServices(services =>
             services.Replace(ServiceDescriptor.Singleton<IGeocodingService, FakeGeocodingService>()));

@@ -121,6 +121,8 @@ dotnet test --project tests/Kamada.ArchitectureTests
 docker compose up --build              # full stack
 docker compose up -d postgres          # DB only, for local dev
 dotnet run --project src/Kamada.Api
+dotnet run -c Release --project benchmarks/Kamada.Benchmarks -- --filter '*'   # solver timings
+dotnet run -c Release --project benchmarks/Kamada.Benchmarks -- --quality      # heuristic gap vs optimum
 ```
 
 EF migrations (per module context; `dotnet-ef` is a local tool: `dotnet tool restore`), e.g.:
@@ -152,8 +154,8 @@ Record small decisions here (date — decision — reason).
   boundaries via `internal` + NetArchTest without 30+ projects.
 - 2026-09-28 — Shouldly over FluentAssertions — FluentAssertions v8 is commercially licensed.
 - 2026-09-28 — No MediatR — commercial license since v13; plain handlers are enough.
-- 2026-09-28 — `GoogleMaps:MaxWaypointsPerLink` default 9 (Google Maps app/desktop); verify against current
-  Maps URLs docs in stage 6 (mobile *browsers* support fewer).
+- 2026-09-28 — `GoogleMaps:MaxWaypointsPerLink` default 9 — verified in the Maps URLs docs: up to 3 waypoints in
+  mobile browsers, 9 otherwise (couriers open links in the Google Maps app). Long routes split into evenly sized parts.
 - 2026-09-28 — `dotnet test` uses Microsoft.Testing.Platform (`global.json` → `test.runner`) — required by
   xUnit v3 4.x on .NET 10 SDK; test projects are executables (`OutputType=Exe`, `tests/Directory.Build.props`).
 - 2026-09-28 — Integration tests share one PostgreSQL Testcontainer per test assembly
@@ -213,3 +215,20 @@ Record small decisions here (date — decision — reason).
   at container start by `deploy/nginx/40-kamada-config.sh` from `API_BASE_URL` (compose: `PUBLIC_API_URL`).
 - 2026-09-28 — Local UI testing: `.claude/launch.json` has `admin-panel` (5081) and `courier-app` (5082) dev servers;
   API runs from `docker compose up -d` (5080). Stop the dockerized `admin` service before starting the dev server on 5081.
+- 2026-09-28 — RouteOptimization is stateless (no schema/DbContext). Contracts: `IRoutePlanner` (`OptimizeAsync` with an
+  optional current order evaluated on the *same* matrix, `EvaluateAsync` for manual orders; stop indexes refer to
+  `RoutePlanRequest.Stops`) and `INavigationLinkBuilder` (Google Maps links as already-encoded strings – `Uri.ToString()`
+  would unescape `%7C`). Solvers and `TravelMatrix` live in `Domain` (pure, no I/O).
+- 2026-09-28 — Matrix provider pipeline: `CachingTravelMatrixProvider` → `FallbackTravelMatrixProvider` → primary
+  (`RouteOptimization:MatrixProvider` = `Osrm` | `Google` | `Haversine`). Fallback catches only provider failures
+  (HTTP, Polly timeout/circuit, bad payload), never caller cancellation or bugs. Approximate matrices are not cached.
+  Pairs a provider cannot route are estimated in a straight line and the whole matrix is flagged approximate.
+- 2026-09-28 — Public OSRM demo server is the dev default (throttled to 1 request/s via `RequestThrottle`, now in
+  `Kamada.Shared.Infrastructure/Http`); the self-hosted OSRM container comes in stage 10.
+- 2026-09-28 — `/health` includes `travel-matrix` (primary provider, uncached): failure reports `Degraded` (HTTP 200),
+  because planning still works with the fallback; the probe result is cached for 5 minutes.
+- 2026-09-28 — Heuristic = nearest neighbour or input order (whichever is cheaper) + 2-opt with O(1) asymmetric
+  reversal deltas (forward/backward prefix sums) + Or-opt (chains of 1–3); time limit `RouteOptimization:HeuristicTimeLimit`.
+  Unit tests use `FakeTimeProvider` so it always converges (deterministic).
+- 2026-09-28 — Google Routes matrix: `TRAFFIC_UNAWARE`, 25 × 25 tiles (625 elements per request); proto3 JSON omits
+  zero values, so missing `originIndex`/`destinationIndex`/`distanceMeters` mean 0.

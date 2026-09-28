@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/benchmarks/">
+    <Project Path="benchmarks/Kamada.Benchmarks/Kamada.Benchmarks.csproj" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/Kamada.Api/Kamada.Api.csproj" />
   </Folder>
@@ -48,6 +51,7 @@
     <Project Path="tests/Kamada.Modules.Customers.UnitTests/Kamada.Modules.Customers.UnitTests.csproj" />
     <Project Path="tests/Kamada.Modules.Ordering.UnitTests/Kamada.Modules.Ordering.UnitTests.csproj" />
     <Project Path="tests/Kamada.Modules.Payments.UnitTests/Kamada.Modules.Payments.UnitTests.csproj" />
+    <Project Path="tests/Kamada.Modules.RouteOptimization.UnitTests/Kamada.Modules.RouteOptimization.UnitTests.csproj" />
     <Project Path="tests/Kamada.Modules.Workforce.UnitTests/Kamada.Modules.Workforce.UnitTests.csproj" />
     <Project Path="tests/Kamada.Shared.UnitTests/Kamada.Shared.UnitTests.csproj" />
   </Folder>

@@ -1,4 +1,5 @@
 using Kamada.Shared.Infrastructure.Geocoding;
+using Kamada.Shared.Infrastructure.Http;
 using Kamada.Shared.Kernel.Geography;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging.Abstractions;
