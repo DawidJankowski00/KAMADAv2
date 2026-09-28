@@ -9,11 +9,16 @@
     <PackageReference Include="EFCore.NamingConventions" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Kamada.Shared.Kernel\Kamada.Shared.Kernel.csproj" />
     <ProjectReference Include="..\Kamada.Shared.Contracts\Kamada.Shared.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Kamada.Shared.UnitTests" />
   </ItemGroup>
 
 </Project>

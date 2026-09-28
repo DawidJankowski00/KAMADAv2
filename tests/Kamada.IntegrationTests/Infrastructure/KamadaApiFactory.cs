@@ -1,5 +1,9 @@
+using Kamada.Shared.Infrastructure.Geocoding;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Testcontainers.PostgreSql;
 
 namespace Kamada.IntegrationTests.Infrastructure;
@@ -7,6 +11,7 @@ namespace Kamada.IntegrationTests.Infrastructure;
 /// <summary>
 /// Boots the whole API against a throwaway PostgreSQL container. Shared by all tests in the assembly,
 /// so tests must not depend on global row counts – each test creates the data it needs.
+/// External services (geocoding) are replaced with deterministic fakes.
 /// </summary>
 public sealed class KamadaApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
@@ -23,6 +28,10 @@ public sealed class KamadaApiFactory : WebApplicationFactory<Program>, IAsyncLif
         builder.UseSetting("Database:SeedDemoData", "false");
         builder.UseSetting("Jwt:SigningKey", "integration-tests-signing-key-0123456789");
         builder.UseSetting("RateLimiting:Login:PermitLimit", "100000");
+        builder.UseSetting("Geocoding:Provider", "None");
+
+        builder.ConfigureTestServices(services =>
+            services.Replace(ServiceDescriptor.Singleton<IGeocodingService, FakeGeocodingService>()));
     }
 
     public override async ValueTask DisposeAsync()

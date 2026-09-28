@@ -7,6 +7,7 @@ using Kamada.Modules.Payments;
 using Kamada.Modules.RouteOptimization;
 using Kamada.Modules.Workforce;
 using Kamada.Shared.Infrastructure.Auth;
+using Kamada.Shared.Infrastructure.Geocoding;
 using Kamada.Shared.Infrastructure.Persistence;
 using Serilog;
 
@@ -20,7 +21,8 @@ builder.Services
     .AddKamadaCors(builder.Configuration)
     .AddKamadaRateLimiting(builder.Configuration)
     .AddKamadaAuthentication(builder.Configuration)
-    .AddKamadaPersistence(builder.Configuration);
+    .AddKamadaPersistence(builder.Configuration)
+    .AddKamadaGeocoding(builder.Configuration);
 
 builder.Services
     .AddWorkforceModule(builder.Configuration)
@@ -36,9 +38,10 @@ builder.Services.AddHealthChecks()
 
 var app = builder.Build();
 
+// Request logging wraps the exception handler, so it records the final status code (not 500 for handled errors).
+app.UseSerilogRequestLogging();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
-app.UseSerilogRequestLogging();
 app.UseCors(HostingExtensions.FrontendsCorsPolicy);
 app.UseAuthentication();
 app.UseRateLimiter();

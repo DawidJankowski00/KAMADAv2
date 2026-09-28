@@ -167,3 +167,16 @@ Record small decisions here (date — decision — reason).
   verify 429 on a separate host (`WithWebHostBuilder`) so limiter state is isolated.
 - 2026-09-28 — Serilog registered with `AddSerilog` (no static bootstrap logger) so multiple test hosts work.
 - 2026-09-28 — Npgsql connection strings use `Gss Encryption Mode=Disable` (no Kerberos in containers).
+- 2026-09-28 — Geocoding lives in `Kamada.Shared.Infrastructure/Geocoding` (used by Customers and later Delivery),
+  `GeoPoint` in Shared Kernel. Provider via `Geocoding:Provider` (`Nominatim` default / `Google` / `None`).
+  Nominatim: identifying User-Agent, `RequestThrottle` inside the resilience pipeline (every retry throttled),
+  results cached (not-found for 10 min). Provider failures never fail a save — address stored without coordinates.
+  Integration tests replace `IGeocodingService` with `FakeGeocodingService`.
+- 2026-09-28 — Addresses are archived (not deleted) and clients/products deactivated, because orders reference them.
+  Changing only apartment number or address type keeps coordinates; changing the building clears and re-geocodes.
+- 2026-09-28 — Stock lives in `catalog.products.stock_quantity`, changed only via `Product` methods
+  (`SetStock` by admin, `ReserveStock`/`ReleaseStock` for Ordering in stage 4). DB check constraints back the invariants.
+- 2026-09-28 — Category filter on products includes subcategories (tree resolved in memory — `CategoryTree`).
+  Sibling category names unique via index with `NULLS NOT DISTINCT` (root level too).
+- 2026-09-28 — HTTP route for Customers module is `/api/clients` (matches table name `clients`).
+- 2026-09-28 — `UseSerilogRequestLogging` is registered before `UseExceptionHandler` so it logs final status codes.
