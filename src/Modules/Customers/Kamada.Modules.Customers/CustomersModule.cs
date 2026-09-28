@@ -3,6 +3,7 @@ using Kamada.Modules.Customers.Api;
 using Kamada.Modules.Customers.Application;
 using Kamada.Modules.Customers.Application.Abstractions;
 using Kamada.Modules.Customers.Application.Clients;
+using Kamada.Modules.Customers.Contracts;
 using Kamada.Modules.Customers.Infrastructure.Persistence;
 using Kamada.Shared.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Builder;
@@ -30,6 +31,7 @@ public static class CustomersModule
         services.AddScoped<AddressGeocoder>();
         services.AddScoped<ClientQueries>();
         services.AddScoped<ClientCommands>();
+        services.AddScoped<ICustomerDirectory, CustomerDirectory>();
         services.AddValidatorsFromAssemblyContaining<ClientQueries>(includeInternalTypes: true);
 
         return services;

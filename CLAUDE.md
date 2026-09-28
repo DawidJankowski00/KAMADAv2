@@ -180,3 +180,21 @@ Record small decisions here (date — decision — reason).
   Sibling category names unique via index with `NULLS NOT DISTINCT` (root level too).
 - 2026-09-28 — HTTP route for Customers module is `/api/clients` (matches table name `clients`).
 - 2026-09-28 — `UseSerilogRequestLogging` is registered before `UseExceptionHandler` so it logs final status codes.
+- 2026-09-28 — Cross-module writes: `IUnitOfWork.ExecuteAsync` (one shared `NpgsqlConnection` per scope, all module
+  contexts enlisted in one transaction, commit only on success). Never run queries of two contexts in parallel
+  within a request (they share the connection).
+- 2026-09-28 — Inter-module contracts so far: `ICatalogInventory` (Catalog: reserve/release stock, all-or-nothing,
+  validates before mutating), `ICustomerDirectory` (Customers: shipping details, current address coordinates),
+  `IOrderPayments` (Ordering: order state for payments, mark paid).
+- 2026-09-28 — Orders snapshot recipient + address (+ coordinates) as an EF complex property; `shipping_address_id`
+  keeps the reference. Delivery (stage 7) should read *current* coordinates via `ICustomerDirectory.GetAddressLocationsAsync`
+  (an admin may pin the address after the order was placed), falling back to the snapshot.
+- 2026-09-28 — Order lifecycle: cancel allowed in New/Paid/ReadyForDelivery (returns stock); refunds are a separate
+  Payments action allowed only for cancelled orders. `DeliveryFailed → ReadyForDelivery` allows re-planning.
+- 2026-09-28 — Payments: simulated gateway — Cash approved, Card approved (or declined with `simulateDecline`),
+  Transfer pending until `POST /api/payments/{id}/confirm`. One active (Pending/Completed) payment per order
+  (partial unique index). Declined attempts are stored as `Failed`.
+- 2026-09-28 — `UseXminConcurrencyTokens` only touches entity types with a primary key (complex types discovered by
+  convention must not be promoted to entities).
+- 2026-09-28 — xUnit theories cannot take internal enums as parameters (test methods are public): pass
+  `nameof(Enum.Value)` strings and `Enum.Parse` inside the test.

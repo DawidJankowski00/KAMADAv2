@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Kamada.Modules.Payments.Contracts\Kamada.Modules.Payments.Contracts.csproj" />
+    <ProjectReference Include="..\..\Ordering\Kamada.Modules.Ordering.Contracts\Kamada.Modules.Ordering.Contracts.csproj" />
     <ProjectReference Include="..\..\..\Shared\Kamada.Shared.Kernel\Kamada.Shared.Kernel.csproj" />
     <ProjectReference Include="..\..\..\Shared\Kamada.Shared.Infrastructure\Kamada.Shared.Infrastructure.csproj" />
     <ProjectReference Include="..\..\..\Shared\Kamada.Shared.Contracts\Kamada.Shared.Contracts.csproj" />

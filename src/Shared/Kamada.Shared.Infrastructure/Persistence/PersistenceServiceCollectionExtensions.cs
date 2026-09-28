@@ -23,6 +23,8 @@ public static class PersistenceServiceCollectionExtensions
         }
 
         services.AddSingleton(_ => NpgsqlDataSource.Create(connectionString));
+        services.AddScoped<ScopedDbConnection>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddSingleton<AuditingInterceptor>();
         services.AddOptions<DatabaseOptions>().Bind(configuration.GetSection(DatabaseOptions.SectionName));
         return services;
@@ -30,14 +32,15 @@ public static class PersistenceServiceCollectionExtensions
 
     /// <summary>
     /// Registers a module <see cref="DbContext"/> mapped to its own PostgreSQL schema, with its own
-    /// migrations history table, snake_case naming and auditing.
+    /// migrations history table, snake_case naming and auditing. All module contexts in a scope share
+    /// one connection (<see cref="ScopedDbConnection"/>) so they can join one transaction.
     /// </summary>
     public static IServiceCollection AddModuleDbContext<TContext>(this IServiceCollection services, string schema)
         where TContext : DbContext
     {
         services.AddDbContext<TContext>((serviceProvider, options) => options
             .UseNpgsql(
-                serviceProvider.GetRequiredService<NpgsqlDataSource>(),
+                serviceProvider.GetRequiredService<ScopedDbConnection>().Connection,
                 npgsql => npgsql.MigrationsHistoryTable(MigrationsHistoryTable, schema))
             .UseSnakeCaseNamingConvention()
             .AddInterceptors(serviceProvider.GetRequiredService<AuditingInterceptor>()));

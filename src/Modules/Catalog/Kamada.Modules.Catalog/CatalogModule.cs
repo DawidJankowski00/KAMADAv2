@@ -2,7 +2,9 @@ using FluentValidation;
 using Kamada.Modules.Catalog.Api;
 using Kamada.Modules.Catalog.Application.Abstractions;
 using Kamada.Modules.Catalog.Application.Categories;
+using Kamada.Modules.Catalog.Application.Inventory;
 using Kamada.Modules.Catalog.Application.Products;
+using Kamada.Modules.Catalog.Contracts;
 using Kamada.Modules.Catalog.Infrastructure.Persistence;
 using Kamada.Shared.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Builder;
@@ -30,6 +32,7 @@ public static class CatalogModule
         services.AddScoped<ProductQueries>();
         services.AddScoped<ProductCommands>();
         services.AddScoped<CategoryService>();
+        services.AddScoped<ICatalogInventory, CatalogInventory>();
         services.AddValidatorsFromAssemblyContaining<ProductQueries>(includeInternalTypes: true);
 
         return services;

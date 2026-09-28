@@ -104,8 +104,7 @@ internal sealed class Product : Entity, IAuditable
         return Result.Success();
     }
 
-    /// <summary>Takes <paramref name="quantity"/> units out of stock for an order.</summary>
-    public Result ReserveStock(int quantity)
+    public Result CanReserve(int quantity)
     {
         if (quantity <= 0)
         {
@@ -117,13 +116,21 @@ internal sealed class Product : Entity, IAuditable
             return ProductErrors.Inactive(Sku);
         }
 
-        if (StockQuantity < quantity)
+        return StockQuantity < quantity
+            ? ProductErrors.InsufficientStock(Sku, StockQuantity, quantity)
+            : Result.Success();
+    }
+
+    /// <summary>Takes <paramref name="quantity"/> units out of stock for an order.</summary>
+    public Result ReserveStock(int quantity)
+    {
+        var check = CanReserve(quantity);
+        if (check.IsSuccess)
         {
-            return ProductErrors.InsufficientStock(Sku, StockQuantity, quantity);
+            StockQuantity -= quantity;
         }
 
-        StockQuantity -= quantity;
-        return Result.Success();
+        return check;
     }
 
     /// <summary>Returns units to stock (e.g. a cancelled order).</summary>

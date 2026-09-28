@@ -12,7 +12,13 @@ public static class ModelBuilderExtensions
     /// </summary>
     public static ModelBuilder UseXminConcurrencyTokens(this ModelBuilder modelBuilder)
     {
-        foreach (var entityType in modelBuilder.Model.GetEntityTypes().Where(e => !e.IsOwned()))
+        // Only real entities: types discovered by convention but later configured as complex properties
+        // (value objects) have no key and must not be promoted to entities here.
+        var entityTypes = modelBuilder.Model.GetEntityTypes()
+            .Where(e => !e.IsOwned() && e.FindPrimaryKey() is not null)
+            .ToList();
+
+        foreach (var entityType in entityTypes)
         {
             modelBuilder.Entity(entityType.ClrType)
                 .Property<uint>(ConcurrencyTokenProperty)
