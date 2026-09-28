@@ -28,7 +28,8 @@ internal static class TestData
     public static async Task<(Guid ClientId, Guid AddressId)> CreateClientAsync(
         this HttpClient admin,
         AddressType addressType = AddressType.Shipping,
-        string buildingNumber = "10")
+        string buildingNumber = "10",
+        string street = "Dworcowa")
     {
         var unique = Guid.NewGuid().ToString("N")[..10];
         var response = await admin.PostJsonAsync("/api/clients", new CreateClientRequest(
@@ -37,7 +38,7 @@ internal static class TestData
             "Adam",
             "Klient",
             "+48 600 111 222",
-            [new AddressRequest(addressType, "Dworcowa", buildingNumber, null, "Bydgoszcz", "85-010")]));
+            [new AddressRequest(addressType, street, buildingNumber, null, "Bydgoszcz", "85-010")]));
         response.StatusCode.ShouldBe(HttpStatusCode.Created);
         var client = await response.ReadAsAsync<ClientDto>();
         return (client.Id, client.Addresses.Single().Id);

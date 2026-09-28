@@ -1,8 +1,10 @@
 using FluentValidation;
 using Kamada.Modules.Workforce.Api;
+using Kamada.Modules.Workforce.Application;
 using Kamada.Modules.Workforce.Application.Abstractions;
 using Kamada.Modules.Workforce.Application.Auth;
 using Kamada.Modules.Workforce.Application.Workers;
+using Kamada.Modules.Workforce.Contracts;
 using Kamada.Modules.Workforce.Domain.Workers;
 using Kamada.Modules.Workforce.Infrastructure.Auth;
 using Kamada.Modules.Workforce.Infrastructure.Persistence;
@@ -40,6 +42,7 @@ public static class WorkforceModule
         services.AddScoped<LogoutHandler>();
         services.AddScoped<WorkerQueries>();
         services.AddScoped<WorkerCommands>();
+        services.AddScoped<ICourierDirectory, CourierDirectory>();
 
         services.AddValidatorsFromAssemblyContaining<WorkerQueries>(includeInternalTypes: true);
         services.AddScoped<IDataSeeder, WorkforceSeeder>();

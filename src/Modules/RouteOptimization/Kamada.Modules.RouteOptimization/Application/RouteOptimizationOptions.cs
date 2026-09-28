@@ -77,6 +77,9 @@ internal sealed class OsrmOptions
 
     /// <summary>The public demo server allows at most 1 request/second; use zero for a self-hosted instance.</summary>
     public TimeSpan MinDelayBetweenRequests { get; init; } = TimeSpan.FromSeconds(1);
+
+    /// <summary>The public demo server rejects requests without a User-Agent (403).</summary>
+    public string UserAgent { get; init; } = "KAMADA-demo/1.0 (+https://github.com/DawidJankowski00/KAMADAv2)";
 }
 
 internal sealed class GoogleRoutesOptions

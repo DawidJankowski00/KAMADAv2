@@ -6,6 +6,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Kamada.Modules.Delivery.Contracts\Kamada.Modules.Delivery.Contracts.csproj" />
+    <ProjectReference Include="..\..\Customers\Kamada.Modules.Customers.Contracts\Kamada.Modules.Customers.Contracts.csproj" />
+    <ProjectReference Include="..\..\Ordering\Kamada.Modules.Ordering.Contracts\Kamada.Modules.Ordering.Contracts.csproj" />
+    <ProjectReference Include="..\..\RouteOptimization\Kamada.Modules.RouteOptimization.Contracts\Kamada.Modules.RouteOptimization.Contracts.csproj" />
+    <ProjectReference Include="..\..\Workforce\Kamada.Modules.Workforce.Contracts\Kamada.Modules.Workforce.Contracts.csproj" />
     <ProjectReference Include="..\..\..\Shared\Kamada.Shared.Kernel\Kamada.Shared.Kernel.csproj" />
     <ProjectReference Include="..\..\..\Shared\Kamada.Shared.Infrastructure\Kamada.Shared.Infrastructure.csproj" />
     <ProjectReference Include="..\..\..\Shared\Kamada.Shared.Contracts\Kamada.Shared.Contracts.csproj" />

@@ -232,3 +232,20 @@ Record small decisions here (date — decision — reason).
   Unit tests use `FakeTimeProvider` so it always converges (deterministic).
 - 2026-09-28 — Google Routes matrix: `TRAFFIC_UNAWARE`, 25 × 25 tiles (625 elements per request); proto3 JSON omits
   zero values, so missing `originIndex`/`destinationIndex`/`distanceMeters` mean 0.
+- 2026-09-28 — Delivery uses `IOrderFulfillment` (Ordering: delivery view of orders + bulk all-or-nothing status transitions)
+  and `ICourierDirectory` (Workforce: assignable = active worker with the Courier role). Order and stop changes are
+  saved in one `IUnitOfWork` transaction.
+- 2026-09-28 — "One order in one active run" is enforced by the order lifecycle (`ReadyForDelivery → AssignedToRun`
+  in the same transaction, `xmin` on the order), not by an index: an order may appear in several runs over time
+  (failed → re-planned).
+- 2026-09-28 — Runs are editable only in `Draft`; adding/removing stops or changing endpoints clears the stored plan,
+  approval requires a plan. `apply-optimization` re-optimizes on the server (matrix is cached) instead of trusting an
+  order sent by the client. Manual order (`PUT sequence`) is stored with algorithm `Manual`.
+- 2026-09-28 — `(delivery_run_id, delivery_sequence)` unique via a `DEFERRABLE INITIALLY DEFERRED` constraint created
+  in the migration SQL, so stops can swap positions in one `SaveChanges`. `google_maps_urls` is jsonb via a value converter.
+- 2026-09-28 — Arrival estimates = driving time + `Delivery:ServiceTimePerStop` (default 3 min) at earlier stops;
+  run totals stay pure driving time/distance. Stops store the coordinates the plan was computed with.
+- 2026-09-28 — Courier API under `/api/courier/delivery-runs` (policy `CourierOnly`): other couriers' runs, drafts
+  and cancelled runs return 404. "Today" for the Current/Upcoming lists uses `Delivery:TimeZone` (Europe/Warsaw).
+  Completing a run early fails pending stops with `DeliveryRun.NotVisitedReason` (Polish text stored as data).
+- 2026-09-28 — The public OSRM demo server returns 403 without a User-Agent: `RouteOptimization:Osrm:UserAgent`.

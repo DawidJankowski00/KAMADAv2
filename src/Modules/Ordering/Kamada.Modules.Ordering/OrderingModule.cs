@@ -32,6 +32,7 @@ public static class OrderingModule
         services.AddScoped<OrderQueries>();
         services.AddScoped<OrderCommands>();
         services.AddScoped<IOrderPayments, OrderPayments>();
+        services.AddScoped<IOrderFulfillment, OrderFulfillment>();
         services.AddValidatorsFromAssemblyContaining<OrderQueries>(includeInternalTypes: true);
 
         return services;

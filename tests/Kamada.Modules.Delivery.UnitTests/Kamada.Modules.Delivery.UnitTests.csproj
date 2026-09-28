@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Modules\Delivery\Kamada.Modules.Delivery\Kamada.Modules.Delivery.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -80,7 +80,11 @@ public static class RouteOptimizationModule
                     sp.GetRequiredService<IOptions<RouteOptimizationOptions>>().Value.Osrm.MinDelayBetweenRequests,
                     sp.GetRequiredService<TimeProvider>()));
                 var osrm = services.AddHttpClient<OsrmMatrixProvider>((sp, http) =>
-                    http.BaseAddress = sp.GetRequiredService<IOptions<RouteOptimizationOptions>>().Value.Osrm.BaseUrl);
+                {
+                    var options = sp.GetRequiredService<IOptions<RouteOptimizationOptions>>().Value.Osrm;
+                    http.BaseAddress = options.BaseUrl;
+                    http.DefaultRequestHeaders.UserAgent.ParseAdd(options.UserAgent);
+                });
                 osrm.AddResilienceHandler("osrm", ConfigureResilience);
                 osrm.AddHttpMessageHandler(sp => new ThrottlingHandler(sp.GetRequiredKeyedService<RequestThrottle>(OsrmThrottleKey)));
                 services.AddKeyedTransient<ITravelTimeMatrixProvider>(

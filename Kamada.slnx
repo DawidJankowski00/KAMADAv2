@@ -49,6 +49,7 @@
     <Project Path="tests/Kamada.IntegrationTests/Kamada.IntegrationTests.csproj" />
     <Project Path="tests/Kamada.Modules.Catalog.UnitTests/Kamada.Modules.Catalog.UnitTests.csproj" />
     <Project Path="tests/Kamada.Modules.Customers.UnitTests/Kamada.Modules.Customers.UnitTests.csproj" />
+    <Project Path="tests/Kamada.Modules.Delivery.UnitTests/Kamada.Modules.Delivery.UnitTests.csproj" />
     <Project Path="tests/Kamada.Modules.Ordering.UnitTests/Kamada.Modules.Ordering.UnitTests.csproj" />
     <Project Path="tests/Kamada.Modules.Payments.UnitTests/Kamada.Modules.Payments.UnitTests.csproj" />
     <Project Path="tests/Kamada.Modules.RouteOptimization.UnitTests/Kamada.Modules.RouteOptimization.UnitTests.csproj" />
