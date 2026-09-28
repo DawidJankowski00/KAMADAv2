@@ -12,10 +12,11 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Kamada.Modules.Delivery.Infrastructure.Seeding;
 
 /// <summary>
-/// Route locations (warehouse and courier base, coordinates stored here) and two runs of courier <c>kurier1</c>,
-/// created through the real use cases (create → optimize → approve → courier actions):
-/// yesterday's completed run – replayed with a <see cref="SeedClock"/>, one stop failed – and today's approved run
-/// that has not started yet. The remaining ready orders are left for planning in the admin panel.
+/// Route locations (a warehouse and a courier base per delivery area, coordinates stored here) and runs created
+/// through the real use cases (create → optimize → approve → courier actions):
+/// in the Tricity courier <c>kurier1</c> has yesterday's completed run – replayed with a <see cref="SeedClock"/>,
+/// one stop failed – and today's approved run; in Szczecin courier <c>kurier2</c> has today's approved run.
+/// The remaining ready orders are left for planning in the admin panel.
 /// </summary>
 internal sealed class DeliverySeeder(
     DeliveryDbContext db,
@@ -26,7 +27,7 @@ internal sealed class DeliverySeeder(
     TimeProvider clock) : IDataSeeder
 {
     private const int CompletedRunStops = 7;
-    private const int TodayRunStops = 8;
+    private const int TodayRunStops = 7;
     private const int FailedStopIndex = 3;
 
     public int Order => SeedOrder.Delivery;
@@ -38,46 +39,57 @@ internal sealed class DeliverySeeder(
             return;
         }
 
-        var warehouse = Location("Magazyn centralny", "Przemysłowa", "8", "85-756", 53.1225509, 18.0999879);
-        var courierBase = Location("Baza kurierów Kapuściska", "Bydgoskich Przemysłowców", "6", "85-862", 53.0841856, 18.0676411);
-        db.RouteLocations.AddRange(warehouse, courierBase);
+        var tricityWarehouse = Location("Magazyn Gdańsk", "Budowlanych", "64D", "Gdańsk", "80-298", 54.3696235, 18.5065513);
+        var tricityBase = Location("Baza kurierów Gdynia", "Hutnicza", "40", "Gdynia", "81-012", 54.5535249, 18.4501734);
+        var szczecinWarehouse = Location("Magazyn Szczecin", "Pomorska", "115b", "Szczecin", "70-812", 53.3870310, 14.6874501);
+        var szczecinBase = Location("Baza kurierów Szczecin", "Gryfińska", "15", "Szczecin", "70-806", 53.3919227, 14.6612222);
+        db.RouteLocations.AddRange(tricityWarehouse, tricityBase, szczecinWarehouse, szczecinBase);
         await db.SaveChangesAsync(cancellationToken);
 
-        if (seedData.CourierIds.Count == 0 || seedData.Orders.Count == 0)
+        if (seedData.CourierIds.Count < 2 || seedData.Orders.Count == 0)
         {
             return;
         }
 
-        var courierId = seedData.CourierIds[0];
         var now = clock.GetUtcNow();
         var today = DemoSeedData.LocalDate(now);
         var yesterday = today.AddDays(-1);
 
-        var placedAt = seedData.Orders.ToDictionary(o => o.OrderId, o => o.PlacedAt);
-        var ready = (await orders.GetDeliveryOrdersAsync(placedAt.Keys, cancellationToken))
+        var placed = seedData.Orders.ToDictionary(o => o.OrderId);
+        var ready = (await orders.GetDeliveryOrdersAsync(placed.Keys, cancellationToken))
             .Where(o => o.Status == FulfillmentStatus.ReadyForDelivery)
-            .OrderBy(o => placedAt[o.OrderId])
-            .Select(o => o.OrderId)
+            .Select(o => placed[o.OrderId])
+            .OrderBy(o => o.PlacedAt)
             .ToList();
 
         var morning = DemoSeedData.AtLocalTime(yesterday, new TimeOnly(7, 0));
-        var completedOrders = ready.Where(id => placedAt[id] < morning).Take(CompletedRunStops).ToList();
-        var todayOrders = ready.Except(completedOrders).Take(TodayRunStops).ToList();
+        var tricity = ready.Where(o => o.Region == DemoRegion.Tricity).ToList();
+        var completedOrders = tricity.Where(o => o.PlacedAt < morning).Take(CompletedRunStops).Select(o => o.OrderId).ToList();
+        var tricityToday = tricity.Select(o => o.OrderId).Except(completedOrders).Take(TodayRunStops).ToList();
+        var szczecinToday = ready.Where(o => o.Region == DemoRegion.Szczecin).Take(TodayRunStops).Select(o => o.OrderId).ToList();
 
+        var (tricityCourier, szczecinCourier) = (seedData.CourierIds[0], seedData.CourierIds[1]);
         if (completedOrders.Count > 0)
         {
-            var request = new CreateDeliveryRunRequest("Trasa poranna", yesterday, courierId, "CB 4521K", warehouse.Id, warehouse.Id, completedOrders);
+            var request = new CreateDeliveryRunRequest("Trójmiasto – poranna", yesterday, tricityCourier, "GD 4521K", tricityWarehouse.Id, tricityWarehouse.Id, completedOrders);
             await ReplayCompletedRunAsync(request, DemoSeedData.AtLocalTime(yesterday, new TimeOnly(8, 30)), cancellationToken);
         }
 
-        if (todayOrders.Count > 0)
+        await PlanApprovedRunAsync(new CreateDeliveryRunRequest("Trójmiasto – dzienna", today, tricityCourier, "GD 4521K", tricityWarehouse.Id, tricityBase.Id, tricityToday), cancellationToken);
+        await PlanApprovedRunAsync(new CreateDeliveryRunRequest("Szczecin – dzienna", today, szczecinCourier, "ZS 7310M", szczecinWarehouse.Id, szczecinBase.Id, szczecinToday), cancellationToken);
+    }
+
+    private async Task PlanApprovedRunAsync(CreateDeliveryRunRequest request, CancellationToken cancellationToken)
+    {
+        if (request.OrderIds is not { Count: > 0 })
         {
-            var request = new CreateDeliveryRunRequest("Trasa dzienna", today, courierId, "CB 4521K", warehouse.Id, courierBase.Id, todayOrders);
-            var run = Ensure(await runs.CreateAsync(request, cancellationToken));
-            var planning = services.GetRequiredService<RoutePlanningHandler>();
-            Ensure(await planning.ApplyOptimizationAsync(run.Id, cancellationToken));
-            Ensure(await runs.ApproveAsync(run.Id, cancellationToken));
+            return;
         }
+
+        var run = Ensure(await runs.CreateAsync(request, cancellationToken));
+        var planning = services.GetRequiredService<RoutePlanningHandler>();
+        Ensure(await planning.ApplyOptimizationAsync(run.Id, cancellationToken));
+        Ensure(await runs.ApproveAsync(run.Id, cancellationToken));
     }
 
     /// <summary>Planned the evening before, driven from <paramref name="startAt"/> with small delays at each stop.</summary>
@@ -111,9 +123,9 @@ internal sealed class DeliverySeeder(
         }
     }
 
-    private static RouteLocation Location(string name, string street, string buildingNumber, string postalCode, double latitude, double longitude)
+    private static RouteLocation Location(string name, string street, string buildingNumber, string city, string postalCode, double latitude, double longitude)
     {
-        var location = RouteLocation.Create(new RouteLocationDetails(name, street, buildingNumber, "Bydgoszcz", postalCode, "Polska"));
+        var location = RouteLocation.Create(new RouteLocationDetails(name, street, buildingNumber, city, postalCode, "Polska"));
         location.SetLocation(new GeoPoint(latitude, longitude));
         return location;
     }

@@ -20,8 +20,8 @@ internal sealed class TravelMatrixHealthCheck(
     private const string CacheKey = "route-optimization:health";
     private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
 
-    // Two points in Bydgoszcz (Old Market Square → main railway station).
-    private static readonly GeoPoint[] Probe = [new(53.12303, 18.00061), new(53.13493, 17.98942)];
+    // Two points in Gdańsk (Long Street → main railway station), covered by the default self-hosted OSRM extract.
+    private static readonly GeoPoint[] Probe = [new(54.34850, 18.65266), new(54.35565, 18.64393)];
 
     public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
     {

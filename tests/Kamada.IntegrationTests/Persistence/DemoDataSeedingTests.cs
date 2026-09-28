@@ -30,7 +30,7 @@ public sealed class DemoDataSeedingTests(KamadaApiFactory factory)
             orders.Items.Select(o => o.Status).ShouldContain(OrderStatus.New);
             orders.Items.Select(o => o.Status).ShouldContain(OrderStatus.ReadyForDelivery);
             orders.Items.Select(o => o.Status).ShouldContain(OrderStatus.Cancelled);
-            orders.Items.Count(o => o.Status == OrderStatus.AssignedToRun).ShouldBe(8);
+            orders.Items.Count(o => o.Status == OrderStatus.AssignedToRun).ShouldBe(14);
             orders.Items.Count(o => o.Status == OrderStatus.Delivered).ShouldBe(6);
             orders.Items.Count(o => o.Status == OrderStatus.DeliveryFailed).ShouldBe(1);
             orders.Items.ShouldAllBe(o => o.CreatedAt < DateTimeOffset.UtcNow);
@@ -38,7 +38,8 @@ public sealed class DemoDataSeedingTests(KamadaApiFactory factory)
             var courier = await SignInAsync(host, "kurier1", WorkforceSeeder.CourierPassword);
             var today = (await GetAsync<List<DeliveryRunSummaryDto>>(courier, "/api/courier/delivery-runs?scope=Current")).ShouldHaveSingleItem();
             today.Status.ShouldBe(DeliveryRunStatus.Planned);
-            today.StopCount.ShouldBe(8);
+            today.Name.ShouldBe("Trójmiasto – dzienna");
+            today.StopCount.ShouldBe(7);
             today.PlannedDurationSeconds.ShouldNotBeNull();
 
             var completed = (await GetAsync<List<DeliveryRunSummaryDto>>(courier, "/api/courier/delivery-runs?scope=Completed")).ShouldHaveSingleItem();
@@ -51,6 +52,15 @@ public sealed class DemoDataSeedingTests(KamadaApiFactory factory)
             history.CompletedAt.Value.ShouldBeGreaterThan(history.StartedAt.Value);
             history.Stops.Where(s => s.Status == DeliveryStopStatus.Delivered)
                 .ShouldAllBe(s => s.DeliveredAt > history.StartedAt && s.DeliveredAt <= history.CompletedAt);
+
+            var szczecin = await SignInAsync(host, "kurier2", WorkforceSeeder.CourierPassword);
+            var szczecinRun = (await GetAsync<List<DeliveryRunSummaryDto>>(szczecin, "/api/courier/delivery-runs?scope=Current")).ShouldHaveSingleItem();
+            szczecinRun.Name.ShouldBe("Szczecin – dzienna");
+            szczecinRun.Status.ShouldBe(DeliveryRunStatus.Planned);
+            szczecinRun.StopCount.ShouldBe(7);
+
+            var locations = await GetAsync<List<RouteLocationDto>>(admin, "/api/route-locations");
+            locations.Select(l => l.City).Distinct().ShouldBe(["Gdańsk", "Gdynia", "Szczecin"], ignoreOrder: true);
         }
 
         // A restart must not seed again.

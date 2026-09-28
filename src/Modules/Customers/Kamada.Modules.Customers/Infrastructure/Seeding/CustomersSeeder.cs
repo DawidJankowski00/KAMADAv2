@@ -10,55 +10,60 @@ using Microsoft.EntityFrameworkCore;
 namespace Kamada.Modules.Customers.Infrastructure.Seeding;
 
 /// <summary>
-/// 25 demo clients in Bydgoszcz. Addresses are real buildings with coordinates stored here (geocoded once with
+/// 25 demo clients in the Tricity (Gdańsk, Gdynia, Sopot) and Szczecin. Addresses are real buildings with coordinates stored here (geocoded once with
 /// Nominatim when the seed was written), so startup never depends on a geocoding service. Names (from lists of
 /// common Polish names), e-mails and phone numbers are picked by Bogus with a fixed seed. Edge cases: one address
 /// without coordinates (it cannot be planned into a run until pinned), one billing address and one deactivated client.
 /// </summary>
 internal sealed class CustomersSeeder(CustomersDbContext db, DemoSeedData seedData, TimeProvider clock) : IDataSeeder
 {
-    private const string City = "Bydgoszcz";
     private const string Country = "Polska";
     private const int ClientCount = 25;
 
+    /// <summary>Home address of client <c>i</c>: the first 13 clients live in the Tricity, the rest in Szczecin.</summary>
     private static readonly DemoAddress[] Addresses =
     [
-        new("Dworcowa", "63", "85-009", 53.1302312, 17.9957081),
-        new("Jagiellońska", "12", "85-068", 53.1234573, 18.0060323),
-        new("Mostowa", "7", "85-110", 53.1228364, 18.0007473),
-        new("Długa", "22", "85-034", 53.1211416, 17.9983480),
-        new("Sienkiewicza", "30", "85-038", 53.1317625, 18.0021677),
-        new("Grunwaldzka", "55", "85-203", 53.1293182, 17.9787801),
-        new("Szubińska", "20", "85-312", 53.1159756, 17.9649497),
-        new("Wojska Polskiego", "30", "85-800", 53.1041850, 18.0534724),
-        new("Nakielska", "100", "85-385", 53.1321552, 17.9417850),
-        new("Glinki", "80", "85-861", 53.1011124, 18.0310171),
-        new("Łęczycka", "15", "85-737", 53.1224904, 18.0562710),
-        new("Szarych Szeregów", "5", "85-829", 53.1098166, 18.0456634),
-        new("Chodkiewicza", "40", "85-671", 53.1314429, 18.0254278),
-        new("Cieszkowskiego", "10", "85-052", 53.1310142, 18.0068678),
-        new("Czerkaska", "10", "85-647", 53.1402844, 18.0254756),
-        new("Leśna", "5", "85-676", 53.1380389, 18.0173876),
-        new("Ikara", "10", "85-314", 53.1138428, 17.9669495),
-        new("Gdańska", "110", "85-022", 53.1351442, 18.0133235),
-        new("Toruńska", "60", "85-026", 53.1190243, 18.0173586),
-        new("Kamienna", "5", "85-726", 53.1324443, 18.0499136),
-        new("Łużycka", "10", "85-096", 53.1227342, 18.0296187),
-        new("Kołłątaja", "10", "85-080", 53.1278449, 18.0106259),
-        new("Śniadeckich", "20", "85-055", 53.1295350, 18.0032823),
-        new("Wyzwolenia", "10", "85-799", 53.1516217, 18.1718627),
-        new("Szpitalna", "5", "85-823", 53.1057632, 18.0465326),
+        new("Gdańsk", "Długa", "45", "80-827", 54.3485048, 18.6526611),
+        new("Gdańsk", "Grunwaldzka", "100", "80-244", 54.3780656, 18.6060457),
+        new("Gdańsk", "Słowackiego", "50", "80-257", 54.3794365, 18.5843039),
+        new("Gdańsk", "Kartuska", "100", "80-104", 54.3487270, 18.6211358),
+        new("Gdańsk", "Piastowska", "50", "80-332", 54.4137710, 18.5789080),
+        new("Gdańsk", "Obrońców Wybrzeża", "5", "80-398", 54.4105500, 18.5959260),
+        new("Gdynia", "Świętojańska", "50", "81-393", 54.5167075, 18.5410578),
+        new("Gdynia", "Starowiejska", "30", "81-356", 54.5214297, 18.5374622),
+        new("Sopot", "Bohaterów Monte Cassino", "30", "81-759", 54.4435621, 18.5654380),
+        new("Gdańsk", "Szeroka", "50", "80-835", 54.3507681, 18.6555367),
+        new("Gdańsk", "Pilotów", "10", "80-460", 54.3918235, 18.5915741),
+        new("Gdynia", "Władysława IV", "40", "81-397", 54.5171151, 18.5382378),
+        new("Sopot", "Niepodległości", "800", "81-805", 54.4440851, 18.5591834),
 
-        // Second shipping addresses (e.g. a workplace) of the first clients.
-        new("Dworcowa", "30", "85-054", 53.1276019, 17.9998639),
-        new("Pomorska", "60", "85-046", 53.1322674, 18.0056023),
-        new("Gdańska", "80", "85-071", 53.1329531, 18.0111499),
-        new("Chrobrego", "10", "85-047", 53.1307846, 18.0028442),
-        new("Racławicka", "10", "85-041", 53.1358183, 18.0030470),
+        new("Szczecin", "Wojska Polskiego", "50", "70-473", 53.4312619, 14.5412203),
+        new("Szczecin", "Jagiellońska", "20", "70-363", 53.4325477, 14.5379823),
+        new("Szczecin", "Niepodległości", "30", "70-412", 53.4275508, 14.5527559),
+        new("Szczecin", "Mazurska", "20", "70-444", 53.4340073, 14.5447254),
+        new("Szczecin", "Krzywoustego", "10", "70-304", 53.4266384, 14.5419570),
+        new("Szczecin", "Monte Cassino", "20", "71-431", 53.4404299, 14.5364192),
+        new("Szczecin", "Ku Słońcu", "50", "71-046", 53.4231572, 14.4955320),
+        new("Szczecin", "Rayskiego", "20", "70-442", 53.4317500, 14.5457412),
+        new("Szczecin", "Mickiewicza", "50", "70-392", 53.4374659, 14.5281746),
+        new("Szczecin", "Jana Pawła II", "30", "71-417", 53.4366623, 14.5433555),
+        new("Szczecin", "Wyszyńskiego", "10", "70-201", 53.4244519, 14.5525751),
+        new("Szczecin", "Niemierzyńska", "10", "71-436", 53.4465532, 14.5414994),
     ];
 
+    /// <summary>Second shipping addresses (e.g. a workplace) of some clients, in the same city area.</summary>
+    private static readonly Dictionary<int, DemoAddress> SecondAddresses = new()
+    {
+        [0] = new("Gdańsk", "Partyzantów", "20", "80-254", 54.3779210, 18.6030731),
+        [1] = new("Gdańsk", "Kołobrzeska", "30", "80-394", 54.4029675, 18.5860851),
+        [2] = new("Gdynia", "10 Lutego", "20", "81-361", 54.5197964, 18.5361289),
+        [13] = new("Szczecin", "Śląska", "20", "70-433", 53.4352229, 14.5488735),
+        [14] = new("Szczecin", "Wojska Polskiego", "100", "70-485", 53.4393587, 14.5333384),
+    };
+
+    private static readonly DemoAddress InactiveClientAddress = new("Gdynia", "Wielkopolska", "100", "81-534", 54.4811468, 18.5301627);
     /// <summary>Real building that "failed" geocoding – the admin has to pin it on the map.</summary>
-    private static readonly DemoAddress NotGeocoded = new("Kraszewskiego", "10a", "85-240", null, null);
+    private static readonly DemoAddress NotGeocoded = new("Gdańsk", "Kraszewskiego", "10a", "80-447", null, null);
 
     private static readonly string[] MailDomains = ["gmail.com", "wp.pl", "onet.pl", "o2.pl", "interia.pl"];
 
@@ -94,7 +99,6 @@ internal sealed class CustomersSeeder(CustomersDbContext db, DemoSeedData seedDa
         var now = clock.GetUtcNow();
         var clients = new List<(Client Client, DateTimeOffset CreatedAt)>();
         var shipping = new List<DemoShippingAddress>();
-        var extraAddresses = new Queue<DemoAddress>(Addresses.Skip(ClientCount));
         var surnames = new Queue<(string Male, string Female)>(faker.Random.Shuffle(Surnames));
 
         for (var i = 0; i < ClientCount; i++)
@@ -114,10 +118,11 @@ internal sealed class CustomersSeeder(CustomersDbContext db, DemoSeedData seedDa
 
             // Every third client lives in a block of flats.
             var apartment = i % 3 == 1 ? faker.Random.Number(1, 60).ToString(CultureInfo.InvariantCulture) : null;
-            shipping.Add(new DemoShippingAddress(client.Id, AddAddress(client, Addresses[i], AddressType.Shipping, apartment, now).Id));
-            if (i < 5 && extraAddresses.TryDequeue(out var second))
+            var home = Addresses[i];
+            shipping.Add(new DemoShippingAddress(client.Id, AddAddress(client, home, AddressType.Shipping, apartment, now).Id, home.Region));
+            if (SecondAddresses.TryGetValue(i, out var second))
             {
-                shipping.Add(new DemoShippingAddress(client.Id, AddAddress(client, second, AddressType.Shipping, apartment: null, now).Id));
+                shipping.Add(new DemoShippingAddress(client.Id, AddAddress(client, second, AddressType.Shipping, apartment: null, now).Id, second.Region));
             }
 
             clients.Add((client, now.AddDays(-faker.Random.Number(20, 400)).AddMinutes(-faker.Random.Number(0, 600))));
@@ -127,7 +132,7 @@ internal sealed class CustomersSeeder(CustomersDbContext db, DemoSeedData seedDa
         AddAddress(clients[5].Client, Addresses[5], AddressType.Billing, apartment: null, now);
         AddAddress(clients[7].Client, NotGeocoded, AddressType.Shipping, apartment: "4", now);
         var inactive = Client.Create("tomasz.nieaktywny", "tomasz.nieaktywny@wp.pl", "Tomasz", "Zieliński", "+48 511 000 111");
-        AddAddress(inactive, Addresses[20], AddressType.Shipping, apartment: "12", now);
+        AddAddress(inactive, InactiveClientAddress, AddressType.Shipping, apartment: "12", now);
         inactive.Deactivate();
         clients.Add((inactive, now.AddDays(-500)));
 
@@ -148,7 +153,7 @@ internal sealed class CustomersSeeder(CustomersDbContext db, DemoSeedData seedDa
 
     private static Address AddAddress(Client client, DemoAddress demo, AddressType type, string? apartment, DateTimeOffset now)
     {
-        var address = client.AddAddress(new AddressDetails(type, demo.Street, demo.BuildingNumber, apartment, City, demo.PostalCode, Country));
+        var address = client.AddAddress(new AddressDetails(type, demo.Street, demo.BuildingNumber, apartment, demo.City, demo.PostalCode, Country));
         if (demo.Latitude is { } latitude && demo.Longitude is { } longitude)
         {
             address.SetGeocodedLocation(new GeoPoint(latitude, longitude), now);
@@ -172,5 +177,8 @@ internal sealed class CustomersSeeder(CustomersDbContext db, DemoSeedData seedDa
         return builder.ToString();
     }
 
-    private sealed record DemoAddress(string Street, string BuildingNumber, string PostalCode, double? Latitude, double? Longitude);
+    private sealed record DemoAddress(string City, string Street, string BuildingNumber, string PostalCode, double? Latitude, double? Longitude)
+    {
+        public DemoRegion Region => City == "Szczecin" ? DemoRegion.Szczecin : DemoRegion.Tricity;
+    }
 }

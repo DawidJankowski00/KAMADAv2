@@ -276,10 +276,14 @@ Record small decisions here (date — decision — reason).
   Past moments are replayed with `SeedClock` via `ActivatorUtilities.CreateInstance(..., seedClock)`; `created_at` is
   backdated with `ExecuteUpdate` in the owning module, followed by `ChangeTracker.Clear()` (the update changes `xmin`).
   Demo times are Polish local time (`DemoSeedData.TimeZone`) and must be converted to UTC before writing (Npgsql).
-- 2026-09-29 — Demo clients: real Bydgoszcz buildings geocoded once with Nominatim (coordinates stored in
+- 2026-09-29 — Demo clients: real buildings in the Tricity and Szczecin geocoded once with Nominatim (coordinates stored in
   `CustomersSeeder`); names from curated lists of common Polish names (Bogus' `pl` locale produced rare names and
   surnames of the wrong gender), picked with a fixed Bogus seed.
-- 2026-09-29 — Self-hosted OSRM: compose profile `osrm` (`osrm-download` with curl → `osrm-prepare` MLD
-  preprocessing → `osrm-routed`), Geofabrik Kujawsko-Pomorskie extract by default (~100 MB, preprocessing < 1 min),
-  data kept in the `osrm-data` volume. The API keeps the public demo server as default; `.env` switches it
-  (`OSRM_BASE_URL`, `OSRM_MIN_DELAY=00:00:00`).
+- 2026-09-29 — Self-hosted OSRM: compose profile `osrm` (`osrm-download`: curl + `osmium merge` of the
+  Geofabrik voivodeship extracts in `OSRM_REGIONS` → `osrm-prepare` MLD preprocessing → `osrm-routed`), data kept in the
+  `osrm-data` volume; a marker file with the region list re-runs merge and preprocessing when the list changes.
+  The API keeps the public demo server as default; `.env` switches it (`OSRM_BASE_URL`, `OSRM_MIN_DELAY=00:00:00`).
+- 2026-09-29 — Demo company delivers in two areas (`DemoRegion`): the Tricity (Pomorskie; warehouse Gdańsk, base Gdynia,
+  `kurier1`) and Szczecin (Zachodniopomorskie; `kurier2`). Orders alternate between areas so both get runs; runs never
+  mix areas. Default OSRM map: Pomorskie + Zachodniopomorskie + Wielkopolskie + Kujawsko-Pomorskie (connected, ~480 MB);
+  `osrm-download` uses `debian:trixie-slim` because the OSRM image (Debian 11) is past its support window for `apt`.

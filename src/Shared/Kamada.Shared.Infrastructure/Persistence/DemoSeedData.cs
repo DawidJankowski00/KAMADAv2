@@ -8,7 +8,7 @@ namespace Kamada.Shared.Infrastructure.Persistence;
 /// </summary>
 public sealed class DemoSeedData
 {
-    /// <summary>The demo data describes a company in Bydgoszcz: working hours and "today" are Polish local time.</summary>
+    /// <summary>The demo data describes a company delivering in the Tricity and Szczecin: working hours and "today" are Polish local time.</summary>
     public static readonly TimeZoneInfo TimeZone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Warsaw");
 
     public IReadOnlyList<Guid> CourierIds { get; set; } = [];

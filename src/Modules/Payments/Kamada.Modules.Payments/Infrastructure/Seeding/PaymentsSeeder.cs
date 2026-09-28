@@ -43,7 +43,7 @@ internal sealed class PaymentsSeeder(PaymentsDbContext db, IServiceProvider serv
 
         for (var i = 0; i < seedData.Orders.Count; i++)
         {
-            var (orderId, placedAt) = seedData.Orders[i];
+            var (orderId, placedAt, _) = seedData.Orders[i];
             var at = placedAt.AddMinutes(random.Next(1, 15));
             if (now - placedAt < JustPlaced)
             {

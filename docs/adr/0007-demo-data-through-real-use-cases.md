@@ -28,8 +28,8 @@ status transitions, route planning) and would easily produce states the applicat
   and a settable clock, so yesterday's run really starts at 08:30 and stops are delivered along the estimated
   arrival times. `created_at` (stamped on save) is moved back afterwards with `ExecuteUpdate` in the owning
   module – the one place where a seeder writes a column directly.
-- Addresses of the 25 clients are **real buildings in Bydgoszcz with stored coordinates** (geocoded once with
-  Nominatim when the seed was written), so startup never calls a geocoding service. Random parts (names, e-mails,
+- Addresses of the 25 clients are **real buildings in the Tricity and Szczecin with stored coordinates**
+  (geocoded once with Nominatim when the seed was written), so startup never calls a geocoding service. Random parts (names, e-mails,
   phone numbers, order contents) use Bogus / `Random` with fixed seeds: every fresh database looks the same,
   relative to the current date.
 - Seeding runs **only on an empty database**: each seeder skips when its tables already contain data, and a

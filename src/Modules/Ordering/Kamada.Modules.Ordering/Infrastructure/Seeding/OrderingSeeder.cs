@@ -8,7 +8,8 @@ namespace Kamada.Modules.Ordering.Infrastructure.Seeding;
 
 /// <summary>
 /// Places 36 demo orders through <see cref="PlaceOrderHandler"/> (stock reservation, price snapshot and totals as
-/// in the real flow) for the seeded clients and products, spread over the last days during shop hours.
+/// in the real flow) for the seeded clients and products, spread over the last days during shop hours and alternating
+/// between the delivery areas, so both regions get enough orders for their runs.
 /// All orders start as <c>New</c>; payment, packing and delivery seeders move them on.
 /// </summary>
 internal sealed class OrderingSeeder(OrderingDbContext db, PlaceOrderHandler placeOrder, DemoSeedData seedData, TimeProvider clock) : IDataSeeder
@@ -38,13 +39,19 @@ internal sealed class OrderingSeeder(OrderingDbContext db, PlaceOrderHandler pla
         }
 
         var random = new Random(30);
-        var addresses = seedData.ShippingAddresses.OrderBy(_ => random.Next()).ToList();
+        var regions = seedData.ShippingAddresses
+            .OrderBy(_ => random.Next())
+            .GroupBy(a => a.Region)
+            .OrderBy(g => g.Key)
+            .Select(g => g.ToList())
+            .ToList();
         var placedAt = PlacementTimes(clock.GetUtcNow(), random);
         var orders = new List<DemoOrder>();
 
         for (var i = 0; i < OrderCount; i++)
         {
-            var address = addresses[i % addresses.Count];
+            var region = regions[i % regions.Count];
+            var address = region[i / regions.Count % region.Count];
             var lineCount = random.Next(100) switch { < 45 => 1, < 80 => 2, < 95 => 3, _ => 4 };
             var items = seedData.ProductIds
                 .OrderBy(_ => random.Next())
@@ -59,7 +66,7 @@ internal sealed class OrderingSeeder(OrderingDbContext db, PlaceOrderHandler pla
                 throw new InvalidOperationException($"Demo order could not be placed: {placed.Error.Code} – {placed.Error.Description}");
             }
 
-            orders.Add(new DemoOrder(placed.Value.Id, placedAt[i]));
+            orders.Add(new DemoOrder(placed.Value.Id, placedAt[i], address.Region));
         }
 
         // created_at is stamped on save; move each order back to the moment it was "placed".

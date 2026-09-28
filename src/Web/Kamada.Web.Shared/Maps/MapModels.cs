@@ -2,8 +2,8 @@ namespace Kamada.Web.Shared.Maps;
 
 public sealed record MapPoint(double Latitude, double Longitude)
 {
-    /// <summary>Bydgoszcz city centre – default view when there is nothing to show yet.</summary>
-    public static MapPoint DefaultCenter { get; } = new(53.1235, 18.0084);
+    /// <summary>Gdańsk city centre – default view when there is nothing to show yet.</summary>
+    public static MapPoint DefaultCenter { get; } = new(54.3520, 18.6466);
 }
 
 public enum MapMarkerKind
