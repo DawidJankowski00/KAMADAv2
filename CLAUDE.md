@@ -105,8 +105,11 @@ Shared: `Kamada.Shared.Kernel` (Result, Error, Entity/AggregateRoot base, domain
 - Domain entities: private constructor + static factory, `Guid.CreateVersion7()`, private setters,
   implement `IAuditable` for `created_at`/`updated_at`. EF configs in `Infrastructure/Persistence/Configurations`
   must `Ignore(e => e.DomainEvents)`.
-- Demo data: `IDataSeeder` implementations, registered per module, run only when `Database:SeedDemoData`.
-  Integration tests disable seeding and arrange their own data (see `tests/Kamada.IntegrationTests/Infrastructure`).
+- Demo data: `IDataSeeder` per module (`Infrastructure/Seeding`), run in `SeedOrder` in one scope only when
+  `Database:SeedDemoData`; each seeds only into empty tables. Business data goes through the real use cases, ids are
+  handed on via `DemoSeedData`, history is replayed with `SeedClock` (see ADR 0007). Integration tests disable seeding
+  and arrange their own data (see `tests/Kamada.IntegrationTests/Infrastructure`); `DemoDataSeedingTests` seeds a
+  separate database.
 - Config via options pattern (`IOptions<T>` + `ValidateOnStart`). No secrets in repo: user secrets / env vars,
   `.env.example` documents them.
 - Tests: `MethodName_Scenario_ExpectedResult` naming; integration tests use Testcontainers (Docker required),
@@ -120,6 +123,8 @@ dotnet test --solution Kamada.slnx     # Microsoft.Testing.Platform runner (opte
 dotnet test --project tests/Kamada.ArchitectureTests
 docker compose up --build              # full stack
 docker compose up -d postgres          # DB only, for local dev
+docker compose --profile osrm up       # + self-hosted OSRM (set OSRM_BASE_URL/OSRM_MIN_DELAY in .env)
+docker compose down -v                 # reset the database (demo data is seeded again)
 dotnet run --project src/Kamada.Api
 dotnet run -c Release --project benchmarks/Kamada.Benchmarks -- --filter '*'   # solver timings
 dotnet run -c Release --project benchmarks/Kamada.Benchmarks -- --quality      # heuristic gap vs optimum
@@ -224,7 +229,7 @@ Record small decisions here (date — decision — reason).
   (HTTP, Polly timeout/circuit, bad payload), never caller cancellation or bugs. Approximate matrices are not cached.
   Pairs a provider cannot route are estimated in a straight line and the whole matrix is flagged approximate.
 - 2026-09-28 — Public OSRM demo server is the dev default (throttled to 1 request/s via `RequestThrottle`, now in
-  `Kamada.Shared.Infrastructure/Http`); the self-hosted OSRM container comes in stage 10.
+  `Kamada.Shared.Infrastructure/Http`); the self-hosted OSRM container is the compose profile `osrm`.
 - 2026-09-28 — `/health` includes `travel-matrix` (primary provider, uncached): failure reports `Degraded` (HTTP 200),
   because planning still works with the fallback; the probe result is cached for 5 minutes.
 - 2026-09-28 — Heuristic = nearest neighbour or input order (whichever is cheaper) + 2-opt with O(1) asymmetric
@@ -266,3 +271,15 @@ Record small decisions here (date — decision — reason).
 - 2026-09-28 — Courier service worker: `appsettings.json` is excluded from the offline precache (the container rewrites it, so the
   published integrity hash would fail the install) and fetched network-first with the last copy as offline fallback. API calls
   are never cached – stop outcomes must reach the server.
+- 2026-09-29 — Demo seed: seeders hand generated ids to later seeders through the scoped `DemoSeedData` instead of
+  deterministic ids or seeding-only contract queries (domain keeps generating Guid v7, contracts stay production API).
+  Past moments are replayed with `SeedClock` via `ActivatorUtilities.CreateInstance(..., seedClock)`; `created_at` is
+  backdated with `ExecuteUpdate` in the owning module, followed by `ChangeTracker.Clear()` (the update changes `xmin`).
+  Demo times are Polish local time (`DemoSeedData.TimeZone`) and must be converted to UTC before writing (Npgsql).
+- 2026-09-29 — Demo clients: real Bydgoszcz buildings geocoded once with Nominatim (coordinates stored in
+  `CustomersSeeder`); names from curated lists of common Polish names (Bogus' `pl` locale produced rare names and
+  surnames of the wrong gender), picked with a fixed Bogus seed.
+- 2026-09-29 — Self-hosted OSRM: compose profile `osrm` (`osrm-download` with curl → `osrm-prepare` MLD
+  preprocessing → `osrm-routed`), Geofabrik Kujawsko-Pomorskie extract by default (~100 MB, preprocessing < 1 min),
+  data kept in the `osrm-data` volume. The API keeps the public demo server as default; `.env` switches it
+  (`OSRM_BASE_URL`, `OSRM_MIN_DELAY=00:00:00`).

@@ -29,7 +29,7 @@ Rules, enforced by `tests/Kamada.ArchitectureTests` (NetArchTest + project file 
 3. No type depends on another module's `Domain`/`Application`/`Infrastructure`/`Api` namespaces.
 4. `Domain` does not depend on `Application`, `Infrastructure`, `Api`, EF Core, ASP.NET Core or Npgsql.
 5. The implementation assembly exposes only the module entry point publicly.
-6. Frontends reference only `Kamada.Shared.Contracts`.
+6. Frontends reference only `Kamada.Shared.Contracts` and the shared UI library `Kamada.Web.Shared`.
 
 ## Alternatives considered
 
