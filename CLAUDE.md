@@ -1,0 +1,147 @@
+# CLAUDE.md — KAMADA v2
+
+Portfolio project (junior/mid .NET): order management + courier delivery routes with route optimization.
+Code is written as if reviewed by a senior engineer: clear architecture, tests, docs, one-command startup.
+
+## Product in one paragraph
+
+**Admin** (browser, Blazor WASM + MudBlazor) manages products, customers, orders and payments, defines route
+locations (warehouses/bases), creates delivery runs, assigns orders and a courier, and optimizes stop order.
+**Courier** (phone, Blazor WASM PWA) sees own runs, stop order, opens the whole run in Google Maps and marks
+stops as delivered / failed. The route optimizer fetches a **travel-time matrix** (OSRM / Google Routes / Haversine)
+and solves a fixed-start/fixed-end TSP locally (brute force / Held-Karp / NN + 2-opt). We never scrape Google Maps.
+
+## Tech stack
+
+- .NET 10 (SDK pinned in `global.json`: 10.0.401, `rollForward: latestFeature`), C# latest, nullable on.
+- `TreatWarningsAsErrors=true` for production projects (`src/**`), relaxed in `tests/**` and `benchmarks/**`.
+- Central package management: `Directory.Packages.props`. Common settings: `Directory.Build.props`.
+- Solution file: `Kamada.slnx`.
+- ASP.NET Core **Minimal APIs**, grouped per module (`MapGroup("/api/<module>")`), one static `XxxEndpoints` class per feature area.
+- EF Core 10 + Npgsql, PostgreSQL 17. Snake_case naming via `EFCore.NamingConventions`.
+- Auth: JWT access token (15 min) + rotating refresh token (stored hashed in DB). Roles `Admin`, `Courier`.
+  Policies `AdminOnly`, `CourierOnly`. Passwords: `PasswordHasher<T>` from ASP.NET Core Identity.
+- FluentValidation (input), Serilog (structured logs), built-in OpenAPI + Scalar UI (`/scalar`).
+- `Microsoft.Extensions.Http.Resilience` for outbound HTTP (OSRM, Nominatim, Google).
+- Tests: xUnit v3 (4.x, runs on Microsoft.Testing.Platform — no `Microsoft.NET.Test.Sdk`), Shouldly, Testcontainers.PostgreSql, `WebApplicationFactory`, NetArchTest.Rules, Bogus.
+- Benchmarks: BenchmarkDotNet (`benchmarks/Kamada.Benchmarks`).
+- Frontends: Blazor WASM, MudBlazor, Leaflet via JS interop (admin map). Served by nginx in Docker.
+- No MediatR / AutoMapper (licensing + unnecessary indirection): plain handler classes and explicit mapping.
+
+## Architecture: modular monolith
+
+One API host (`src/Kamada.Api`), seven modules. Each module = **two projects**:
+
+```
+src/Modules/<Module>/Kamada.Modules.<Module>/            # internal implementation
+    Domain/          # entities, value objects, domain errors, state transitions — no EF/HTTP deps
+    Application/     # use-case handlers, validators, ports (interfaces)
+    Infrastructure/  # DbContext, EF configurations, migrations, external clients
+    Api/             # Minimal API endpoint mappings
+    <Module>Module.cs  # public: AddXxxModule(IServiceCollection, IConfiguration) + MapXxxEndpoints()
+src/Modules/<Module>/Kamada.Modules.<Module>.Contracts/  # public API for OTHER modules (interfaces + DTOs)
+```
+
+Rules (enforced by `tests/Kamada.ArchitectureTests`):
+- Everything inside a module project is `internal` except the module registration class; tests use `InternalsVisibleTo`.
+- A module may reference **only the `.Contracts` project** of another module, never its implementation project.
+- `Domain` namespace does not depend on `Infrastructure`, `Api`, EF Core or ASP.NET Core.
+- Frontends reference only `Kamada.Shared.Contracts` (HTTP DTOs), never modules.
+
+Modules: `Catalog`, `Customers`, `Ordering`, `Payments`, `Workforce`, `Delivery`, `RouteOptimization`.
+Shared: `Kamada.Shared.Kernel` (Result, Error, Entity/AggregateRoot base, domain events, clock abstractions),
+`Kamada.Shared.Infrastructure` (EF interceptors, shared connection/transaction, ProblemDetails mapping),
+`Kamada.Shared.Contracts` (HTTP request/response DTOs used by API and both Blazor apps, folder per module).
+
+### Persistence
+
+- **One PostgreSQL database, one schema per module, one `DbContext` per module**
+  (`catalog`, `customers`, `ordering`, `payments`, `workforce`, `delivery`). Each context has its own
+  migrations and its own `__ef_migrations_history` table in its schema. A context maps only its own tables.
+- Cross-module atomic operations (e.g. create order + decrement stock) share one scoped `NpgsqlConnection`
+  and one DB transaction via `IUnitOfWork` from `Kamada.Shared.Infrastructure`; each module context enlists
+  in it (`Database.UseTransaction`). Documented in ADR.
+- Stock (`stock_quantity`) lives in `catalog.products` (as in the diagram); it is mutated **only** through
+  `ICatalogInventory` (Catalog.Contracts), called by Ordering.
+- Cross-module references are plain IDs (no FK navigation across schemas; FK constraints only within a schema).
+- Ids: `Guid` v7 (`Guid.CreateVersion7()`), generated in the domain.
+- `created_at` / `updated_at` set by an EF `SaveChanges` interceptor using `TimeProvider`. Concurrency: `xmin`.
+- Enums stored as strings. Money: `decimal(10,2)`. Timestamps: `timestamptz`, always UTC.
+
+### Domain & errors
+
+- State transitions are methods on entities (`order.MarkPaid()`, `run.Start()`), no public setters.
+- Business failures return `Result` / `Result<T>` with a typed `Error` (`Validation`, `NotFound`, `Conflict`,
+  `Forbidden`). Endpoints map them to `ProblemDetails` (RFC 9457): invalid transition → `409`.
+- Unexpected exceptions → global `IExceptionHandler` → `500` ProblemDetails (no stack traces outside Development).
+
+### Route optimization (key technical part)
+
+- `ITravelTimeMatrixProvider` → `TravelMatrix` (durations + distances, may be asymmetric).
+  Implementations: `OsrmMatrixProvider` (default), `GoogleRoutesMatrixProvider` (only with API key),
+  `HaversineMatrixProvider` (tests + fallback; result flagged as approximate). Matrix cache keyed by
+  sorted coordinates rounded to 5 decimals.
+- `IRouteSolver.Solve(matrix, startIndex, endIndex)`; `RouteSolverSelector`: n ≤ 8 brute force,
+  n ≤ 15 Held-Karp, otherwise nearest neighbour + 2-opt (+ Or-opt) with a time limit (non-optimal flag).
+- `GoogleMapsUrlBuilder`: official Maps URLs format, coordinates, `%7C`-encoded waypoints, splits into
+  chained segments when waypoint limit (config `GoogleMaps:MaxWaypointsPerLink`) is exceeded.
+
+## Conventions
+
+- Code, identifiers, commit messages, README, ADRs: **English**. UI texts in the apps: **Polish**.
+- Conventional Commits (`feat(ordering): ...`, `test(delivery): ...`, `chore: ...`, `docs: ...`).
+- File-scoped namespaces, `sealed` by default, primary constructors for DI, `CancellationToken` on all async APIs.
+- One public type per file. Async methods end with `Async`. No `#region`.
+- API routes kebab-case (`/api/delivery-runs/{id}/apply-optimization`), JSON camelCase, enums as strings.
+- Validation of request shape in FluentValidation; business rules in domain.
+- Config via options pattern (`IOptions<T>` + `ValidateOnStart`). No secrets in repo: user secrets / env vars,
+  `.env.example` documents them.
+- Tests: `MethodName_Scenario_ExpectedResult` naming; integration tests use Testcontainers (Docker required),
+  matrix provider replaced with Haversine, geocoding replaced with a fake.
+
+## Commands
+
+```bash
+dotnet build Kamada.slnx
+dotnet test --solution Kamada.slnx     # Microsoft.Testing.Platform runner (opted in via global.json)
+dotnet test --project tests/Kamada.ArchitectureTests
+docker compose up --build              # full stack
+docker compose up -d postgres          # DB only, for local dev
+dotnet run --project src/Kamada.Api
+```
+
+EF migrations (per module context), e.g.:
+
+```bash
+dotnet ef migrations add Initial -p src/Modules/Catalog/Kamada.Modules.Catalog -s src/Kamada.Api -c CatalogDbContext -o Infrastructure/Persistence/Migrations
+```
+
+## Ports (local / docker)
+
+| Service | URL |
+|---|---|
+| API (+ `/scalar`, `/health`) | http://localhost:5080 |
+| Admin panel | http://localhost:5081 |
+| Courier app | http://localhost:5082 |
+| PostgreSQL | localhost:5432 |
+| OSRM (optional profile) | http://localhost:5000 |
+
+## Minor decisions log
+
+Record small decisions here (date — decision — reason).
+
+- 2026-09-28 — Minimal APIs over controllers — less ceremony, natural grouping per module.
+- 2026-09-28 — Two projects per module (impl + Contracts) with internal layers as folders — enforces
+  boundaries via `internal` + NetArchTest without 30+ projects.
+- 2026-09-28 — Shouldly over FluentAssertions — FluentAssertions v8 is commercially licensed.
+- 2026-09-28 — No MediatR — commercial license since v13; plain handlers are enough.
+- 2026-09-28 — `GoogleMaps:MaxWaypointsPerLink` default 9 (Google Maps app/desktop); verify against current
+  Maps URLs docs in stage 6 (mobile *browsers* support fewer).
+- 2026-09-28 — `dotnet test` uses Microsoft.Testing.Platform (`global.json` → `test.runner`) — required by
+  xUnit v3 4.x on .NET 10 SDK; test projects are executables (`OutputType=Exe`, `tests/Directory.Build.props`).
+- 2026-09-28 — Integration tests share one PostgreSQL Testcontainer per test assembly
+  (`[assembly: AssemblyFixture(typeof(KamadaApiFactory))]`); the connection string is injected with
+  `UseSetting` so it is visible to code reading configuration before `builder.Build()`.
+- 2026-09-28 — Architecture tests read `<ProjectReference>` items from .csproj files in addition to
+  NetArchTest, because unused assembly references are dropped by the compiler.
+- 2026-09-28 — Test projects don't use `TreatWarningsAsErrors` (overridden in `tests/Directory.Build.props`).

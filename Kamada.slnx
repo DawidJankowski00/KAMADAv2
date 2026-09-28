@@ -1,0 +1,47 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Kamada.Api/Kamada.Api.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/" />
+  <Folder Name="/src/Modules/Catalog/">
+    <Project Path="src/Modules/Catalog/Kamada.Modules.Catalog.Contracts/Kamada.Modules.Catalog.Contracts.csproj" />
+    <Project Path="src/Modules/Catalog/Kamada.Modules.Catalog/Kamada.Modules.Catalog.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Customers/">
+    <Project Path="src/Modules/Customers/Kamada.Modules.Customers.Contracts/Kamada.Modules.Customers.Contracts.csproj" />
+    <Project Path="src/Modules/Customers/Kamada.Modules.Customers/Kamada.Modules.Customers.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Delivery/">
+    <Project Path="src/Modules/Delivery/Kamada.Modules.Delivery.Contracts/Kamada.Modules.Delivery.Contracts.csproj" />
+    <Project Path="src/Modules/Delivery/Kamada.Modules.Delivery/Kamada.Modules.Delivery.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Ordering/">
+    <Project Path="src/Modules/Ordering/Kamada.Modules.Ordering.Contracts/Kamada.Modules.Ordering.Contracts.csproj" />
+    <Project Path="src/Modules/Ordering/Kamada.Modules.Ordering/Kamada.Modules.Ordering.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Payments/">
+    <Project Path="src/Modules/Payments/Kamada.Modules.Payments.Contracts/Kamada.Modules.Payments.Contracts.csproj" />
+    <Project Path="src/Modules/Payments/Kamada.Modules.Payments/Kamada.Modules.Payments.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/RouteOptimization/">
+    <Project Path="src/Modules/RouteOptimization/Kamada.Modules.RouteOptimization.Contracts/Kamada.Modules.RouteOptimization.Contracts.csproj" />
+    <Project Path="src/Modules/RouteOptimization/Kamada.Modules.RouteOptimization/Kamada.Modules.RouteOptimization.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Workforce/">
+    <Project Path="src/Modules/Workforce/Kamada.Modules.Workforce.Contracts/Kamada.Modules.Workforce.Contracts.csproj" />
+    <Project Path="src/Modules/Workforce/Kamada.Modules.Workforce/Kamada.Modules.Workforce.csproj" />
+  </Folder>
+  <Folder Name="/src/Shared/">
+    <Project Path="src/Shared/Kamada.Shared.Contracts/Kamada.Shared.Contracts.csproj" />
+    <Project Path="src/Shared/Kamada.Shared.Infrastructure/Kamada.Shared.Infrastructure.csproj" />
+    <Project Path="src/Shared/Kamada.Shared.Kernel/Kamada.Shared.Kernel.csproj" />
+  </Folder>
+  <Folder Name="/src/Web/">
+    <Project Path="src/Web/Kamada.AdminPanel/Kamada.AdminPanel.csproj" />
+    <Project Path="src/Web/Kamada.CourierApp/Kamada.CourierApp.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Kamada.ArchitectureTests/Kamada.ArchitectureTests.csproj" />
+    <Project Path="tests/Kamada.IntegrationTests/Kamada.IntegrationTests.csproj" />
+  </Folder>
+</Solution>

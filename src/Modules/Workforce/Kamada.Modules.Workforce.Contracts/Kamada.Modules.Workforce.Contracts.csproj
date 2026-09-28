@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\Kamada.Shared.Kernel\Kamada.Shared.Kernel.csproj" />
+  </ItemGroup>
+
+</Project>
