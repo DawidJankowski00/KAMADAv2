@@ -5,6 +5,7 @@ using Kamada.Modules.Customers.Application.Abstractions;
 using Kamada.Modules.Customers.Application.Clients;
 using Kamada.Modules.Customers.Contracts;
 using Kamada.Modules.Customers.Infrastructure.Persistence;
+using Kamada.Modules.Customers.Infrastructure.Seeding;
 using Kamada.Shared.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
@@ -32,6 +33,7 @@ public static class CustomersModule
         services.AddScoped<ClientQueries>();
         services.AddScoped<ClientCommands>();
         services.AddScoped<ICustomerDirectory, CustomerDirectory>();
+        services.AddScoped<IDataSeeder, CustomersSeeder>();
         services.AddValidatorsFromAssemblyContaining<ClientQueries>(includeInternalTypes: true);
 
         return services;

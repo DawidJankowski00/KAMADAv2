@@ -5,6 +5,7 @@ using Kamada.Modules.Ordering.Application.Abstractions;
 using Kamada.Modules.Ordering.Application.Orders;
 using Kamada.Modules.Ordering.Contracts;
 using Kamada.Modules.Ordering.Infrastructure.Persistence;
+using Kamada.Modules.Ordering.Infrastructure.Seeding;
 using Kamada.Shared.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
@@ -33,6 +34,8 @@ public static class OrderingModule
         services.AddScoped<OrderCommands>();
         services.AddScoped<IOrderPayments, OrderPayments>();
         services.AddScoped<IOrderFulfillment, OrderFulfillment>();
+        services.AddScoped<IDataSeeder, OrderingSeeder>();
+        services.AddScoped<IDataSeeder, OrderPackingSeeder>();
         services.AddValidatorsFromAssemblyContaining<OrderQueries>(includeInternalTypes: true);
 
         return services;

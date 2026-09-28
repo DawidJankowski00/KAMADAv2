@@ -6,6 +6,7 @@ using Kamada.Modules.Catalog.Application.Inventory;
 using Kamada.Modules.Catalog.Application.Products;
 using Kamada.Modules.Catalog.Contracts;
 using Kamada.Modules.Catalog.Infrastructure.Persistence;
+using Kamada.Modules.Catalog.Infrastructure.Seeding;
 using Kamada.Shared.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
@@ -33,6 +34,7 @@ public static class CatalogModule
         services.AddScoped<ProductCommands>();
         services.AddScoped<CategoryService>();
         services.AddScoped<ICatalogInventory, CatalogInventory>();
+        services.AddScoped<IDataSeeder, CatalogSeeder>();
         services.AddValidatorsFromAssemblyContaining<ProductQueries>(includeInternalTypes: true);
 
         return services;

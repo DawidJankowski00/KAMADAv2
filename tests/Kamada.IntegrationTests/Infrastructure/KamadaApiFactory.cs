@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Npgsql;
 using Testcontainers.PostgreSql;
 
 namespace Kamada.IntegrationTests.Infrastructure;
@@ -34,6 +35,15 @@ public sealed class KamadaApiFactory : WebApplicationFactory<Program>, IAsyncLif
         builder.ConfigureTestServices(services =>
             services.Replace(ServiceDescriptor.Singleton<IGeocodingService, FakeGeocodingService>()));
     }
+
+    /// <summary>
+    /// A second host with demo seeding enabled, on its own (new) database in the same container, so seeding starts
+    /// from an empty database regardless of what other tests created.
+    /// </summary>
+    public WebApplicationFactory<Program> WithDemoData(string database) =>
+        WithWebHostBuilder(builder => builder
+            .UseSetting("ConnectionStrings:Kamada", new NpgsqlConnectionStringBuilder(_postgres.GetConnectionString()) { Database = database }.ConnectionString)
+            .UseSetting("Database:SeedDemoData", "true"));
 
     public override async ValueTask DisposeAsync()
     {

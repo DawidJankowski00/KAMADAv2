@@ -5,6 +5,7 @@ using Kamada.Modules.Delivery.Application.Abstractions;
 using Kamada.Modules.Delivery.Application.Locations;
 using Kamada.Modules.Delivery.Application.Runs;
 using Kamada.Modules.Delivery.Infrastructure.Persistence;
+using Kamada.Modules.Delivery.Infrastructure.Seeding;
 using Kamada.Shared.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
@@ -41,6 +42,7 @@ public static class DeliveryModule
         services.AddScoped<DeliveryRunCommands>();
         services.AddScoped<RoutePlanningHandler>();
         services.AddScoped<CourierRunCommands>();
+        services.AddScoped<IDataSeeder, DeliverySeeder>();
         services.AddValidatorsFromAssemblyContaining<DeliveryRunQueries>(includeInternalTypes: true);
 
         return services;

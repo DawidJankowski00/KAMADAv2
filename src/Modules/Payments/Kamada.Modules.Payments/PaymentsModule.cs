@@ -4,6 +4,7 @@ using Kamada.Modules.Payments.Application;
 using Kamada.Modules.Payments.Application.Abstractions;
 using Kamada.Modules.Payments.Infrastructure;
 using Kamada.Modules.Payments.Infrastructure.Persistence;
+using Kamada.Modules.Payments.Infrastructure.Seeding;
 using Kamada.Shared.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
@@ -29,6 +30,7 @@ public static class PaymentsModule
 
         services.AddSingleton<IPaymentGateway, SimulatedPaymentGateway>();
         services.AddScoped<PaymentService>();
+        services.AddScoped<IDataSeeder, PaymentsSeeder>();
         services.AddValidatorsFromAssemblyContaining<PaymentService>(includeInternalTypes: true);
 
         return services;

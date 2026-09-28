@@ -26,6 +26,7 @@ public static class PersistenceServiceCollectionExtensions
         services.AddScoped<ScopedDbConnection>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddSingleton<AuditingInterceptor>();
+        services.AddScoped<DemoSeedData>();
         services.AddOptions<DatabaseOptions>().Bind(configuration.GetSection(DatabaseOptions.SectionName));
         return services;
     }
