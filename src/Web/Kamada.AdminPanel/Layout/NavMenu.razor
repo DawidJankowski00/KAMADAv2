@@ -1,0 +1,15 @@
+<MudNavMenu Class="pt-2">
+    <MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">Pulpit</MudNavLink>
+    <MudNavGroup Title="Sprzedaż" Icon="@Icons.Material.Filled.ShoppingCart" Expanded="true">
+        <MudNavLink Href="orders" Icon="@Icons.Material.Filled.ReceiptLong">Zamówienia</MudNavLink>
+        <MudNavLink Href="orders/new" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.AddShoppingCart">Nowe zamówienie</MudNavLink>
+        <MudNavLink Href="clients" Icon="@Icons.Material.Filled.People">Klienci</MudNavLink>
+    </MudNavGroup>
+    <MudNavGroup Title="Katalog" Icon="@Icons.Material.Filled.Inventory2" Expanded="true">
+        <MudNavLink Href="products" Icon="@Icons.Material.Filled.Inventory">Produkty</MudNavLink>
+        <MudNavLink Href="categories" Icon="@Icons.Material.Filled.AccountTree">Kategorie</MudNavLink>
+    </MudNavGroup>
+    <MudNavGroup Title="Administracja" Icon="@Icons.Material.Filled.AdminPanelSettings" Expanded="true">
+        <MudNavLink Href="workers" Icon="@Icons.Material.Filled.Badge">Pracownicy</MudNavLink>
+    </MudNavGroup>
+</MudNavMenu>

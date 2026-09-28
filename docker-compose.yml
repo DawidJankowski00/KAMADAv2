@@ -30,5 +30,17 @@ services:
       postgres:
         condition: service_healthy
 
+  admin:
+    build:
+      context: .
+      dockerfile: src/Web/Kamada.AdminPanel/Dockerfile
+    environment:
+      # Address of the API as seen from the user's browser.
+      API_BASE_URL: ${PUBLIC_API_URL:-http://localhost:5080/}
+    ports:
+      - "5081:80"
+    depends_on:
+      - api
+
 volumes:
   postgres-data:

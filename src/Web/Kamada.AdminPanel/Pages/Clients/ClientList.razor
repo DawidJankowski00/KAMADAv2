@@ -1,0 +1,95 @@
+@page "/clients"
+@inject ApiClient Api
+@inject IDialogService Dialogs
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+
+<PageTitle>Klienci – KAMADA</PageTitle>
+
+<PageHeader Title="Klienci" Subtitle="Klienci sklepu i ich adresy">
+    <Actions>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.PersonAdd" OnClick="CreateAsync">Dodaj klienta</MudButton>
+    </Actions>
+</PageHeader>
+
+<MudPaper Class="pa-4 mb-4" Elevation="1">
+    <MudGrid Spacing="2">
+        <MudItem xs="12" md="8">
+            <MudTextField T="string" Value="_search" ValueChanged="OnSearchChanged" Label="Szukaj (imię, nazwisko, e-mail, telefon, login)"
+                          Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" DebounceInterval="300" Clearable="true" />
+        </MudItem>
+        <MudItem xs="12" md="4">
+            <MudSelect T="bool?" Value="_isActive" ValueChanged="OnActiveChanged" Label="Status">
+                <MudSelectItem T="bool?" Value="null">Wszyscy</MudSelectItem>
+                <MudSelectItem T="bool?" Value="true">Aktywni</MudSelectItem>
+                <MudSelectItem T="bool?" Value="false">Nieaktywni</MudSelectItem>
+            </MudSelect>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+<MudTable T="ClientSummaryDto" @ref="_table" ServerData="LoadAsync" Hover="true" Elevation="1" Dense="true" RowsPerPage="20"
+          OnRowClick="@(args => Navigation.NavigateTo($"clients/{args.Item!.Id}"))" RowClass="kamada-clickable-row">
+    <HeaderContent>
+        <MudTh>Klient</MudTh>
+        <MudTh>E-mail</MudTh>
+        <MudTh>Telefon</MudTh>
+        <MudTh>Adresy</MudTh>
+        <MudTh>Status</MudTh>
+        <MudTh>Utworzony</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Klient">
+            <MudText Typo="Typo.body2"><b>@context.Name @context.Surname</b></MudText>
+            <MudText Typo="Typo.caption" Class="mud-text-secondary">@context.Username</MudText>
+        </MudTd>
+        <MudTd DataLabel="E-mail">@context.Email</MudTd>
+        <MudTd DataLabel="Telefon">@context.PhoneNumber</MudTd>
+        <MudTd DataLabel="Adresy">@context.AddressCount</MudTd>
+        <MudTd DataLabel="Status">
+            @if (!context.IsActive)
+            {
+                <MudChip T="string" Size="Size.Small">Nieaktywny</MudChip>
+            }
+        </MudTd>
+        <MudTd DataLabel="Utworzony">@Labels.Date(context.CreatedAt)</MudTd>
+    </RowTemplate>
+    <NoRecordsContent><MudText Class="pa-4">Brak klientów spełniających kryteria.</MudText></NoRecordsContent>
+    <PagerContent><MudTablePager RowsPerPageString="Na stronie:" InfoFormat="{first_item}–{last_item} z {all_items}" /></PagerContent>
+</MudTable>
+
+@code {
+    private MudTable<ClientSummaryDto>? _table;
+    private string? _search;
+    private bool? _isActive;
+
+    private async Task<TableData<ClientSummaryDto>> LoadAsync(TableState state, CancellationToken cancellationToken)
+    {
+        var query = QueryString.Build(("search", _search), ("isActive", _isActive), ("page", state.Page + 1), ("pageSize", state.PageSize));
+        var result = await Api.GetAsync<PagedResult<ClientSummaryDto>>($"api/clients{query}", cancellationToken);
+        return Snackbar.Report(result)
+            ? new TableData<ClientSummaryDto> { Items = result.Value.Items, TotalItems = result.Value.TotalCount }
+            : new TableData<ClientSummaryDto> { Items = [], TotalItems = 0 };
+    }
+
+    private Task OnSearchChanged(string? value)
+    {
+        _search = value;
+        return _table!.ReloadServerData();
+    }
+
+    private Task OnActiveChanged(bool? value)
+    {
+        _isActive = value;
+        return _table!.ReloadServerData();
+    }
+
+    private async Task CreateAsync()
+    {
+        var created = await Dialogs.ShowForResultAsync<ClientDialog, ClientDto>("Nowy klient", maxWidth: MaxWidth.Medium);
+        if (created is not null)
+        {
+            Navigation.NavigateTo($"clients/{created.Id}");
+        }
+    }
+}

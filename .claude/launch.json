@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "admin-panel",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "src/Web/Kamada.AdminPanel", "--launch-profile", "http"],
+      "port": 5081
+    },
+    {
+      "name": "courier-app",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "src/Web/Kamada.CourierApp", "--launch-profile", "http"],
+      "port": 5082
+    }
+  ]
+}

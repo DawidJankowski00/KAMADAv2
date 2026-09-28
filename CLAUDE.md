@@ -46,7 +46,8 @@ Rules (enforced by `tests/Kamada.ArchitectureTests`):
 - Everything inside a module project is `internal` except the module registration class; tests use `InternalsVisibleTo`.
 - A module may reference **only the `.Contracts` project** of another module, never its implementation project.
 - `Domain` namespace does not depend on `Infrastructure`, `Api`, EF Core or ASP.NET Core.
-- Frontends reference only `Kamada.Shared.Contracts` (HTTP DTOs), never modules.
+- Frontends reference only `Kamada.Shared.Contracts` (HTTP DTOs) and `Kamada.Web.Shared` (shared Blazor UI
+  library, which itself references only `Kamada.Shared.Contracts`), never modules.
 
 Modules: `Catalog`, `Customers`, `Ordering`, `Payments`, `Workforce`, `Delivery`, `RouteOptimization`.
 Shared: `Kamada.Shared.Kernel` (Result, Error, Entity/AggregateRoot base, domain events, clock abstractions),
@@ -198,3 +199,17 @@ Record small decisions here (date — decision — reason).
   convention must not be promoted to entities).
 - 2026-09-28 — xUnit theories cannot take internal enums as parameters (test methods are public): pass
   `nameof(Enum.Value)` strings and `Enum.Parse` inside the test.
+- 2026-09-28 — Frontend plumbing lives in `src/Web/Kamada.Web.Shared` (RCL): `ApiClient` (typed calls → `ApiResult`,
+  ProblemDetails parsing, Polish messages for known error codes in `ErrorMessages`), `AuthService` (login with role
+  check per app, refresh-token rotation with a lock, session in localStorage via `TokenStore`), `AuthorizingHandler`
+  (bearer + one retry after refresh on 401), `SessionAuthenticationStateProvider`, `LeafletMap` component
+  (Leaflet 1.9.4 from jsDelivr, OSM tiles, markers/route/click-to-pin), `Labels` (Polish labels, money, dates).
+  Auth-related services are singletons (WASM has one scope, and HttpClient handlers get their own scope).
+- 2026-09-28 — Admin panel UI: MudBlazor 9 (API ≈ v8: `IMudDialogInstance`, `ServerData(TableState, CancellationToken)`,
+  `MudText HtmlTag`, `SelectedValues` is `IReadOnlyCollection<T>`; use `ToStringFunc` instead of
+  `MultiSelectionTextFunc`). Grey helper text: `Class="mud-text-secondary"` (`Color.Secondary` is the purple accent).
+  Coordinates are always shown with invariant decimals (`Labels.Coordinates`).
+- 2026-09-28 — Frontends in Docker: nginx (`deploy/nginx/spa.conf`, SPA fallback, `gzip_static`), API address injected
+  at container start by `deploy/nginx/40-kamada-config.sh` from `API_BASE_URL` (compose: `PUBLIC_API_URL`).
+- 2026-09-28 — Local UI testing: `.claude/launch.json` has `admin-panel` (5081) and `courier-app` (5082) dev servers;
+  API runs from `docker compose up -d` (5080). Stop the dockerized `admin` service before starting the dev server on 5081.

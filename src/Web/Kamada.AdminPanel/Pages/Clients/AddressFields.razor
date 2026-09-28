@@ -1,0 +1,47 @@
+@* Address inputs rendered inside a parent MudForm/MudGrid. *@
+
+<MudItem xs="12" sm="4">
+    <MudSelect @bind-Value="Model.Type" Label="Typ adresu">
+        <MudSelectItem Value="AddressType.Shipping">@Labels.Of(AddressType.Shipping)</MudSelectItem>
+        <MudSelectItem Value="AddressType.Billing">@Labels.Of(AddressType.Billing)</MudSelectItem>
+    </MudSelect>
+</MudItem>
+<MudItem xs="12" sm="8">
+    <MudTextField @bind-Value="Model.Street" Label="Ulica" Required="Required" MaxLength="200" />
+</MudItem>
+<MudItem xs="6" sm="3">
+    <MudTextField @bind-Value="Model.BuildingNumber" Label="Nr budynku" Required="Required" MaxLength="20" />
+</MudItem>
+<MudItem xs="6" sm="3">
+    <MudTextField @bind-Value="Model.ApartmentNumber" Label="Nr lokalu" MaxLength="20" />
+</MudItem>
+<MudItem xs="5" sm="2">
+    <MudTextField @bind-Value="Model.PostalCode" Label="Kod" Required="Required" MaxLength="10" Placeholder="00-000"
+                  Validation="@(new Func<string, string?>(ValidatePostalCode))" />
+</MudItem>
+<MudItem xs="7" sm="4">
+    <MudTextField @bind-Value="Model.City" Label="Miasto" Required="Required" MaxLength="100" />
+</MudItem>
+<MudItem xs="12" sm="4">
+    <MudTextField @bind-Value="Model.Country" Label="Kraj" Required="Required" MaxLength="60" />
+</MudItem>
+
+@code {
+    [Parameter, EditorRequired] public AddressModel Model { get; set; } = default!;
+
+    /// <summary>False for the optional address in the "new client" form.</summary>
+    [Parameter] public bool Required { get; set; } = true;
+
+    private string? ValidatePostalCode(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        var isPoland = Model.Country.Trim() is "Polska" or "Poland" or "PL";
+        return isPoland && !System.Text.RegularExpressions.Regex.IsMatch(value.Trim(), "^[0-9]{2}-[0-9]{3}$")
+            ? "Format kodu: 00-000"
+            : null;
+    }
+}

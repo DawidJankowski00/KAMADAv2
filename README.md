@@ -16,6 +16,7 @@ docker compose up --build
 
 | Service | URL |
 |---|---|
+| Admin panel | http://localhost:5081 |
 | API docs (Scalar) | http://localhost:5080/scalar |
 | API health | http://localhost:5080/health |
 
@@ -33,6 +34,7 @@ Requirements: .NET SDK 10.0.401+, Docker (PostgreSQL and integration tests).
 ```bash
 docker compose up -d postgres
 dotnet run --project src/Kamada.Api
+dotnet run --project src/Web/Kamada.AdminPanel   # http://localhost:5081
 dotnet test --solution Kamada.slnx
 ```
 

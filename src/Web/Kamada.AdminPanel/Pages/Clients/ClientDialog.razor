@@ -1,0 +1,95 @@
+@inject ApiClient Api
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="_form" @bind-IsValid="_valid">
+            <MudGrid Spacing="2">
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="_name" Label="Imię" Required="true" MaxLength="100" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="_surname" Label="Nazwisko" Required="true" MaxLength="100" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="_email" Label="E-mail" Required="true" InputType="InputType.Email" MaxLength="254"
+                                  Validation="@(new System.ComponentModel.DataAnnotations.EmailAddressAttribute { ErrorMessage = "Niepoprawny adres e-mail." })" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="_phone" Label="Telefon" Required="true" MaxLength="20" Placeholder="+48 600 000 000" />
+                </MudItem>
+                @if (Client is null)
+                {
+                    <MudItem xs="12" sm="6">
+                        <MudTextField @bind-Value="_username" Label="Login klienta" Required="true" MaxLength="50"
+                                      HelperText="Litery, cyfry, kropka, podkreślnik, myślnik" />
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudDivider Class="my-2" />
+                        <MudText Typo="Typo.subtitle2">Adres dostawy (opcjonalnie – można dodać później)</MudText>
+                    </MudItem>
+                    <AddressFields Model="_address" Required="false" />
+                }
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="() => Dialog.Cancel()">Anuluj</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="SaveAsync" Disabled="_busy">Zapisz</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private readonly AddressModel _address = new();
+    private MudForm? _form;
+    private bool _valid;
+    private bool _busy;
+    private string _name = string.Empty;
+    private string _surname = string.Empty;
+    private string _email = string.Empty;
+    private string _phone = string.Empty;
+    private string _username = string.Empty;
+
+    [CascadingParameter] private IMudDialogInstance Dialog { get; set; } = default!;
+
+    /// <summary>Client to edit; null creates a new one.</summary>
+    [Parameter] public ClientDto? Client { get; set; }
+
+    protected override void OnInitialized()
+    {
+        if (Client is not null)
+        {
+            _name = Client.Name;
+            _surname = Client.Surname;
+            _email = Client.Email;
+            _phone = Client.PhoneNumber;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        await _form!.ValidateAsync();
+        if (!_valid)
+        {
+            return;
+        }
+
+        _busy = true;
+        ApiResult<ClientDto> result;
+        if (Client is null)
+        {
+            IReadOnlyList<AddressRequest>? addresses = _address.IsEmpty ? null : [_address.ToRequest()];
+            result = await Api.PostAsync<ClientDto>("api/clients", new CreateClientRequest(_username, _email, _name, _surname, _phone, addresses));
+        }
+        else
+        {
+            result = await Api.PutAsync<ClientDto>($"api/clients/{Client.Id}", new UpdateClientRequest(_email, _name, _surname, _phone));
+        }
+
+        _busy = false;
+        if (Snackbar.Report(result, Client is null ? "Klient został dodany." : "Dane klienta zapisane."))
+        {
+            Dialog.Close(DialogResult.Ok(result.Value));
+        }
+    }
+}

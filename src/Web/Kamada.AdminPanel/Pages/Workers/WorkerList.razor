@@ -1,0 +1,148 @@
+@page "/workers"
+@inject ApiClient Api
+@inject IDialogService Dialogs
+@inject ISnackbar Snackbar
+
+<PageTitle>Pracownicy – KAMADA</PageTitle>
+
+<PageHeader Title="Pracownicy" Subtitle="Konta administratorów i kurierów">
+    <Actions>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.PersonAdd" OnClick="CreateAsync">Dodaj pracownika</MudButton>
+    </Actions>
+</PageHeader>
+
+<MudPaper Class="pa-4 mb-4" Elevation="1">
+    <MudGrid Spacing="2">
+        <MudItem xs="12" md="6">
+            <MudTextField T="string" Value="_search" ValueChanged="OnSearchChanged" Label="Szukaj (login, imię, nazwisko)"
+                          Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" DebounceInterval="300" Clearable="true" />
+        </MudItem>
+        <MudItem xs="6" md="3">
+            <MudSelect T="WorkerRole?" Value="_role" ValueChanged="OnRoleChanged" Label="Rola" Clearable="true">
+                <MudSelectItem T="WorkerRole?" Value="WorkerRole.Admin">@Labels.Of(WorkerRole.Admin)</MudSelectItem>
+                <MudSelectItem T="WorkerRole?" Value="WorkerRole.Courier">@Labels.Of(WorkerRole.Courier)</MudSelectItem>
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="6" md="3">
+            <MudSelect T="bool?" Value="_isActive" ValueChanged="OnActiveChanged" Label="Status">
+                <MudSelectItem T="bool?" Value="null">Wszyscy</MudSelectItem>
+                <MudSelectItem T="bool?" Value="true">Aktywni</MudSelectItem>
+                <MudSelectItem T="bool?" Value="false">Nieaktywni</MudSelectItem>
+            </MudSelect>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+<MudTable T="WorkerDto" @ref="_table" ServerData="LoadAsync" Hover="true" Elevation="1" Dense="true" RowsPerPage="20">
+    <HeaderContent>
+        <MudTh>Pracownik</MudTh>
+        <MudTh>Login</MudTh>
+        <MudTh>Rola</MudTh>
+        <MudTh>Telefon</MudTh>
+        <MudTh>Status</MudTh>
+        <MudTh Style="text-align:right">Akcje</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Pracownik">@context.Name @context.Surname</MudTd>
+        <MudTd DataLabel="Login"><code>@context.Username</code></MudTd>
+        <MudTd DataLabel="Rola">
+            <MudChip T="string" Size="Size.Small" Color="@(context.Role == WorkerRole.Admin ? Color.Secondary : Color.Primary)">@Labels.Of(context.Role)</MudChip>
+        </MudTd>
+        <MudTd DataLabel="Telefon">@context.PhoneNumber</MudTd>
+        <MudTd DataLabel="Status">
+            @if (context.IsActive)
+            {
+                <MudChip T="string" Size="Size.Small" Color="Color.Success">Aktywny</MudChip>
+            }
+            else
+            {
+                <MudChip T="string" Size="Size.Small">Nieaktywny</MudChip>
+            }
+        </MudTd>
+        <MudTd Style="text-align:right; white-space:nowrap">
+            <MudTooltip Text="Edytuj"><MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="() => EditAsync(context)" /></MudTooltip>
+            <MudTooltip Text="Resetuj hasło"><MudIconButton Icon="@Icons.Material.Filled.LockReset" Size="Size.Small" OnClick="() => ResetPasswordAsync(context)" /></MudTooltip>
+            @if (context.IsActive)
+            {
+                <MudTooltip Text="Dezaktywuj"><MudIconButton Icon="@Icons.Material.Filled.PersonOff" Size="Size.Small" OnClick="() => SetActiveAsync(context, false)" /></MudTooltip>
+            }
+            else
+            {
+                <MudTooltip Text="Aktywuj"><MudIconButton Icon="@Icons.Material.Filled.HowToReg" Size="Size.Small" OnClick="() => SetActiveAsync(context, true)" /></MudTooltip>
+            }
+        </MudTd>
+    </RowTemplate>
+    <NoRecordsContent><MudText Class="pa-4">Brak pracowników spełniających kryteria.</MudText></NoRecordsContent>
+    <PagerContent><MudTablePager RowsPerPageString="Na stronie:" InfoFormat="{first_item}–{last_item} z {all_items}" /></PagerContent>
+</MudTable>
+
+@code {
+    private MudTable<WorkerDto>? _table;
+    private string? _search;
+    private WorkerRole? _role;
+    private bool? _isActive;
+
+    private async Task<TableData<WorkerDto>> LoadAsync(TableState state, CancellationToken cancellationToken)
+    {
+        var query = QueryString.Build(("search", _search), ("role", _role), ("isActive", _isActive), ("page", state.Page + 1), ("pageSize", state.PageSize));
+        var result = await Api.GetAsync<PagedResult<WorkerDto>>($"api/workers{query}", cancellationToken);
+        return Snackbar.Report(result)
+            ? new TableData<WorkerDto> { Items = result.Value.Items, TotalItems = result.Value.TotalCount }
+            : new TableData<WorkerDto> { Items = [], TotalItems = 0 };
+    }
+
+    private Task OnSearchChanged(string? value)
+    {
+        _search = value;
+        return _table!.ReloadServerData();
+    }
+
+    private Task OnRoleChanged(WorkerRole? value)
+    {
+        _role = value;
+        return _table!.ReloadServerData();
+    }
+
+    private Task OnActiveChanged(bool? value)
+    {
+        _isActive = value;
+        return _table!.ReloadServerData();
+    }
+
+    private async Task CreateAsync()
+    {
+        if (await Dialogs.ShowForResultAsync<WorkerDialog, WorkerDto>("Nowy pracownik", maxWidth: MaxWidth.Small) is not null)
+        {
+            await _table!.ReloadServerData();
+        }
+    }
+
+    private async Task EditAsync(WorkerDto worker)
+    {
+        var parameters = new DialogParameters<WorkerDialog> { { d => d.Worker, worker } };
+        if (await Dialogs.ShowForResultAsync<WorkerDialog, WorkerDto>($"Edycja: {worker.Username}", parameters) is not null)
+        {
+            await _table!.ReloadServerData();
+        }
+    }
+
+    private async Task ResetPasswordAsync(WorkerDto worker)
+    {
+        var parameters = new DialogParameters<ResetPasswordDialog> { { d => d.Worker, worker } };
+        await Dialogs.ShowForResultAsync<ResetPasswordDialog, bool>($"Nowe hasło: {worker.Username}", parameters, MaxWidth.ExtraSmall);
+    }
+
+    private async Task SetActiveAsync(WorkerDto worker, bool active)
+    {
+        if (!active && !await Dialogs.ConfirmAsync("Dezaktywacja konta", $"Dezaktywować konto {worker.Username}? Pracownik zostanie wylogowany i nie zaloguje się ponownie.", "Dezaktywuj", Color.Warning))
+        {
+            return;
+        }
+
+        var result = await Api.PostAsync($"api/workers/{worker.Id}/{(active ? "activate" : "deactivate")}");
+        if (Snackbar.Report(result, active ? "Konto aktywowane." : "Konto dezaktywowane."))
+        {
+            await _table!.ReloadServerData();
+        }
+    }
+}

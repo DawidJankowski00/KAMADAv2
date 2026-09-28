@@ -1,0 +1,233 @@
+@page "/orders/new"
+@inject ApiClient Api
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+
+<PageTitle>Nowe zamówienie – KAMADA</PageTitle>
+
+<PageHeader Title="Nowe zamówienie" Subtitle="Klient → adres dostawy → produkty" />
+
+<MudGrid>
+    <MudItem xs="12" lg="8">
+        @* 1. Client *@
+        <MudPaper Class="pa-4 mb-4" Elevation="1">
+            <MudText Typo="Typo.h6" Class="mb-2">1. Klient</MudText>
+            <MudAutocomplete T="ClientSummaryDto" Value="_client" ValueChanged="OnClientSelectedAsync" SearchFunc="SearchClientsAsync"
+                             ToStringFunc="@(c => c is null ? string.Empty : $"{c.Name} {c.Surname} ({c.Email})")"
+                             Label="Wyszukaj klienta" DebounceInterval="300" MinCharacters="2" ResetValueOnEmptyText="true"
+                             AdornmentIcon="@Icons.Material.Filled.Search" Clearable="true" />
+        </MudPaper>
+
+        @* 2. Shipping address *@
+        <MudPaper Class="pa-4 mb-4" Elevation="1">
+            <MudText Typo="Typo.h6" Class="mb-2">2. Adres dostawy</MudText>
+            @if (_clientDetails is null)
+            {
+                <MudText Class="mud-text-secondary">Najpierw wybierz klienta.</MudText>
+            }
+            else if (ShippingAddresses.Count == 0)
+            {
+                <MudAlert Severity="Severity.Warning">
+                    Klient nie ma adresu dostawy.
+                    <MudLink Href="@($"clients/{_clientDetails.Id}")">Dodaj adres w karcie klienta</MudLink>.
+                </MudAlert>
+            }
+            else
+            {
+                <MudRadioGroup T="Guid?" @bind-Value="_addressId">
+                    @foreach (var address in ShippingAddresses)
+                    {
+                        <div class="d-flex align-center">
+                            <MudRadio T="Guid?" Value="address.Id" Color="Color.Primary">@Labels.Format(address)</MudRadio>
+                            @if (!address.HasCoordinates)
+                            {
+                                <MudTooltip Text="Adres bez współrzędnych – zamówienie nie trafi do optymalizacji trasy, dopóki nie ustawisz pinezki.">
+                                    <MudIcon Icon="@Icons.Material.Filled.WrongLocation" Color="Color.Warning" Size="Size.Small" />
+                                </MudTooltip>
+                            }
+                        </div>
+                    }
+                </MudRadioGroup>
+            }
+        </MudPaper>
+
+        @* 3. Products *@
+        <MudPaper Class="pa-4 mb-4" Elevation="1">
+            <MudText Typo="Typo.h6" Class="mb-2">3. Produkty</MudText>
+            <div class="d-flex flex-wrap align-end gap-3">
+                <div class="flex-grow-1" style="min-width: 260px">
+                    <MudAutocomplete T="ProductDto" @bind-Value="_product" SearchFunc="SearchProductsAsync"
+                                     ToStringFunc="@(p => p is null ? string.Empty : $"{p.Name} ({p.Sku})")"
+                                     Label="Produkt (nazwa lub SKU)" DebounceInterval="300" MinCharacters="1" ResetValueOnEmptyText="true">
+                        <ItemTemplate Context="p">
+                            <div class="d-flex justify-space-between" style="width:100%">
+                                <span>@p.Name <MudText Typo="Typo.caption" Inline="true" Class="mud-text-secondary">@p.Sku</MudText></span>
+                                <span>@Labels.Money(p.Price) · <b>@p.StockQuantity</b> szt.</span>
+                            </div>
+                        </ItemTemplate>
+                    </MudAutocomplete>
+                </div>
+                <MudNumericField @bind-Value="_quantity" Label="Ilość" Min="1" Max="10000" Style="width: 110px" />
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="AddLine" Disabled="_product is null">Dodaj</MudButton>
+            </div>
+
+            @if (_lines.Count > 0)
+            {
+                <MudSimpleTable Dense="true" Class="mt-4">
+                    <thead>
+                        <tr><th>Produkt</th><th style="text-align:right">Cena</th><th style="width:130px">Ilość</th><th style="text-align:right">Wartość</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var line in _lines)
+                        {
+                            <tr>
+                                <td>@line.Product.Name <MudText Typo="Typo.caption" Class="mud-text-secondary" Inline="true">@line.Product.Sku</MudText></td>
+                                <td style="text-align:right">@Labels.Money(line.Product.Price)</td>
+                                <td>
+                                    <MudNumericField @bind-Value="line.Quantity" Min="1" Max="10000" Variant="Variant.Text" Margin="Margin.Dense"
+                                                     Error="line.Quantity > line.Product.StockQuantity" ErrorText="@($"Dostępne: {line.Product.StockQuantity}")" />
+                                </td>
+                                <td style="text-align:right">@Labels.Money(line.Product.Price * line.Quantity)</td>
+                                <td><MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" OnClick="() => _lines.Remove(line)" /></td>
+                            </tr>
+                        }
+                    </tbody>
+                </MudSimpleTable>
+            }
+
+            <MudTextField @bind-Value="_notes" Label="Uwagi do zamówienia (opcjonalnie)" Lines="2" MaxLength="1000" Class="mt-4" />
+        </MudPaper>
+    </MudItem>
+
+    <MudItem xs="12" lg="4">
+        <MudPaper Class="pa-4" Elevation="2" Style="position: sticky; top: 80px;">
+            <MudText Typo="Typo.h6">Podsumowanie</MudText>
+            <MudDivider Class="my-3" />
+            <MudText Typo="Typo.body2">Klient: <b>@(_client is null ? "—" : $"{_client.Name} {_client.Surname}")</b></MudText>
+            <MudText Typo="Typo.body2">Pozycji: <b>@_lines.Count</b></MudText>
+            <MudText Typo="Typo.h5" Class="mt-3">@Labels.Money(EstimatedTotal)</MudText>
+            <MudText Typo="Typo.caption" Class="mud-text-secondary">Kwota orientacyjna – ostateczną sumę liczy serwer według aktualnych cen.</MudText>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" Size="Size.Large" Class="mt-4"
+                       Disabled="!CanSubmit || _busy" OnClick="SubmitAsync" StartIcon="@Icons.Material.Filled.Check">
+                Złóż zamówienie
+            </MudButton>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private readonly List<OrderLine> _lines = [];
+    private ClientSummaryDto? _client;
+    private ClientDto? _clientDetails;
+    private Guid? _addressId;
+    private ProductDto? _product;
+    private int _quantity = 1;
+    private string? _notes;
+    private bool _busy;
+
+    [SupplyParameterFromQuery(Name = "clientId")] public Guid? PreselectedClientId { get; set; }
+
+    private IReadOnlyList<AddressDto> ShippingAddresses =>
+        _clientDetails?.Addresses.Where(a => a.Type == AddressType.Shipping).ToList() ?? [];
+
+    private decimal EstimatedTotal => _lines.Sum(l => l.Product.Price * l.Quantity);
+
+    private bool CanSubmit => _client is not null && _addressId is not null && _lines.Count > 0 && _lines.All(l => l.Quantity > 0);
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (PreselectedClientId is { } clientId)
+        {
+            var result = await Api.GetAsync<ClientDto>($"api/clients/{clientId}");
+            if (result.IsSuccess)
+            {
+                var c = result.Value;
+                _client = new ClientSummaryDto(c.Id, c.Username, c.Email, c.Name, c.Surname, c.PhoneNumber, c.IsActive, c.Addresses.Count, c.CreatedAt);
+                SetClientDetails(c);
+            }
+        }
+    }
+
+    private async Task<IEnumerable<ClientSummaryDto>> SearchClientsAsync(string? text, CancellationToken cancellationToken)
+    {
+        var result = await Api.GetAsync<PagedResult<ClientSummaryDto>>(
+            $"api/clients{QueryString.Build(("search", text), ("isActive", true), ("pageSize", 10))}", cancellationToken);
+        return result.IsSuccess ? result.Value.Items : [];
+    }
+
+    private async Task<IEnumerable<ProductDto>> SearchProductsAsync(string? text, CancellationToken cancellationToken)
+    {
+        var result = await Api.GetAsync<PagedResult<ProductDto>>(
+            $"api/products{QueryString.Build(("search", text), ("isActive", true), ("pageSize", 15))}", cancellationToken);
+        return result.IsSuccess ? result.Value.Items : [];
+    }
+
+    private async Task OnClientSelectedAsync(ClientSummaryDto? client)
+    {
+        _client = client;
+        _clientDetails = null;
+        _addressId = null;
+        if (client is null)
+        {
+            return;
+        }
+
+        var result = await Api.GetAsync<ClientDto>($"api/clients/{client.Id}");
+        if (Snackbar.Report(result))
+        {
+            SetClientDetails(result.Value);
+        }
+    }
+
+    private void SetClientDetails(ClientDto client)
+    {
+        _clientDetails = client;
+        var shipping = client.Addresses.Where(a => a.Type == AddressType.Shipping).ToList();
+        _addressId = shipping.Count == 1 ? shipping[0].Id : null;
+    }
+
+    private void AddLine()
+    {
+        if (_product is null)
+        {
+            return;
+        }
+
+        var existing = _lines.FirstOrDefault(l => l.Product.Id == _product.Id);
+        if (existing is not null)
+        {
+            existing.Quantity += _quantity;
+        }
+        else
+        {
+            _lines.Add(new OrderLine(_product) { Quantity = _quantity });
+        }
+
+        _product = null;
+        _quantity = 1;
+    }
+
+    private async Task SubmitAsync()
+    {
+        _busy = true;
+        var request = new PlaceOrderRequest(
+            _client!.Id,
+            _addressId!.Value,
+            [.. _lines.Select(l => new OrderLineRequest(l.Product.Id, l.Quantity))],
+            _notes);
+        var result = await Api.PostAsync<OrderDto>("api/orders", request);
+        _busy = false;
+
+        if (Snackbar.Report(result, $"Zamówienie #{(result.IsSuccess ? result.Value.Number : 0)} zostało złożone."))
+        {
+            Navigation.NavigateTo($"orders/{result.Value.Id}");
+        }
+    }
+
+    private sealed class OrderLine(ProductDto product)
+    {
+        public ProductDto Product { get; } = product;
+
+        public int Quantity { get; set; } = 1;
+    }
+}
