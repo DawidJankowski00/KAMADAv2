@@ -1,0 +1,42 @@
+<MudDialog>
+    <DialogContent>
+        <MudText Typo="Typo.body2" Class="mb-3">#@Stop.OrderNumber · @Stop.RecipientName, @Labels.Format(Stop)</MudText>
+        <div class="d-flex flex-wrap gap-1 mb-2">
+            @foreach (var reason in CommonReasons)
+            {
+                <MudChip T="string" Variant="@(_reason == reason ? Variant.Filled : Variant.Outlined)" Color="Color.Error"
+                         OnClick="() => _reason = reason">@reason</MudChip>
+            }
+        </div>
+        <MudTextField @bind-Value="_reason" Label="Powód" Variant="Variant.Outlined" Lines="3" MaxLength="MaxLength" Counter="MaxLength"
+                      Immediate="true" Placeholder="Wybierz powyżej lub opisz, co się stało" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="() => Dialog.Cancel()">Anuluj</MudButton>
+        <MudButton Color="Color.Error" Variant="Variant.Filled" Disabled="string.IsNullOrWhiteSpace(_reason)"
+                   OnClick="() => Dialog.Close(DialogResult.Ok(_reason!.Trim()))">
+            Zapisz
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    /// <summary>Same limit as the API (<c>FailStopRequest.Reason</c>).</summary>
+    private const int MaxLength = 500;
+
+    private static readonly string[] CommonReasons =
+    [
+        "Brak odbiorcy pod adresem",
+        "Odbiorca nie odbiera telefonu",
+        "Błędny adres",
+        "Brak dostępu do budynku",
+        "Odmowa przyjęcia",
+        "Uszkodzona przesyłka",
+    ];
+
+    private string? _reason;
+
+    [CascadingParameter] private IMudDialogInstance Dialog { get; set; } = default!;
+
+    [Parameter, EditorRequired] public DeliveryStopDto Stop { get; set; } = default!;
+}

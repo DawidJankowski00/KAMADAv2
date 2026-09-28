@@ -7,11 +7,11 @@ else
     <div class="d-flex flex-column gap-2">
         @foreach (var link in Links)
         {
-            <MudButton Href="@link.Url" Target="_blank" Rel="noopener" Variant="Variant.Outlined" Color="Color.Primary"
+            <MudButton Href="@link.Url" Target="_blank" Rel="noopener" Variant="Variant" Size="Size" Color="Color.Primary"
                        StartIcon="@Icons.Material.Filled.Navigation" FullWidth="true" Class="justify-start">
                 @if (link.TotalParts > 1)
                 {
-                    @($"Część {link.Part}/{link.TotalParts}: {RunMap.PointName(link.FromPoint, StopCount)} → {RunMap.PointName(link.ToPoint, StopCount)}")
+                    @($"Część {link.Part}/{link.TotalParts}: {DeliveryRunMap.PointName(link.FromPoint, StopCount)} → {DeliveryRunMap.PointName(link.ToPoint, StopCount)}")
                 }
                 else
                 {
@@ -32,4 +32,8 @@ else
     [Parameter, EditorRequired] public IReadOnlyList<NavigationLinkDto> Links { get; set; } = [];
 
     [Parameter, EditorRequired] public int StopCount { get; set; }
+
+    [Parameter] public Variant Variant { get; set; } = Variant.Outlined;
+
+    [Parameter] public Size Size { get; set; } = Size.Medium;
 }

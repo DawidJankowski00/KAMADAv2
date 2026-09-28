@@ -144,8 +144,8 @@
             .Select(p => StopOf(p.OrderId) is { } stop ? stop with { Latitude = p.Latitude, Longitude = p.Longitude } : null)
             .OfType<DeliveryStopDto>()
             .ToList();
-        _markers = RunMap.Markers(Run, proposed);
-        _route = RunMap.Route(Run, proposed);
+        _markers = DeliveryRunMap.Markers(Run, proposed);
+        _route = DeliveryRunMap.Route(Run, proposed);
     }
 
     private DeliveryStopDto? StopOf(Guid orderId) => Run.Stops.FirstOrDefault(s => s.OrderId == orderId);

@@ -31,7 +31,7 @@ public static class ServiceCollectionExtensions
 
         services.AddMudServices(config =>
         {
-            config.SnackbarConfiguration.PositionClass = Defaults.Classes.Position.BottomRight;
+            config.SnackbarConfiguration.PositionClass = options.SnackbarPosition;
             config.SnackbarConfiguration.VisibleStateDuration = 4000;
             config.SnackbarConfiguration.PreventDuplicates = false;
         });

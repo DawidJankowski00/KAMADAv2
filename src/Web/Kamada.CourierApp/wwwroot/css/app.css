@@ -38,7 +38,7 @@
 }
 
     .blazor-error-boundary::after {
-        content: "An error has occurred."
+        content: "Wystąpił błąd."
     }
 
 .loading-progress {
@@ -72,7 +72,7 @@
 }
 
     .loading-progress-text:after {
-        content: var(--blazor-load-percentage-text, "Loading");
+        content: var(--blazor-load-percentage-text, "Ładowanie");
     }
 
 code {
@@ -86,4 +86,41 @@ code {
 
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
+}
+/* KAMADA */
+.kamada-login-background {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #1565c0 0%, #0d47a1 55%, #002171 100%);
+    padding: 16px;
+}
+
+/* FocusOnNavigate moves focus to the page heading for screen readers; no visible outline needed. */
+h1:focus {
+    outline: none;
+}
+
+/* Courier app: large touch targets, content clear of the phone's notch/home bar */
+.mud-main-content {
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+.kamada-run-card {
+    cursor: pointer;
+}
+
+.kamada-stop-number {
+    min-width: 36px;
+    height: 36px;
+    font-weight: 700;
+}
+
+.kamada-next-stop {
+    border: 2px solid var(--mud-palette-primary);
+}
+
+.kamada-stop-done {
+    opacity: 0.75;
 }

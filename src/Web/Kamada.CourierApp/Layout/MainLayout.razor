@@ -1,3 +1,51 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
+@inject AuthService Auth
+@inject NavigationManager Navigation
 
-@Body
+<MudThemeProvider Theme="CourierTheme.Theme" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="1" Dense="true">
+        <MudLink Href="" Color="Color.Inherit" Underline="Underline.None" Class="d-flex align-center">
+            <MudIcon Icon="@Icons.Material.Filled.LocalShipping" Class="mr-2" />
+            <MudText Typo="Typo.h6">KAMADA</MudText>
+        </MudLink>
+        <MudSpacer />
+        <AuthorizeView>
+            <Authorized>
+                <MudText Typo="Typo.body2" Class="mr-1">
+                    @context.User.FindFirst("given_name")?.Value @context.User.FindFirst("family_name")?.Value
+                </MudText>
+                <MudIconButton Icon="@Icons.Material.Filled.Logout" Color="Color.Inherit" OnClick="LogoutAsync" aria-label="Wyloguj" />
+            </Authorized>
+        </AuthorizeView>
+    </MudAppBar>
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.Small" Class="py-4 px-3">
+            <ErrorBoundary @ref="_errorBoundary">
+                <ChildContent>
+                    @Body
+                </ChildContent>
+                <ErrorContent>
+                    <MudAlert Severity="Severity.Error" Class="mb-4">
+                        Wystąpił nieoczekiwany błąd.
+                        <MudButton Size="Size.Small" OnClick="() => _errorBoundary?.Recover()">Spróbuj ponownie</MudButton>
+                    </MudAlert>
+                </ErrorContent>
+            </ErrorBoundary>
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    private ErrorBoundary? _errorBoundary;
+
+    private async Task LogoutAsync()
+    {
+        await Auth.LogoutAsync();
+        Navigation.NavigateTo("login", replace: true);
+    }
+}

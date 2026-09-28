@@ -45,5 +45,16 @@ services:
     depends_on:
       - api
 
+  courier:
+    build:
+      context: .
+      dockerfile: src/Web/Kamada.CourierApp/Dockerfile
+    environment:
+      API_BASE_URL: ${PUBLIC_API_URL:-http://localhost:5080/}
+    ports:
+      - "5082:80"
+    depends_on:
+      - api
+
 volumes:
   postgres-data:

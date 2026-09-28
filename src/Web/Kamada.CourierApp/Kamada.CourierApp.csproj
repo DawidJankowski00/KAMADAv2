@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Shared\Kamada.Shared.Contracts\Kamada.Shared.Contracts.csproj" />
+    <ProjectReference Include="..\Kamada.Web.Shared\Kamada.Web.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>

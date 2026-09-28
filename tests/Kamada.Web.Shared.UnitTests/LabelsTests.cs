@@ -48,4 +48,46 @@ public sealed class LabelsTests
     [Fact]
     public void Date_DateOnly_UsesPolishFormat() =>
         Labels.Date(new DateOnly(2026, 9, 3)).ShouldBe("03.09.2026");
+
+    [Fact]
+    public void Time_Timestamp_ShowsLocalHoursAndMinutes() =>
+        Labels.Time(Local(9, 5)).ShouldBe("09:05");
+
+    [Fact]
+    public void Arrival_RunStarted_ShowsClockTime() =>
+        Labels.Arrival(Local(14, 0), 45 * 60 + 20).ShouldBe("ok. 14:45");
+
+    [Fact]
+    public void Arrival_RunNotStarted_ShowsOffsetFromStart() =>
+        Labels.Arrival(null, 75 * 60).ShouldBe("1 h 15 min od startu");
+
+    [Fact]
+    public void Arrival_NoEstimate_ReturnsNull() =>
+        Labels.Arrival(Local(14, 0), null).ShouldBeNull();
+
+    [Theory]
+    [InlineData(0, "0 przystanków")]
+    [InlineData(1, "1 przystanek")]
+    [InlineData(2, "2 przystanki")]
+    [InlineData(4, "4 przystanki")]
+    [InlineData(5, "5 przystanków")]
+    [InlineData(12, "12 przystanków")]
+    [InlineData(14, "14 przystanków")]
+    [InlineData(22, "22 przystanki")]
+    [InlineData(25, "25 przystanków")]
+    public void StopCount_Count_UsesPolishPluralForm(int count, string expected) =>
+        Labels.StopCount(count).ShouldBe(expected);
+
+    [Theory]
+    [InlineData("+48 601 111 111", "tel:+48601111111")]
+    [InlineData(" +48 (52) 345-67-89", "tel:+48523456789")]
+    [InlineData("601-111-111", "tel:601111111")]
+    public void PhoneUri_FormattedNumber_KeepsDigitsAndLeadingPlus(string phone, string expected) =>
+        Labels.PhoneUri(phone).ShouldBe(expected);
+
+    private static DateTimeOffset Local(int hour, int minute)
+    {
+        var local = new DateTime(2026, 9, 28, hour, minute, 0, DateTimeKind.Unspecified);
+        return new DateTimeOffset(local, TimeZoneInfo.Local.GetUtcOffset(local));
+    }
 }

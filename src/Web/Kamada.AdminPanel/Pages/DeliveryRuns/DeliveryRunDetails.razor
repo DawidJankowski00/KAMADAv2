@@ -304,8 +304,8 @@ else
     private void RefreshStops()
     {
         _dropVersion++;
-        _markers = RunMap.Markers(_run!, _order);
-        _route = RunMap.Route(_run!, _order);
+        _markers = DeliveryRunMap.Markers(_run!, _order);
+        _route = DeliveryRunMap.Route(_run!, _order);
     }
 
     private void OnStopDropped(MudItemDropInfo<DeliveryStopDto> drop)

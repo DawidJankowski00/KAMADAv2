@@ -1,0 +1,217 @@
+@page "/runs/{Id:guid}"
+@inject ApiClient Api
+@inject ISnackbar Snackbar
+@inject IDialogService Dialogs
+
+<PageTitle>@(_run?.Name ?? "Trasa") – KAMADA Kurier</PageTitle>
+
+<div class="d-flex align-center mb-2">
+    <MudIconButton Icon="@Icons.Material.Filled.ArrowBack" Href="@BackUrl" Edge="Edge.Start" aria-label="Moje trasy" />
+    <MudText Typo="Typo.h6" HtmlTag="h1" Class="flex-grow-1" Style="min-width:0">@(_run?.Name ?? "Trasa")</MudText>
+    <MudIconButton Icon="@Icons.Material.Filled.Refresh" OnClick="LoadAsync" Disabled="_busy" aria-label="Odśwież" />
+</div>
+
+@if (_error is not null)
+{
+    <MudAlert Severity="Severity.Error" Class="mb-3">@_error</MudAlert>
+    <MudButton Href="@BackUrl" Variant="Variant.Filled" Color="Color.Primary">Moje trasy</MudButton>
+}
+else if (_run is null)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+else
+{
+    var run = _run;
+    var stops = run.Stops.OrderBy(s => s.Sequence).ToList();
+    var next = stops.FirstOrDefault(s => s.Status == DeliveryStopStatus.Pending);
+    var inProgress = run.Status == DeliveryRunStatus.InProgress;
+
+    <MudPaper Elevation="1" Class="pa-3 mb-3">
+        <div class="d-flex align-center gap-2">
+            <MudText Typo="Typo.body1" Class="flex-grow-1">@Labels.Date(run.PlannedDate) · @run.VehiclePlate</MudText>
+            <RunStatusChip Status="run.Status" />
+        </div>
+        <MudText Typo="Typo.body2" Class="mud-text-secondary">Start: @run.StartLocation.Name, @Labels.Format(run.StartLocation)</MudText>
+        @if (run.EndLocation.Id != run.StartLocation.Id)
+        {
+            <MudText Typo="Typo.body2" Class="mud-text-secondary">Koniec: @run.EndLocation.Name, @Labels.Format(run.EndLocation)</MudText>
+        }
+        @if (run.RoutePlan is { } plan)
+        {
+            <MudText Typo="Typo.body2" Class="mt-1">
+                @Labels.StopCount(stops.Count) · jazda @Labels.Duration(plan.DurationSeconds) · @Labels.Distance(plan.DistanceMeters)
+            </MudText>
+        }
+        @if (run.Status is DeliveryRunStatus.InProgress or DeliveryRunStatus.Completed)
+        {
+            <div class="d-flex align-center gap-2 mt-2">
+                <MudProgressLinear Value="100.0 * (Delivered + Failed) / Math.Max(1, stops.Count)" Color="Color.Success" Rounded="true" Size="Size.Medium" Class="flex-grow-1" />
+                <MudText Typo="Typo.caption" Style="white-space:nowrap">
+                    @Delivered/@stops.Count dostarczone@(Failed > 0 ? $" · {Failed} nieudane" : string.Empty)
+                </MudText>
+            </div>
+        }
+        @if (run.StartedAt is { } startedAt)
+        {
+            <MudText Typo="Typo.caption" Class="mud-text-secondary d-block mt-1">
+                Rozpoczęta o @Labels.Time(startedAt)@(run.CompletedAt is { } completedAt ? $" · zakończona o {Labels.Time(completedAt)}" : string.Empty)
+            </MudText>
+        }
+    </MudPaper>
+
+    @if (run.Status == DeliveryRunStatus.Planned)
+    {
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" FullWidth="true" Class="mb-3"
+                   StartIcon="@Icons.Material.Filled.PlayArrow" Disabled="_busy" OnClick="StartAsync">
+            Rozpocznij trasę
+        </MudButton>
+    }
+    else if (inProgress && next is null)
+    {
+        <MudAlert Severity="Severity.Success" Class="mb-3">Wszystkie przystanki obsłużone. Wróć do bazy i zakończ trasę.</MudAlert>
+        <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Large" FullWidth="true" Class="mb-3"
+                   StartIcon="@Icons.Material.Filled.Flag" Disabled="_busy" OnClick="CompleteAsync">
+            Zakończ trasę
+        </MudButton>
+    }
+
+    @if (run.Status is DeliveryRunStatus.Planned or DeliveryRunStatus.InProgress)
+    {
+        <MudPaper Elevation="1" Class="pa-3 mb-3">
+            <MudText Typo="Typo.subtitle2" Class="mb-2">Nawigacja</MudText>
+            <NavigationLinks Links="run.NavigationLinks" StopCount="stops.Count" Variant="Variant.Filled" />
+            <MudButton Variant="Variant.Text" FullWidth="true" Class="mt-2" OnClick="() => _showMap = !_showMap"
+                       StartIcon="@(_showMap ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.Map)">
+                @(_showMap ? "Ukryj mapę" : "Pokaż mapę")
+            </MudButton>
+            @if (_showMap)
+            {
+                <div class="mt-2">
+                    <LeafletMap Markers="_markers" Route="_route" Height="320px" />
+                </div>
+            }
+        </MudPaper>
+    }
+
+    <MudText Typo="Typo.subtitle2" Class="mb-2">Przystanki</MudText>
+    @foreach (var stop in stops)
+    {
+        <StopCard @key="stop.Id" Stop="stop" StartedAt="run.StartedAt" IsNext="inProgress && stop.Id == next?.Id" CanAct="inProgress"
+                  Busy="_busy" OnDeliver="() => DeliverAsync(stop)" OnFail="() => FailAsync(stop)" />
+    }
+    <MudPaper Elevation="0" Outlined="true" Class="pa-3 mb-3 d-flex align-center gap-3">
+        <MudIcon Icon="@Icons.Material.Filled.Warehouse" Class="mud-text-secondary" />
+        <div>
+            <MudText Typo="Typo.body2"><b>Powrót: @run.EndLocation.Name</b></MudText>
+            <MudText Typo="Typo.caption" Class="mud-text-secondary">@Labels.Format(run.EndLocation)</MudText>
+        </div>
+    </MudPaper>
+
+    @if (inProgress && next is not null)
+    {
+        <MudButton Variant="Variant.Outlined" Color="Color.Error" FullWidth="true" Class="mb-6"
+                   StartIcon="@Icons.Material.Filled.Flag" Disabled="_busy" OnClick="CompleteAsync">
+            Zakończ trasę wcześniej
+        </MudButton>
+    }
+}
+
+@code {
+    private DeliveryRunDto? _run;
+    private string? _error;
+    private bool _busy;
+    private bool _showMap;
+    private IReadOnlyList<MapMarker> _markers = [];
+    private IReadOnlyList<MapPoint> _route = [];
+
+    [Parameter] public Guid Id { get; set; }
+
+    private string BaseUrl => $"api/courier/delivery-runs/{Id}";
+
+    private string BackUrl => _run?.Status switch
+    {
+        DeliveryRunStatus.Completed => "?scope=Completed",
+        DeliveryRunStatus.Planned when _run.PlannedDate > DateOnly.FromDateTime(DateTime.Today) => "?scope=Upcoming",
+        _ => "./",
+    };
+
+    private int Delivered => _run!.Stops.Count(s => s.Status == DeliveryStopStatus.Delivered);
+
+    private int Failed => _run!.Stops.Count(s => s.Status == DeliveryStopStatus.Failed);
+
+    protected override Task OnParametersSetAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _error = null;
+        var result = await Api.GetAsync<DeliveryRunDto>(BaseUrl);
+        if (result.IsSuccess)
+        {
+            SetRun(result.Value);
+        }
+        else
+        {
+            SetRun(null);
+            _error = result.Problem!.Status == 404 ? "Nie znaleziono trasy. Mogła zostać anulowana lub przypisana innemu kurierowi." : result.Problem.Message;
+        }
+    }
+
+    private void SetRun(DeliveryRunDto? run)
+    {
+        _run = run;
+        var stops = run?.Stops.OrderBy(s => s.Sequence).ToList() ?? [];
+        _markers = run is null ? [] : DeliveryRunMap.Markers(run, stops);
+        _route = run is null ? [] : DeliveryRunMap.Route(run, stops);
+    }
+
+    private Task StartAsync() =>
+        RunActionAsync(() => Api.PostAsync<DeliveryRunDto>($"{BaseUrl}/start"), "Trasa rozpoczęta. Szerokiej drogi!");
+
+    private async Task DeliverAsync(DeliveryStopDto stop)
+    {
+        if (await Dialogs.ConfirmAsync("Potwierdź doręczenie", $"#{stop.OrderNumber} · {stop.RecipientName}, {Labels.Format(stop)}", "Dostarczone", Color.Success))
+        {
+            await RunActionAsync(() => Api.PostAsync<DeliveryRunDto>($"{BaseUrl}/stops/{stop.Id}/deliver"), $"Zamówienie #{stop.OrderNumber} dostarczone.");
+        }
+    }
+
+    private async Task FailAsync(DeliveryStopDto stop)
+    {
+        var parameters = new DialogParameters<FailStopDialog> { { d => d.Stop, stop } };
+        var reason = await Dialogs.ShowForResultAsync<FailStopDialog, string>("Nieudana dostawa", parameters, MaxWidth.ExtraSmall);
+        if (reason is not null)
+        {
+            await RunActionAsync(() => Api.PostAsync<DeliveryRunDto>($"{BaseUrl}/stops/{stop.Id}/fail", new FailStopRequest(reason)), $"Zapisano nieudaną dostawę #{stop.OrderNumber}.");
+        }
+    }
+
+    private async Task CompleteAsync()
+    {
+        var pending = _run!.Stops.Count(s => s.Status == DeliveryStopStatus.Pending);
+        var message = pending == 0
+            ? "Wszystkie przystanki są obsłużone."
+            : $"Nieobsłużone przystanki ({pending}) zostaną oznaczone jako nieudane – administrator może je zaplanować ponownie.";
+        if (await Dialogs.ConfirmAsync("Zakończyć trasę?", message, "Zakończ trasę", pending == 0 ? Color.Success : Color.Error))
+        {
+            await RunActionAsync(() => Api.PostAsync<DeliveryRunDto>($"{BaseUrl}/complete"), "Trasa zakończona. Dziękujemy!");
+        }
+    }
+
+    /// <summary>Every courier action returns the updated run.</summary>
+    private async Task RunActionAsync(Func<Task<ApiResult<DeliveryRunDto>>> action, string successMessage)
+    {
+        _busy = true;
+        var result = await action();
+        _busy = false;
+        if (Snackbar.Report(result, successMessage))
+        {
+            SetRun(result.Value);
+        }
+        else if (result.Problem!.Status is 404 or 409)
+        {
+            // The run changed elsewhere (e.g. cancelled by the admin) – show its current state.
+            await LoadAsync();
+        }
+    }
+}

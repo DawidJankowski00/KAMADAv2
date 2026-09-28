@@ -1,11 +1,9 @@
 using Kamada.Shared.Contracts.Delivery;
-using Kamada.Web.Shared;
-using Kamada.Web.Shared.Maps;
 
-namespace Kamada.AdminPanel.Pages.DeliveryRuns;
+namespace Kamada.Web.Shared.Maps;
 
 /// <summary>Map markers and the route polyline (straight segments start → stops → end) for a delivery run.</summary>
-internal static class RunMap
+public static class DeliveryRunMap
 {
     public static IReadOnlyList<MapMarker> Markers(DeliveryRunDto run, IReadOnlyList<DeliveryStopDto> orderedStops)
     {

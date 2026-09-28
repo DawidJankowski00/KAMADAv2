@@ -86,6 +86,31 @@ public static class Labels
 
     public static string Date(DateOnly value) => value.ToString("dd.MM.yyyy", Polish);
 
+    /// <summary>"14:05" in the device's time zone.</summary>
+    public static string Time(DateTimeOffset value) => value.ToLocalTime().ToString("HH:mm", Polish);
+
+    /// <summary>
+    /// Estimated arrival at a stop: a clock time once the run has started ("ok. 14:05"), otherwise the offset
+    /// from the start ("45 min od startu"). <c>null</c> when the run has no plan.
+    /// </summary>
+    public static string? Arrival(DateTimeOffset? startedAt, double? offsetSeconds) =>
+        offsetSeconds is not { } offset ? null
+        : startedAt is { } start ? "ok. " + Time(start.AddSeconds(offset))
+        : Duration(offset) + " od startu";
+
+    /// <summary>"1 przystanek", "3 przystanki", "5 przystanków", "22 przystanki" (Polish plural forms).</summary>
+    public static string StopCount(int count)
+    {
+        var word = count == 1 ? "przystanek"
+            : count % 10 is >= 2 and <= 4 && count % 100 is not (>= 12 and <= 14) ? "przystanki"
+            : "przystanków";
+        return $"{count} {word}";
+    }
+
+    /// <summary><c>tel:</c> link for a phone number typed with spaces, dashes or brackets ("+48 601-111 111" → "tel:+48601111111").</summary>
+    public static string PhoneUri(string phoneNumber) =>
+        "tel:" + (phoneNumber.TrimStart().StartsWith('+') ? "+" : string.Empty) + string.Concat(phoneNumber.Where(char.IsAsciiDigit));
+
     /// <summary>"45 min", "1 h 05 min".</summary>
     public static string Duration(double seconds)
     {

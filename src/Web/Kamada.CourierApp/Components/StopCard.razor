@@ -1,0 +1,111 @@
+@{
+    var pending = Stop.Status == DeliveryStopStatus.Pending;
+    var arrival = pending ? Labels.Arrival(StartedAt, Stop.EstimatedArrivalOffsetSeconds) : null;
+}
+<MudPaper Elevation="@(IsNext ? 3 : 1)" Class="@($"pa-3 mb-3 {(IsNext ? "kamada-next-stop" : string.Empty)} {(pending ? string.Empty : "kamada-stop-done")}")">
+    <div class="d-flex gap-3">
+        <MudAvatar Color="@(pending ? (IsNext ? Color.Primary : Color.Default) : Labels.ColorOf(Stop.Status))" Class="kamada-stop-number">
+            @if (Stop.Status == DeliveryStopStatus.Delivered)
+            {
+                <MudIcon Icon="@Icons.Material.Filled.Check" />
+            }
+            else if (Stop.Status == DeliveryStopStatus.Failed)
+            {
+                <MudIcon Icon="@Icons.Material.Filled.Close" />
+            }
+            else
+            {
+                @Stop.Sequence
+            }
+        </MudAvatar>
+        <div class="flex-grow-1" style="min-width:0">
+            @if (IsNext)
+            {
+                <MudText Typo="Typo.overline" Color="Color.Primary" Class="d-block" Style="line-height:1.4">Następny przystanek</MudText>
+            }
+            <MudText Typo="Typo.subtitle1" Style="font-weight:600">@Stop.RecipientName</MudText>
+            <MudText Typo="Typo.body2">@Labels.Format(Stop)</MudText>
+            <MudText Typo="Typo.caption" Class="mud-text-secondary">
+                #@Stop.OrderNumber@(arrival is null ? string.Empty : $" · {arrival}")
+                @if (!pending)
+                {
+                    @($" · {Labels.Of(Stop.Status)}")
+                    @if (Stop.DeliveredAt is { } deliveredAt)
+                    {
+                        @($" o {Labels.Time(deliveredAt)}")
+                    }
+                }
+            </MudText>
+        </div>
+    </div>
+
+    @if (Stop.FailureReason is not null)
+    {
+        <MudAlert Severity="Severity.Error" Dense="true" Class="mt-2">Powód: @Stop.FailureReason</MudAlert>
+    }
+
+    @if (pending)
+    {
+        @if (!Stop.HasCoordinates)
+        {
+            <MudAlert Severity="Severity.Warning" Dense="true" Class="mt-2">Adres bez współrzędnych – nawigacja po adresie może być niedokładna.</MudAlert>
+        }
+        @if (!string.IsNullOrWhiteSpace(Stop.Notes))
+        {
+            <MudAlert Severity="Severity.Info" Dense="true" Icon="@Icons.Material.Filled.StickyNote2" Class="mt-2">@Stop.Notes</MudAlert>
+        }
+        @if (Stop.Items.Count > 0)
+        {
+            <div class="mt-2">
+                @foreach (var item in Stop.Items)
+                {
+                    <MudText Typo="Typo.body2"><b>@item.Quantity ×</b> @item.ProductName</MudText>
+                }
+            </div>
+        }
+
+        <div class="d-flex gap-2 mt-3">
+            <MudButton Href="@Labels.PhoneUri(Stop.PhoneNumber)" Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Phone" Class="flex-grow-1">
+                Zadzwoń
+            </MudButton>
+            @if (Stop.NavigationUrl is not null)
+            {
+                <MudButton Href="@Stop.NavigationUrl" Target="_blank" Rel="noopener" Variant="Variant.Outlined" Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Navigation" Class="flex-grow-1">
+                    Nawiguj
+                </MudButton>
+            }
+        </div>
+        @if (CanAct)
+        {
+            <div class="d-flex gap-2 mt-2">
+                <MudButton Variant="Variant.Filled" Color="Color.Success" StartIcon="@Icons.Material.Filled.Check" Size="Size.Large"
+                           Class="flex-grow-1" Disabled="Busy" OnClick="OnDeliver">
+                    Dostarczone
+                </MudButton>
+                <MudButton Variant="Variant.Outlined" Color="Color.Error" StartIcon="@Icons.Material.Filled.Close" Size="Size.Large"
+                           Class="flex-grow-1" Disabled="Busy" OnClick="OnFail">
+                    Nieudane
+                </MudButton>
+            </div>
+        }
+    }
+</MudPaper>
+
+@code {
+    [Parameter, EditorRequired] public DeliveryStopDto Stop { get; set; } = default!;
+
+    /// <summary>When the run started – arrival estimates become clock times.</summary>
+    [Parameter] public DateTimeOffset? StartedAt { get; set; }
+
+    [Parameter] public bool IsNext { get; set; }
+
+    /// <summary>The run is in progress, so the stop outcome can be recorded.</summary>
+    [Parameter] public bool CanAct { get; set; }
+
+    [Parameter] public bool Busy { get; set; }
+
+    [Parameter] public EventCallback OnDeliver { get; set; }
+
+    [Parameter] public EventCallback OnFail { get; set; }
+}

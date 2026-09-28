@@ -257,3 +257,12 @@ Record small decisions here (date — decision — reason).
   messages; the page shows per-stop coordinate warnings itself.
 - 2026-09-28 — `QueryString` formats `DateOnly` as `yyyy-MM-dd` (invariant `DateOnly.ToString()` is `MM/dd/yyyy`).
   Formatting helpers of `Kamada.Web.Shared` are unit tested in `tests/Kamada.Web.Shared.UnitTests`.
+- 2026-09-28 — Courier PWA (`src/Web/Kamada.CourierApp`): phone-first MudBlazor UI, same `AddKamadaClient` plumbing as the admin
+  panel (role `Courier`, own localStorage key). Run list tab is kept in the URL (`?scope=`) so "back" returns to it; each
+  action (start / deliver / fail / complete) returns the updated run, a 404/409 reloads it (e.g. cancelled by the admin).
+  Delivering asks for confirmation; failure reasons offer common presets. Snackbars at the top (`KamadaClientOptions.SnackbarPosition`),
+  because the bottom of a phone screen holds the stop action buttons. `DeliveryRunMap`, `NavigationLinks` and `RunStatusChip`
+  moved to `Kamada.Web.Shared` (used by both apps).
+- 2026-09-28 — Courier service worker: `appsettings.json` is excluded from the offline precache (the container rewrites it, so the
+  published integrity hash would fail the install) and fetched network-first with the last copy as offline fallback. API calls
+  are never cached – stop outcomes must reach the server.

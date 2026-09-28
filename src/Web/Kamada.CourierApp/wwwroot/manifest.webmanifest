@@ -1,11 +1,15 @@
 {
-  "name": "Kamada.CourierApp",
-  "short_name": "Kamada.CourierApp",
+  "name": "KAMADA – aplikacja kuriera",
+  "short_name": "KAMADA Kurier",
+  "description": "Trasy dostaw, kolejność przystanków i nawigacja dla kurierów KAMADA.",
+  "lang": "pl",
   "id": "./",
   "start_url": "./",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#03173d",
+  "orientation": "portrait",
+  "background_color": "#f5f7fb",
+  "theme_color": "#0d47a1",
   "prefer_related_applications": false,
   "icons": [
     {
