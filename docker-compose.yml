@@ -26,6 +26,7 @@ services:
       ConnectionStrings__Kamada: Host=postgres;Port=5432;Database=kamada;Username=${POSTGRES_USER:-kamada};Password=${POSTGRES_PASSWORD:-kamada_dev};Gss Encryption Mode=Disable
       RouteOptimization__MatrixProvider: ${ROUTE_MATRIX_PROVIDER:-Osrm}
       RouteOptimization__Osrm__BaseUrl: ${OSRM_BASE_URL:-https://router.project-osrm.org/}
+      RouteOptimization__Osrm__MinDelayBetweenRequests: ${OSRM_MIN_DELAY:-00:00:01}
       RouteOptimization__Google__ApiKey: ${GOOGLE_ROUTES_API_KEY:-}
     ports:
       - "5080:8080"
@@ -56,5 +57,42 @@ services:
     depends_on:
       - api
 
+  # Optional self-hosted OSRM (docker compose --profile osrm up), see README "Self-hosted OSRM".
+  # First start downloads the OSM extract and preprocesses it (a few minutes); later starts reuse the volume.
+  osrm-download:
+    image: curlimages/curl:8.16.0
+    profiles: [osrm]
+    user: "0:0"
+    environment:
+      OSRM_PBF_URL: ${OSRM_PBF_URL:-https://download.geofabrik.de/europe/poland/kujawsko-pomorskie-latest.osm.pbf}
+    entrypoint: ["/bin/sh", "/scripts/download.sh"]
+    volumes:
+      - osrm-data:/data
+      - ./deploy/osrm:/scripts:ro
+
+  osrm-prepare:
+    image: ghcr.io/project-osrm/osrm-backend:v5.27.1
+    profiles: [osrm]
+    entrypoint: ["/bin/sh", "/scripts/prepare.sh"]
+    volumes:
+      - osrm-data:/data
+      - ./deploy/osrm:/scripts:ro
+    depends_on:
+      osrm-download:
+        condition: service_completed_successfully
+
+  osrm:
+    image: ghcr.io/project-osrm/osrm-backend:v5.27.1
+    profiles: [osrm]
+    command: ["osrm-routed", "--algorithm", "mld", "--max-table-size", "1000", "/data/region.osrm"]
+    ports:
+      - "5000:5000"
+    volumes:
+      - osrm-data:/data
+    depends_on:
+      osrm-prepare:
+        condition: service_completed_successfully
+
 volumes:
   postgres-data:
+  osrm-data:
