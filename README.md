@@ -42,7 +42,7 @@ a Blazor WebAssembly admin panel and a Blazor PWA for couriers.
 - **Tests:** unit, integration (Testcontainers) and architecture tests, plus BenchmarkDotNet for the solvers.
   CI runs on GitHub Actions.
 - **Deployment:** one-command startup with Docker Compose and realistic demo data: real addresses in
-  Bydgoszcz, orders in every status, a run planned for today and one completed yesterday.
+  the Tricity and Szczecin, orders in every status, runs planned for today and one completed yesterday.
 
 ## Screenshots
 
@@ -80,24 +80,28 @@ Demo accounts (seeded in the Development environment):
 
 ### Demo data
 
-On first start with an empty database, the API seeds a small company in Bydgoszcz. The data is created through
+On first start with an empty database, the API seeds a small company delivering in two areas: the Tricity
+(Gdańsk, Gdynia, Sopot – Pomorskie) and Szczecin (Zachodniopomorskie). Each area has its own warehouse and
+courier base. The data is created through
 the real use cases ([ADR 0007](docs/adr/0007-demo-data-through-real-use-cases.md)):
 
 - **Catalog:** 40 products in 5 categories with 11 subcategories. Some products have several categories, low
   stock or no stock, and one is deactivated.
-- **Clients:** 25 clients with real, pre-geocoded addresses in Bydgoszcz. Five of them have a second shipping
+- **Clients:** 25 clients with real, pre-geocoded addresses: 13 in the Tricity and 12 in Szczecin. Five of them have a second shipping
   address. Edge cases: one address without coordinates (pin it on the map), one billing address and one
   deactivated client.
-- **Orders:** 36 orders from the last days, paid by card, cash or transfer, in every status:
+- **Orders:** 36 orders from the last days, split evenly between the two areas, paid by card, cash or transfer, in every status:
   - new and awaiting payment;
   - paid and being packed;
   - ready for delivery;
   - assigned to a run;
   - delivered, failed or cancelled.
-- **Runs** (courier `kurier1`):
-  - **Trasa poranna:** yesterday, completed. Six stops were delivered and one failed; that order can be
-    planned again.
-  - **Trasa dzienna:** today, approved and waiting to start.
+- **Runs:**
+  - **Trójmiasto – poranna** (`kurier1`): yesterday, completed. Six stops were delivered and one failed; that
+    order can be planned again.
+  - **Trójmiasto – dzienna** (`kurier1`): today, from the Gdańsk warehouse to the Gdynia base, approved and
+    waiting to start.
+  - **Szczecin – dzienna** (`kurier2`): today, approved and waiting to start.
 
   The remaining ready orders are waiting for you to plan a run.
 
@@ -111,7 +115,8 @@ docker compose down -v
 
 By default, travel times come from the public OSRM demo server. It is fine for development, is throttled to one
 request per second, and when it is unavailable planning falls back to straight-line estimates. To run your own
-OSRM with the Kujawsko-Pomorskie map (about 100 MB from [Geofabrik](https://download.geofabrik.de/europe/poland.html)):
+OSRM with a map of four connected voivodeships – Pomorskie, Zachodniopomorskie, Wielkopolskie and Kujawsko-Pomorskie
+(about 480 MB from [Geofabrik](https://download.geofabrik.de/europe/poland.html)):
 
 1. Put these lines in `.env` (see [`.env.example`](.env.example)):
 
@@ -126,8 +131,10 @@ OSRM with the Kujawsko-Pomorskie map (about 100 MB from [Geofabrik](https://down
    docker compose --profile osrm up --build
    ```
 
-The first start downloads the extract and preprocesses it (`deploy/osrm/*.sh`). This takes about a minute for
-one voivodeship, and the result is kept in the `osrm-data` volume. For another region, set `OSRM_PBF_URL`.
+The first start downloads the extracts, merges them with `osmium` and preprocesses the result (`deploy/osrm/*.sh`).
+This takes about three minutes and under 2 GB of RAM, and the result is kept in the `osrm-data` volume. To use other
+voivodeships, set `OSRM_REGIONS` (Geofabrik names, space separated, e.g. `pomorskie zachodniopomorskie`); the map is
+prepared again on the next start.
 
 ## Running without Docker
 

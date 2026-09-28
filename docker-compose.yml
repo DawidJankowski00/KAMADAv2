@@ -60,11 +60,11 @@ services:
   # Optional self-hosted OSRM (docker compose --profile osrm up), see README "Self-hosted OSRM".
   # First start downloads the OSM extract and preprocesses it (a few minutes); later starts reuse the volume.
   osrm-download:
-    image: curlimages/curl:8.16.0
+    image: debian:trixie-slim
     profiles: [osrm]
-    user: "0:0"
     environment:
-      OSRM_PBF_URL: ${OSRM_PBF_URL:-https://download.geofabrik.de/europe/poland/kujawsko-pomorskie-latest.osm.pbf}
+      OSRM_REGIONS: ${OSRM_REGIONS:-pomorskie zachodniopomorskie wielkopolskie kujawsko-pomorskie}
+      OSRM_GEOFABRIK_URL: ${OSRM_GEOFABRIK_URL:-https://download.geofabrik.de/europe/poland}
     entrypoint: ["/bin/sh", "/scripts/download.sh"]
     volumes:
       - osrm-data:/data
