@@ -54,7 +54,10 @@ public sealed class ModuleBoundaryTests
     {
         var current = Modules.Get(module);
 
-        var publicTypes = current.Assembly.GetExportedTypes().Select(t => t.FullName);
+        // EF Core generates migrations as public types; they carry no behaviour other modules could use.
+        var publicTypes = current.Assembly.GetExportedTypes()
+            .Where(t => t.Namespace?.EndsWith(".Migrations", StringComparison.Ordinal) != true)
+            .Select(t => t.FullName);
 
         publicTypes.ShouldBe([$"{current.RootNamespace}.{module}Module"]);
     }

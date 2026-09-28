@@ -1,3 +1,4 @@
+using Kamada.Api.Extensions;
 using Kamada.Modules.Catalog;
 using Kamada.Modules.Customers;
 using Kamada.Modules.Delivery;
@@ -5,11 +6,21 @@ using Kamada.Modules.Ordering;
 using Kamada.Modules.Payments;
 using Kamada.Modules.RouteOptimization;
 using Kamada.Modules.Workforce;
+using Kamada.Shared.Infrastructure.Auth;
+using Kamada.Shared.Infrastructure.Persistence;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var connectionString = builder.Configuration.GetConnectionString("Kamada")
-    ?? throw new InvalidOperationException("Connection string 'Kamada' is not configured.");
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services
+    .AddKamadaLogging()
+    .AddKamadaHttp()
+    .AddKamadaOpenApi()
+    .AddKamadaCors(builder.Configuration)
+    .AddKamadaRateLimiting(builder.Configuration)
+    .AddKamadaAuthentication(builder.Configuration)
+    .AddKamadaPersistence(builder.Configuration);
 
 builder.Services
     .AddWorkforceModule(builder.Configuration)
@@ -21,11 +32,24 @@ builder.Services
     .AddDeliveryModule(builder.Configuration);
 
 builder.Services.AddHealthChecks()
-    .AddNpgSql(connectionString, name: "postgres");
+    .AddNpgSql(name: "postgres");
 
 var app = builder.Build();
 
-app.MapHealthChecks("/health");
+app.UseExceptionHandler();
+app.UseStatusCodePages();
+app.UseSerilogRequestLogging();
+app.UseCors(HostingExtensions.FrontendsCorsPolicy);
+app.UseAuthentication();
+app.UseRateLimiter();
+app.UseAuthorization();
+
+if (!app.Environment.IsProduction())
+{
+    app.MapKamadaApiReference();
+}
+
+app.MapHealthChecks("/health").AllowAnonymous();
 
 app.MapWorkforceEndpoints()
     .MapCatalogEndpoints()
@@ -35,4 +59,6 @@ app.MapWorkforceEndpoints()
     .MapRouteOptimizationEndpoints()
     .MapDeliveryEndpoints();
 
-app.Run();
+await app.Services.InitializeDatabasesAsync(app.Lifetime.ApplicationStopping);
+
+await app.RunAsync();

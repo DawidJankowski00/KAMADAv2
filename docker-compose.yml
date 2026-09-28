@@ -23,7 +23,7 @@ services:
       dockerfile: src/Kamada.Api/Dockerfile
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
-      ConnectionStrings__Kamada: Host=postgres;Port=5432;Database=kamada;Username=${POSTGRES_USER:-kamada};Password=${POSTGRES_PASSWORD:-kamada_dev}
+      ConnectionStrings__Kamada: Host=postgres;Port=5432;Database=kamada;Username=${POSTGRES_USER:-kamada};Password=${POSTGRES_PASSWORD:-kamada_dev};Gss Encryption Mode=Disable
     ports:
       - "5080:8080"
     depends_on:

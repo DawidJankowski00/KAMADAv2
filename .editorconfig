@@ -397,3 +397,8 @@ trim_trailing_whitespace = false
 # Shell scripts
 [*.sh]
 end_of_line = lf
+
+# EF Core migrations are generated code: do not enforce style rules on them
+[**/Migrations/*.cs]
+generated_code = true
+dotnet_analyzer_diagnostic.severity = none

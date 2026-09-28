@@ -94,6 +94,18 @@ Shared: `Kamada.Shared.Kernel` (Result, Error, Entity/AggregateRoot base, domain
 - One public type per file. Async methods end with `Async`. No `#region`.
 - API routes kebab-case (`/api/delivery-runs/{id}/apply-optimization`), JSON camelCase, enums as strings.
 - Validation of request shape in FluentValidation; business rules in domain.
+  Endpoints opt in with `.WithValidation<TRequest>()` (endpoint filter, returns `400 ValidationProblem`).
+- Application layer talks to persistence via `IXxxDbContext` (port in `Application/Abstractions`, DbSets +
+  `SaveChangesAsync`) and EF LINQ — no generic repositories. EF Core is allowed in Application, never in Domain.
+- Use cases: simple CRUD grouped in `XxxQueries` / `XxxCommands` classes; non-trivial flows get a dedicated
+  `XxxHandler` (e.g. `LoginHandler`). All return `Result`/`Result<T>`; endpoints map with `ToHttpResult(...)`.
+- Endpoints are secure by default (fallback policy = authenticated). Public ones call `.AllowAnonymous()`.
+  Current worker: inject `ICurrentUser`.
+- Domain entities: private constructor + static factory, `Guid.CreateVersion7()`, private setters,
+  implement `IAuditable` for `created_at`/`updated_at`. EF configs in `Infrastructure/Persistence/Configurations`
+  must `Ignore(e => e.DomainEvents)`.
+- Demo data: `IDataSeeder` implementations, registered per module, run only when `Database:SeedDemoData`.
+  Integration tests disable seeding and arrange their own data (see `tests/Kamada.IntegrationTests/Infrastructure`).
 - Config via options pattern (`IOptions<T>` + `ValidateOnStart`). No secrets in repo: user secrets / env vars,
   `.env.example` documents them.
 - Tests: `MethodName_Scenario_ExpectedResult` naming; integration tests use Testcontainers (Docker required),
@@ -110,11 +122,15 @@ docker compose up -d postgres          # DB only, for local dev
 dotnet run --project src/Kamada.Api
 ```
 
-EF migrations (per module context), e.g.:
+EF migrations (per module context; `dotnet-ef` is a local tool: `dotnet tool restore`), e.g.:
 
 ```bash
 dotnet ef migrations add Initial -p src/Modules/Catalog/Kamada.Modules.Catalog -s src/Kamada.Api -c CatalogDbContext -o Infrastructure/Persistence/Migrations
 ```
+
+Migrations are generated code (`.editorconfig` disables analyzers for `**/Migrations/*.cs`). On a fresh
+database EF logs one `Failed executing DbCommand ... __ef_migrations_history` error per module on first start —
+benign, EF probes the history table before creating it.
 
 ## Ports (local / docker)
 
@@ -145,3 +161,9 @@ Record small decisions here (date — decision — reason).
 - 2026-09-28 — Architecture tests read `<ProjectReference>` items from .csproj files in addition to
   NetArchTest, because unused assembly references are dropped by the compiler.
 - 2026-09-28 — Test projects don't use `TreatWarningsAsErrors` (overridden in `tests/Directory.Build.props`).
+- 2026-09-28 — Single `/api/auth/login` for both apps; each frontend rejects a token with the wrong role,
+  the API enforces roles via policies anyway.
+- 2026-09-28 — Login rate limit: fixed window per client IP (`RateLimiting:Login`), tests raise the limit and
+  verify 429 on a separate host (`WithWebHostBuilder`) so limiter state is isolated.
+- 2026-09-28 — Serilog registered with `AddSerilog` (no static bootstrap logger) so multiple test hosts work.
+- 2026-09-28 — Npgsql connection strings use `Gss Encryption Mode=Disable` (no Kerberos in containers).

@@ -43,5 +43,6 @@
   <Folder Name="/tests/">
     <Project Path="tests/Kamada.ArchitectureTests/Kamada.ArchitectureTests.csproj" />
     <Project Path="tests/Kamada.IntegrationTests/Kamada.IntegrationTests.csproj" />
+    <Project Path="tests/Kamada.Modules.Workforce.UnitTests/Kamada.Modules.Workforce.UnitTests.csproj" />
   </Folder>
 </Solution>

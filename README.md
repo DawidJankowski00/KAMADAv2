@@ -16,7 +16,15 @@ docker compose up --build
 
 | Service | URL |
 |---|---|
+| API docs (Scalar) | http://localhost:5080/scalar |
 | API health | http://localhost:5080/health |
+
+Demo accounts (seeded in the Development environment):
+
+| Role | Username | Password |
+|---|---|---|
+| Administrator | `admin` | `Admin123!` |
+| Courier | `kurier1`, `kurier2`, `kurier3` | `Kurier123!` |
 
 ## Development
 
