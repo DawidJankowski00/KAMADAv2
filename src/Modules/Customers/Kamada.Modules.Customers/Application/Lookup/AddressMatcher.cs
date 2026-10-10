@@ -16,7 +16,7 @@ internal sealed record AddressRow(
 
 /// <summary>
 /// Decides whether a mentioned address is one the client already has: same street (fuzzy, without "ul."/"al." prefixes),
-/// same building and apartment (spaces and case ignored), and the same city when a city was mentioned.
+/// same building and apartment (spaces and case ignored); the city only chooses between several matches.
 /// </summary>
 internal static class AddressMatcher
 {
@@ -39,8 +39,17 @@ internal static class AddressMatcher
         var sameBuilding = addresses
             .Where(a => TextSimilarity.JaroWinkler(street, StreetName(a.Street)) >= MinStreetSimilarity)
             .Where(a => TextSimilarity.Compact(a.BuildingNumber) == building)
-            .Where(a => string.IsNullOrWhiteSpace(mention.City) || TextSimilarity.Similarity(mention.City, a.City) >= MinCitySimilarity)
             .ToList();
+
+        // The city only breaks ties: a client rarely has the same street and number in two cities, while a misheard
+        // or misread city is common.
+        var inSameCity = sameBuilding
+            .Where(a => !string.IsNullOrWhiteSpace(mention.City) && TextSimilarity.Similarity(mention.City, a.City) >= MinCitySimilarity)
+            .ToList();
+        if (inSameCity.Count > 0)
+        {
+            sameBuilding = inSameCity;
+        }
 
         var apartment = TextSimilarity.Compact(mention.ApartmentNumber);
         var exact = sameBuilding.Where(a => TextSimilarity.Compact(a.ApartmentNumber) == apartment).ToList();

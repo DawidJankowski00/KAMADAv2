@@ -21,8 +21,11 @@ internal sealed partial class OrderDraftResolver(ICustomerDirectory customers, I
     /// <summary>A name match at least this similar (and the only one) selects the client.</summary>
     public const double StrongNameScore = 0.92;
 
-    /// <summary>A product at least this similar selects itself, unless the runner-up is within <see cref="ProductScoreMargin"/>.</summary>
-    public const double StrongProductScore = 0.9;
+    /// <summary>
+    /// A product at least this similar selects itself, unless the runner-up is within <see cref="ProductScoreMargin"/>.
+    /// A phrase fully covered by a longer catalogue name ("czajnik" → "Czajnik elektryczny 1,7 l") scores 0.85–0.9.
+    /// </summary>
+    public const double StrongProductScore = 0.85;
 
     public const double ProductScoreMargin = 0.05;
 

@@ -21,7 +21,8 @@ internal static class ExtractionPrompt
         - client.phone: digits only, e.g. "600 100 200" or "sześćset sto dwieście" -> "600100200".
         - client.email: as said, lower case; spoken "małpa" or "at" means "@", "kropka" or "dot" means ".".
         - address.street: the street name without "ul.", "ulica" or "street", in the nominative form
-          ("na Grunwaldzkiej" -> "Grunwaldzka").
+          ("na Grunwaldzkiej" -> "Grunwaldzka"). Some street names start with a number ("10 Lutego", "3 Maja",
+          "11 Listopada"): "10 Lutego 20" -> street "10 Lutego", buildingNumber "20".
         - address.buildingNumber and address.apartmentNumber: digits (and a letter if said): "piętnaście a" -> "15A";
           "mieszkania 4", "m. 4", "lokal 4", "/4", "flat 4", "apartment 4" -> apartmentNumber "4".
         - address.city: nominative form ("w Gdańsku" -> "Gdańsk"). address.postalCode: only when said, as "00-000".

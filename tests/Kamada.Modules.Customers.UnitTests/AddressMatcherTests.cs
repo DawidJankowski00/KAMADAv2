@@ -36,8 +36,16 @@ public sealed class AddressMatcherTests
     }
 
     [Fact]
-    public void FindSame_DifferentCity_ReturnsNull() =>
-        AddressMatcher.FindSame(Mention("Grunwaldzka", "15", "4", "Szczecin"), [Grunwaldzka]).ShouldBeNull();
+    public void FindSame_MisheardCityButSameStreetAndBuilding_StillMatches() =>
+        AddressMatcher.FindSame(Mention("Grunwaldzka", "15", "4", "Gdynia"), [Grunwaldzka]).ShouldBe(Grunwaldzka);
+
+    [Fact]
+    public void FindSame_SameStreetInTwoCities_CityDecides()
+    {
+        var szczecin = Grunwaldzka with { Id = Guid.NewGuid(), City = "Szczecin" };
+
+        AddressMatcher.FindSame(Mention("Grunwaldzka", "15", "4", "Szczecin"), [Grunwaldzka, szczecin]).ShouldBe(szczecin);
+    }
 
     [Fact]
     public void FindSame_MissingBuilding_ReturnsNull() =>

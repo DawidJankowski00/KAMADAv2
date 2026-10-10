@@ -54,6 +54,14 @@ public sealed class ProductMatcherTests
     }
 
     [Fact]
+    public void Rank_PhraseWrittenAsTwoWords_MatchesOneWordName()
+    {
+        ProductRow powerbank = new(Guid.NewGuid(), "Powerbank 20 000 mAh", "EL-SMA-002", 159m, 45);
+
+        ProductMatcher.Rank("power bank", [powerbank, .. Products], 3)[0].Id.ShouldBe(powerbank.Id);
+    }
+
+    [Fact]
     public void Rank_UnrelatedPhrase_ReturnsNothing() =>
         ProductMatcher.Rank("pralka automatyczna", Products, 3).ShouldBeEmpty();
 }
