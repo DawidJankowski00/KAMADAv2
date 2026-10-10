@@ -34,6 +34,29 @@ public sealed class GeocodingTests
     }
 
     [Fact]
+    public async Task Nominatim_ReturnsAddressDetailsAndSkipsEmptyQueryParts()
+    {
+        var handler = StubHttpMessageHandler.Json("""
+            [{ "lat": "54.38", "lon": "18.60", "display_name": "15, Aleja Grunwaldzka, Gdańsk",
+               "address": { "road": "Aleja Grunwaldzka", "house_number": "15", "postcode": "80-236", "city": "Gdańsk" } }]
+            """);
+
+        var result = await Nominatim(handler).GeocodeAsync(
+            new GeocodingRequest("Grunwaldzka", "15", "Gdańsk", string.Empty, "Polska"),
+            TestContext.Current.CancellationToken);
+
+        result.ShouldNotBeNull();
+        result.Address.ShouldBe(new GeocodedAddress("Aleja Grunwaldzka", "15", "80-236", "Gdańsk"));
+        var query = Uri.UnescapeDataString(handler.Requests.Single().RequestUri!.Query);
+        query.ShouldContain("addressdetails=1");
+        query.ShouldNotContain("postalcode");
+    }
+
+    [Fact]
+    public void Request_ToQueryString_SkipsEmptyParts() =>
+        new GeocodingRequest("Grunwaldzka", "15", "Gdańsk", " ", "Polska").ToQueryString().ShouldBe("Grunwaldzka 15, Gdańsk, Polska");
+
+    [Fact]
     public async Task Nominatim_NoResults_ReturnsNull()
     {
         var result = await Nominatim(StubHttpMessageHandler.Json("[]")).GeocodeAsync(Request, TestContext.Current.CancellationToken);

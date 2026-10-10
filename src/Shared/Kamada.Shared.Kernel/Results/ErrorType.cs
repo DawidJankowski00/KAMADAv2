@@ -11,4 +11,7 @@ public enum ErrorType
     Conflict,
     Unauthorized,
     Forbidden,
+
+    /// <summary>A dependency (e.g. a local AI model) is temporarily unavailable; the request may be retried.</summary>
+    Unavailable,
 }
