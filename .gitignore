@@ -480,3 +480,7 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Local AI models downloaded on first start (Whisper GGML files)
+src/Kamada.Api/models/
+*.bin.download

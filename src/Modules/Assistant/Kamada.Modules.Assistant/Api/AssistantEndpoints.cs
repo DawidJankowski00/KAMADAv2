@@ -1,10 +1,12 @@
 using Kamada.Modules.Assistant.Application;
 using Kamada.Modules.Assistant.Application.Drafts;
+using Kamada.Modules.Assistant.Application.Transcriptions;
 using Kamada.Shared.Contracts.Assistant;
 using Kamada.Shared.Infrastructure.Auth;
 using Kamada.Shared.Infrastructure.Http;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -40,6 +42,22 @@ internal static class AssistantEndpoints
             .Produces<OrderDraftDto>()
             .ProducesProblem(StatusCodes.Status400BadRequest);
 
+        // Multipart upload authenticated by a bearer token, so antiforgery does not apply. The request limit leaves room
+        // for multipart overhead; the handler enforces the configured audio limits with clear errors.
+        inference.MapPost("/transcriptions", async (IFormFile? audio, [FromForm] string? language, TranscriptionHandler handler, CancellationToken ct) =>
+            {
+                await using var content = audio?.OpenReadStream();
+                return (await handler.TranscribeAsync(content, audio?.Length ?? 0, language, ct)).ToHttpResult(TypedResults.Ok);
+            })
+            .DisableAntiforgery()
+            .WithMetadata(new RequestSizeLimitAttribute(MaxUploadBytes))
+            .Accepts<IFormFile>("multipart/form-data")
+            .WithSummary("Recognize speech in a 16 kHz mono WAV recording (multipart field 'audio', optional 'language') – audio is not stored")
+            .Produces<TranscriptionDto>()
+            .ProducesProblem(StatusCodes.Status400BadRequest);
+
         return endpoints;
     }
+
+    private const long MaxUploadBytes = 25 * 1024 * 1024;
 }

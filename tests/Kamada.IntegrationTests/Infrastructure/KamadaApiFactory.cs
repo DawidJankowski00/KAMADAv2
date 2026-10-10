@@ -13,7 +13,7 @@ namespace Kamada.IntegrationTests.Infrastructure;
 /// <summary>
 /// Boots the whole API against a throwaway PostgreSQL container. Shared by all tests in the assembly,
 /// so tests must not depend on global row counts – each test creates the data it needs.
-/// External services (geocoding, the language model) are replaced with deterministic fakes.
+/// External services (geocoding, the language and speech models) are replaced with deterministic fakes.
 /// </summary>
 public sealed class KamadaApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
@@ -40,6 +40,7 @@ public sealed class KamadaApiFactory : WebApplicationFactory<Program>, IAsyncLif
             services.Replace(ServiceDescriptor.Singleton<IGeocodingService, FakeGeocodingService>());
             services.Replace(ServiceDescriptor.Singleton<IOrderExtractor>(OrderExtractor));
             services.Replace(ServiceDescriptor.Singleton<ILanguageModelProbe, FakeLanguageModelProbe>());
+            services.Replace(ServiceDescriptor.Singleton<ISpeechToText, FakeSpeechToText>());
         });
     }
 

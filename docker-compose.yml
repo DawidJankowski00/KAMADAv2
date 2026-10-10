@@ -32,8 +32,13 @@ services:
       Assistant__Enabled: ${ASSISTANT_ENABLED:-false}
       Assistant__Ollama__BaseUrl: ${OLLAMA_BASE_URL:-http://ollama:11434/}
       Assistant__Ollama__Model: ${OLLAMA_MODEL:-gemma3:4b}
+      Assistant__Whisper__Model: ${WHISPER_MODEL:-small}
+      Assistant__Whisper__ModelPath: /app/models/ggml-${WHISPER_MODEL:-small}.bin
     ports:
       - "5080:8080"
+    volumes:
+      # Speech model (downloaded on the first start with the assistant enabled).
+      - whisper-models:/app/models
     depends_on:
       postgres:
         condition: service_healthy
@@ -102,6 +107,9 @@ services:
   ollama:
     image: ollama/ollama:0.34.1
     profiles: [ai]
+    environment:
+      # Keep the model in memory between orders (loading it takes tens of seconds on a CPU).
+      OLLAMA_KEEP_ALIVE: ${OLLAMA_KEEP_ALIVE:-30m}
     ports:
       - "11434:11434"
     volumes:
@@ -134,3 +142,4 @@ volumes:
   postgres-data:
   osrm-data:
   ollama-data:
+  whisper-models:

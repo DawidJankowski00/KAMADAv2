@@ -4,6 +4,8 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Microsoft.Extensions.AI.Abstractions" />
     <PackageReference Include="OllamaSharp" />
+    <PackageReference Include="Whisper.net" />
+    <PackageReference Include="Whisper.net.Runtime" />
   </ItemGroup>
 
   <ItemGroup>

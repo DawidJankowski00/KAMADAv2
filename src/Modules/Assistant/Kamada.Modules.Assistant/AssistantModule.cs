@@ -3,8 +3,10 @@ using Kamada.Modules.Assistant.Api;
 using Kamada.Modules.Assistant.Application;
 using Kamada.Modules.Assistant.Application.Abstractions;
 using Kamada.Modules.Assistant.Application.Drafts;
+using Kamada.Modules.Assistant.Application.Transcriptions;
 using Kamada.Modules.Assistant.Infrastructure;
 using Kamada.Modules.Assistant.Infrastructure.Ollama;
+using Kamada.Modules.Assistant.Infrastructure.Whisper;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.AI;
@@ -47,6 +49,11 @@ public static class AssistantModule
             sp.GetRequiredService<IOptions<AssistantOptions>>().Value.Ollama.Model));
         services.AddSingleton<IOllamaApiClient>(sp => sp.GetRequiredService<OllamaApiClient>());
         services.AddKeyedSingleton<IChatClient>(AssistantServiceKeys.ChatClient, (sp, _) => sp.GetRequiredService<OllamaApiClient>());
+
+        services.AddHttpClient(WhisperSpeechToText.DownloadHttpClient, http => http.Timeout = TimeSpan.FromHours(1));
+        services.AddSingleton<ISpeechToText, WhisperSpeechToText>();
+        services.AddHostedService<SpeechModelWarmUp>();
+        services.AddScoped<TranscriptionHandler>();
 
         services.AddScoped<IOrderExtractor, OllamaOrderExtractor>();
         services.AddSingleton<ILanguageModelProbe, OllamaModelProbe>();

@@ -8,6 +8,11 @@ public sealed record AssistantStatusDto(bool Enabled, bool SpeechToText, string?
 /// <param name="Language"><c>pl</c>, <c>en</c> or <c>auto</c> (default).</param>
 public sealed record OrderDraftRequest(string Text, string? Language = null);
 
+/// <summary>Result of <c>POST /api/assistant/transcriptions</c> (the recording itself is not stored).</summary>
+/// <param name="Language">Recognized language, e.g. <c>pl</c>.</param>
+/// <param name="DurationMs">Length of the recording.</param>
+public sealed record TranscriptionDto(string Text, string Language, long DurationMs);
+
 /// <summary>
 /// Suggested order built from a dictated or typed note. Nothing has been saved: the admin reviews it and places the
 /// order (creating the client/address first when <see cref="DraftClientMode.New"/> / <see cref="DraftAddressMode.New"/>).
