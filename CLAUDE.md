@@ -129,6 +129,7 @@ docker compose down -v                 # reset the database (demo data is seeded
 dotnet run --project src/Kamada.Api
 dotnet run -c Release --project benchmarks/Kamada.Benchmarks -- --filter '*'   # solver timings
 dotnet run -c Release --project benchmarks/Kamada.Benchmarks -- --quality      # heuristic gap vs optimum
+dotnet run -c Release --project benchmarks/Kamada.Assistant.Evals -- --model gemma3:4b   # assistant accuracy (needs Ollama + Postgres)
 ```
 
 EF migrations (per module context; `dotnet-ef` is a local tool: `dotnet tool restore`), e.g.:
@@ -295,7 +296,9 @@ Record small decisions here (date — decision — reason).
   length-weighted phrase score). Contracts: `ICustomerDirectory.FindClientCandidatesAsync` / `FindShippingAddressAsync` /
   `SuggestUsernameAsync`, `ICatalogLookup.FindProductCandidatesAsync` (in-memory over narrow projections).
 - 2026-10-10 — Draft thresholds live in `OrderDraftResolver`: client selected on exact phone/e-mail or a single name match
-  ≥ 0.92 (namesakes broken by a matching address); product selected at ≥ 0.9 with a 0.05 margin over the runner-up.
+  ≥ 0.92 (namesakes broken by a matching address); product selected at ≥ 0.85 with a 0.05 margin over the runner-up
+  (tuned down from 0.9 after the evals: a fully covered phrase plus extra catalogue words scores 0.85–0.9). An existing
+  address matches on street + building + apartment; the city only breaks ties (models sometimes change the city).
   Geocoder output replaces spoken street/city only when similar (≥ 0.85), otherwise the lookup is ignored with a warning.
 - 2026-10-10 — Accepting a draft = existing endpoints in sequence from the admin panel (create client with address / add
   address → place order), no cross-module transaction; the page switches to "existing" after each create, so retries do
@@ -308,3 +311,25 @@ Record small decisions here (date — decision — reason).
   and `FakeLanguageModelProbe`; `FakeGeocodingService` fills a missing postal code (`80-001`).
 - 2026-10-10 — Demo catalogue has "Napoje" and "Pieczywo" (water still/sparkling, juices, bread) so the example dictations
   resolve, including an ambiguous "woda".
+- 2026-10-10 — Dictation: `VoiceRecorder` (Web.Shared) captures with an AudioWorklet and resamples to 16 kHz mono in the
+  browser (`OfflineAudioContext`); JS returns 16-bit PCM and `WavEncoder` (C#, unit tested) writes the header. The server
+  validates the WAV (`WavAudio`: PCM 16 kHz mono 16-bit, ≤ 60 s, ≤ 2 MB) before Whisper. No Web Speech API (Chrome sends
+  audio to Google). Minimal API multipart endpoint uses `DisableAntiforgery()` (bearer auth).
+- 2026-10-10 — `WhisperSpeechToText` (Whisper.net 1.9, singleton): the GGML model is downloaded once to
+  `Assistant:Whisper:ModelPath` (temp file + move) by the `SpeechModelWarmUp` background service; until loaded, status reports
+  `speechToText: false` and the panel polls every 15 s. `SemaphoreSlim(MaxConcurrency)`; threads = half the cores (≤ 8).
+  The API image needs `libgomp1` (OpenMP) for the linux-x64 natives and a writable `/app/models` volume.
+- 2026-10-10 — Geocoding: Nominatim retries a street without a type word as `aleja …` (OSM naming); the assistant trusts a
+  geocoder hit only for the same building number (street-level hits had a mid-street pin and possibly another postal code).
+- 2026-10-10 — Ollama in compose: `OLLAMA_KEEP_ALIVE=30m` (reloading `gemma3:4b` on CPU takes ~50 s). The fixed system prompt +
+  few-shot prefix is reused by Ollama's prompt cache, so a warm request evaluates only the note (~11–20 s on a laptop CPU).
+- 2026-10-10 — `Assistant:Ollama:Think` (optional): Ollama's `think` has no `IChatClient` equivalent, so the extractor passes
+  `ChatOptions.RawRepresentationFactory = _ => new ChatRequest { Think = … }` (OllamaSharp starts from that native request).
+  Left unset for non-reasoning models (setting it may fail there); `false` for qwen3 (otherwise hundreds of thinking tokens).
+- 2026-10-10 — Assistant evals (`benchmarks/Kamada.Assistant.Evals`): the whole API in-process via `WebApplicationFactory`
+  (content root through `UseSolutionRelativeContentRoot(..., "Kamada.slnx")` – the default lookup expects `*.sln`), its own
+  database `kamada_evals` seeded with demo data, geocoding off, real Ollama model from `--model`. Cases in `cases.json`
+  (expected client/address decisions, SKUs or "ambiguous"/"not found", quantities); lines are compared by position.
+- 2026-10-10 — Default model stays `gemma3:4b` after the evals (README table): as accurate as Bielik 4.5B, 2–3× faster, the
+  only one usable on a laptop CPU. On a GPU any of them answers in 1–2 s, so `OLLAMA_BASE_URL` may point to another
+  machine in the LAN (evals: `--ollama http://<host>:11434/`).
