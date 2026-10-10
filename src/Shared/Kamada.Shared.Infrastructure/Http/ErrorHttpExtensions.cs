@@ -19,6 +19,7 @@ public static class ErrorHttpExtensions
             ErrorType.Forbidden => (StatusCodes.Status403Forbidden, "Forbidden"),
             ErrorType.NotFound => (StatusCodes.Status404NotFound, "Resource not found"),
             ErrorType.Conflict => (StatusCodes.Status409Conflict, "Conflict"),
+            ErrorType.Unavailable => (StatusCodes.Status503ServiceUnavailable, "Service unavailable"),
             _ => (StatusCodes.Status500InternalServerError, "Operation failed"),
         };
 

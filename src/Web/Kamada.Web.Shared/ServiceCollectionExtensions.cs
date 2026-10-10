@@ -21,7 +21,12 @@ public static class ServiceCollectionExtensions
         services.AddTransient<AuthorizingHandler>();
 
         services.AddHttpClient(AuthService.AnonymousClientName, http => http.BaseAddress = options.ApiBaseUrl);
-        services.AddHttpClient<ApiClient>(http => http.BaseAddress = options.ApiBaseUrl)
+        services.AddHttpClient<ApiClient>(http =>
+            {
+                http.BaseAddress = options.ApiBaseUrl;
+                // Longer than the API's own limit for local AI inference (CPU-only models can take a minute or two).
+                http.Timeout = TimeSpan.FromMinutes(3);
+            })
             .AddHttpMessageHandler<AuthorizingHandler>();
 
         services.AddAuthorizationCore();

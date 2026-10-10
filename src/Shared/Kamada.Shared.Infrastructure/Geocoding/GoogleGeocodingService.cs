@@ -29,11 +29,20 @@ internal sealed class GoogleGeocodingService(HttpClient http, IOptions<Geocoding
             return null;
         }
 
+        var result = response!.Results[0];
         return new GeocodingResult(
             new GeoPoint(location.Lat, location.Lng),
             ProviderName,
-            response!.Results[0].FormattedAddress);
+            result.FormattedAddress,
+            new GeocodedAddress(
+                Component(result, "route"),
+                Component(result, "street_number"),
+                Component(result, "postal_code"),
+                Component(result, "locality") ?? Component(result, "postal_town")));
     }
+
+    private static string? Component(GoogleResult result, string type) =>
+        result.AddressComponents?.FirstOrDefault(c => c.Types.Contains(type, StringComparer.Ordinal))?.LongName;
 
     private sealed record GoogleResponse(
         [property: JsonPropertyName("status")] string Status,
@@ -41,7 +50,12 @@ internal sealed class GoogleGeocodingService(HttpClient http, IOptions<Geocoding
 
     private sealed record GoogleResult(
         [property: JsonPropertyName("formatted_address")] string? FormattedAddress,
-        [property: JsonPropertyName("geometry")] GoogleGeometry Geometry);
+        [property: JsonPropertyName("geometry")] GoogleGeometry Geometry,
+        [property: JsonPropertyName("address_components")] GoogleAddressComponent[]? AddressComponents);
+
+    private sealed record GoogleAddressComponent(
+        [property: JsonPropertyName("long_name")] string LongName,
+        [property: JsonPropertyName("types")] string[] Types);
 
     private sealed record GoogleGeometry([property: JsonPropertyName("location")] GoogleLocation Location);
 

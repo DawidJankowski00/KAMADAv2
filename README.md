@@ -13,6 +13,10 @@ a Blazor WebAssembly admin panel and a Blazor PWA for couriers.
   map. When geocoding fails, the admin pins the address by hand.
 - **Orders.** New order in a few steps: client → shipping address → products with autocomplete. Stock is
   checked and reserved in one transaction and the total is computed on the server.
+- **AI order assistant** (optional, fully local). Dictate or type *"Nowe zamówienie dla Jana Kowalskiego,
+  Grunwaldzka 15 m. 4, Gdańsk: sześć wód niegazowanych i dwa chleby razowe"*, and the form fills itself in. It
+  matches existing clients, addresses and products or proposes new ones. The admin reviews and accepts; nothing
+  is saved before that.
 - **Payments** through a simulated provider: cash, card (with a decline
   switch), bank transfer with confirmation, and refunds.
 - **Route locations.** Warehouses and courier bases where runs start and end.
@@ -39,6 +43,9 @@ a Blazor WebAssembly admin panel and a Blazor PWA for couriers.
   per module.
 - **Stack:** Minimal APIs, EF Core 10, JWT with rotating refresh tokens, FluentValidation, ProblemDetails,
   Serilog, OpenAPI + Scalar.
+- **Local AI:** Whisper.net speech recognition and an Ollama model behind `Microsoft.Extensions.AI`. The model
+  only extracts what was said; matching to the database is deterministic C#. Accuracy is measured by an
+  evaluation suite.
 - **Tests:** unit, integration (Testcontainers) and architecture tests, plus BenchmarkDotNet for the solvers.
   CI runs on GitHub Actions.
 - **Deployment:** one-command startup with Docker Compose and realistic demo data: real addresses in
@@ -70,6 +77,7 @@ docker compose up --build
 | Courier app (PWA; use a phone or a narrow window) | http://localhost:5082 |
 | API docs (Scalar) | http://localhost:5080/scalar |
 | API health | http://localhost:5080/health |
+| Ollama (profile `ai` only) | http://localhost:11434 |
 
 Demo accounts (seeded in the Development environment):
 
@@ -85,7 +93,7 @@ On first start with an empty database, the API seeds a small company delivering 
 courier base. The data is created through
 the real use cases ([ADR 0007](docs/adr/0007-demo-data-through-real-use-cases.md)):
 
-- **Catalog:** 40 products in 5 categories with 11 subcategories. Some products have several categories, low
+- **Catalog:** 46 products in 5 categories with 13 subcategories (including drinks and bread for the assistant demo). Some products have several categories, low
   stock or no stock, and one is deactivated.
 - **Clients:** 25 clients with real, pre-geocoded addresses: 13 in the Tricity and 12 in Szczecin. Five of them have a second shipping
   address. Edge cases: one address without coordinates (pin it on the map), one billing address and one
@@ -136,6 +144,42 @@ This takes about three minutes and under 2 GB of RAM, and the result is kept in 
 voivodeships, set `OSRM_REGIONS` (Geofabrik names, space separated, e.g. `pomorskie zachodniopomorskie`); the map is
 prepared again on the next start.
 
+### AI order assistant (optional)
+
+Everything runs locally: speech recognition inside the API (Whisper.net, model `small`), the language model in an
+`ollama` container (default `gemma3:4b`). No audio, transcript or client data leaves the machine.
+
+1. Put this line in `.env` (see [`.env.example`](.env.example)):
+
+   ```dotenv
+   ASSISTANT_ENABLED=true
+   ```
+
+2. Start the stack with the `ai` profile:
+
+   ```bash
+   docker compose --profile ai up --build
+   ```
+
+On the first start, `ollama-pull` downloads the language model (~3.3 GB) and the API downloads the speech model
+(~470 MB) into volumes. The assistant panel appears on "Nowe zamówienie" right away; dictation turns on when the
+speech model is ready. `/health` reports the assistant as `Degraded` (not `Unhealthy`) while the model is missing.
+
+| | CPU only (tested: Ryzen 7 7840HS, 8 threads) | With an NVIDIA GPU |
+|---|---|---|
+| Speech recognition (`small`, 12 s recording) | ~7 s | – (runs in the API, CPU) |
+| Draft from text (`gemma3:4b`) | ~11–20 s (first request after a start: up to a minute) | ~1–3 s |
+| RAM | ~6–8 GB in total (model ~4 GB, Whisper ~1 GB) | VRAM ≥ 4 GB |
+
+For a GPU, uncomment the `deploy` block of the `ollama` service in `docker-compose.yml` (NVIDIA Container Toolkit
+required). On weak machines use `WHISPER_MODEL=base`. To switch the language model, change `OLLAMA_MODEL` (e.g.
+`gemma4:e4b`, `qwen3:4b`, `SpeakLeash/bielik-4.5b-v3.0-instruct:Q8_0`); no code changes are needed. Reasoning
+models such as `qwen3` should run with `Assistant__Ollama__Think=false` (their "thinking" makes a draft several
+times slower on a CPU).
+
+The microphone works only on `localhost` or over HTTPS (browser rule). Dictation never uses the Web Speech API,
+because Chrome would send the audio to Google.
+
 ## Running without Docker
 
 Requirements: .NET SDK 10.0.401+ and Docker (for PostgreSQL and the integration tests).
@@ -163,6 +207,11 @@ dotnet user-secrets --project src/Kamada.Api set "RouteOptimization:Google:ApiKe
 | `Geocoding:Provider` | `Nominatim` | `Nominatim`, `Google` or `None` |
 | `GoogleMaps:MaxWaypointsPerLink` | `9` | Waypoints per navigation link before splitting |
 | `Delivery:ServiceTimePerStop` | `00:03:00` | Time at each stop, used in arrival estimates |
+| `Assistant:Enabled` | `false` (`true` in Development) | Order assistant on/off |
+| `Assistant:Ollama:BaseUrl` / `Model` | `http://localhost:11434/`, `gemma3:4b` | Language model server and model |
+| `Assistant:Ollama:Think` | not set | `false` turns off reasoning of models like `qwen3` |
+| `Assistant:Whisper:Model` / `ModelPath` | `small`, `models/ggml-small.bin` | Speech model (downloaded on first start) |
+| `RateLimiting:Assistant:PermitLimit` | `20` per minute | Per-user limit on assistant requests |
 
 ## Tests
 
@@ -177,6 +226,8 @@ dotnet test --project tests/Kamada.ArchitectureTests      # module boundaries on
     random asymmetric matrices;
   - `GoogleMapsUrlBuilder`, including segment splitting;
   - matrix providers against stubbed HTTP;
+  - assistant: text folding and similarity, client/address/product matching, draft decisions, parsing of the
+    model's JSON, WAV encoding and validation;
   - frontend formatting helpers.
 - **Integration tests:**
   - **Setup:** the whole API with `WebApplicationFactory` and PostgreSQL in Testcontainers. The matrix provider
@@ -185,6 +236,9 @@ dotnet test --project tests/Kamada.ArchitectureTests      # module boundaries on
   - **Delivery:** an order cannot be in two active runs; the full scenario from creating a run to completing
     it; a courier cannot see another courier's run.
   - **Seed and security:** the demo seed runs on a fresh database; plus auth, rate limiting and health checks.
+  - **Assistant:** the language and speech models are replaced with fakes. Covered: drafts for an existing client,
+    a new client with a new address, an ambiguous product, the full accept flow ending in a placed order, upload
+    limits and rate limiting.
 - **Architecture tests** (NetArchTest plus project references):
   - modules use only each other's `Contracts`;
   - `Domain` has no infrastructure dependencies;
@@ -193,7 +247,7 @@ dotnet test --project tests/Kamada.ArchitectureTests      # module boundaries on
 
 ## Architecture
 
-A **modular monolith** ([ADR 0001](docs/adr/0001-modular-monolith.md)): one API host and seven modules. Each
+A **modular monolith** ([ADR 0001](docs/adr/0001-modular-monolith.md)): one API host and eight modules. Each
 module has an implementation project and a public `Contracts` project. Modules talk to each other only through
 contracts: plain interfaces called in-process, sharing one database transaction when needed
 ([ADR 0002](docs/adr/0002-schema-and-dbcontext-per-module.md)).
@@ -213,6 +267,7 @@ flowchart LR
         Payments["Payments<br/>simulated provider"]
         Delivery["Delivery<br/>locations, runs, stops"]
         RouteOpt["RouteOptimization<br/>matrix + solvers + Maps links"]
+        Assistant["Assistant<br/>order drafts (local AI)"]
     end
 
     Admin -- "HTTP/JSON + JWT" --> Host
@@ -225,12 +280,15 @@ flowchart LR
     Delivery -- ICustomerDirectory --> Customers
     Delivery -- ICourierDirectory --> Workforce
     Delivery -- "IRoutePlanner<br/>INavigationLinkBuilder" --> RouteOpt
+    Assistant -- "ICustomerDirectory" --> Customers
+    Assistant -- "ICatalogLookup" --> Catalog
 
     Host --> DB[("PostgreSQL 17<br/>schema per module")]
     RouteOpt -. "/table" .-> OSRM["OSRM<br/>(self-hosted or demo)"]
     RouteOpt -. "computeRouteMatrix<br/>(optional)" .-> Google["Google Routes API"]
     Customers -. geocoding .-> Nominatim["Nominatim (OSM)"]
     Delivery -. geocoding .-> Nominatim
+    Assistant -. "chat (JSON schema)" .-> Ollama["Ollama<br/>(local LLM)"]
 ```
 
 ```
@@ -249,6 +307,7 @@ src/
     Kamada.CourierApp/              # courier PWA
 tests/                              # unit tests per module, integration tests, architecture tests
 benchmarks/Kamada.Benchmarks/       # solver speed and heuristic quality
+benchmarks/Kamada.Assistant.Evals/  # order assistant accuracy and latency against a real model
 deploy/                             # nginx config for the SPAs, OSRM data scripts
 docs/adr/                           # architecture decision records
 ```
@@ -449,6 +508,77 @@ dotnet run -c Release --project benchmarks/Kamada.Benchmarks -- --filter '*'
 dotnet run -c Release --project benchmarks/Kamada.Benchmarks -- --quality
 ```
 
+## AI order assistant
+
+The admin dictates or types a note on "Nowe zamówienie" and gets a **draft**, never a saved order
+([ADR 0008](docs/adr/0008-local-ai-assistant-suggests-only.md)):
+
+```mermaid
+flowchart LR
+    Mic["Microphone<br/>(AudioWorklet, 16 kHz WAV<br/>built in the browser)"] -->|POST /transcriptions| STT["Whisper.net<br/>speech → text"]
+    STT --> Text["Editable text"]
+    Text -->|POST /order-drafts| LLM["Ollama model<br/>text → mentions (JSON schema)"]
+    LLM --> Resolver["C# resolver<br/>mentions → clients, addresses, products"]
+    Resolver --> Draft["Draft in the form<br/>(admin reviews and accepts)"]
+```
+
+1. **Extraction (language model).** The model reads only the note and returns *mentions*. These are names in
+   the nominative ("Jana Kowalskiego" → Jan Kowalski), the phone as digits, address parts, product phrases in
+   Polish with quantities, and notes for the courier. A JSON schema at temperature 0 constrains the output, and the
+   answer is cleaned defensively (postal code format, e-mail shape, null words). The model never sees the
+   database and returns no ids.
+2. **Resolution (deterministic C#).** The Assistant module asks Customers and Catalog through their contracts.
+   Text is folded (case, diacritics, `ł`) and compared with Jaro-Winkler:
+   - **Client:** an exact phone number or e-mail decides. Otherwise a single name match ≥ 0.92 is selected.
+     For namesakes, the spoken address decides, or the admin picks one. If nobody matches, a **new client** is
+     proposed, still with a "did you mean…?" list.
+   - **Address:** one of the client's shipping addresses with the same street, building and apartment is
+     selected. Otherwise a **new shipping address** is proposed. The geocoder completes the postal code and
+     map pin only when it finds the same building.
+   - **Products:** a product is selected automatically only when it clearly beats the runner-up. Otherwise the
+     admin chooses from candidates (e.g. "woda" → still or sparkling).
+3. **Acceptance (admin).** Fields filled by AI are marked, uncertain ones are shown in the warning colour, and
+   missing required data (an e-mail is never invented) blocks the button. On "Utwórz klienta i złóż zamówienie" the
+   panel calls the regular endpoints in sequence: create the client or address, then place the order.
+
+### Assistant evals
+
+[`benchmarks/Kamada.Assistant.Evals`](benchmarks/Kamada.Assistant.Evals) runs 40 notes (26 Polish, 14 English)
+against the seeded demo database and a real model. The cases cover existing and new clients, inflected names and
+streets, numbers as words, missing diacritics, a second address, ambiguous and unknown products, and English notes
+for a Polish catalogue. For each field it checks the decision (selected client, existing vs new address, auto-selected
+product or a choice left to the admin) and the quantity. Latency is end to end, per draft.
+
+Results (2026-10-10, temperature 0, geocoding off). Accuracy is from one run of each model on Ollama 0.40 with the
+model fully in the memory of a desktop GPU; the CPU column is the same suite on a laptop CPU (Ollama 0.34 in Docker,
+warm model). The accuracy of a model differs by a few cases between the two machines (GPU arithmetic), the order of the
+models does not.
+
+| Model | Client decision | Address decision | Product (PL / EN) | Quantity | All correct (PL / EN) | p50 / p95 GPU | p50 / p95 CPU |
+|---|---|---|---|---|---|---|---|
+| `gemma3:4b` | 98% | 95% | 87% (97% / 67%) | 100% | 78% (92% / 50%) | 0.8 s / 1.0 s | 13.7 s / 16.6 s |
+| `qwen3:4b (think off)` | 93% | 98% | 82% (100% / 44%) | 100% | 68% (88% / 29%) | 1.2 s / 1.5 s | 15.9 s / 23.4 s |
+| `SpeakLeash/bielik-4.5b-v3.0-instruct:Q8_0` | 98% | 98% | 86% (95% / 68%) | 98% | 78% (92% / 50%) | 2.0 s / 2.3 s | 42.9 s / 83.7 s |
+
+- **Polish notes work well with every model** (92% fully correct for gemma3 and Bielik). The remaining Polish misses
+  are a phone number spelled out in words and an apartment written as `50/59`.
+- **English notes are the weak spot**: the model has to translate product names into the Polish catalogue wording and
+  often picks a near synonym ("ziarna kawy", "chleb pełnoziarnisty"). The resolver then *does not guess*: the admin
+  gets a choice (about half the time it includes the right product) or searches the catalogue. A wrong product was
+  selected automatically only by qwen3 ("patelnia" → ground coffee).
+- **Default: `gemma3:4b`.** It is as accurate as Bielik (a Polish-tuned model), smaller and 2–3× faster, and it is the
+  only one with a p50 under 15 s on a laptop CPU. qwen3 needs `Assistant:Ollama:Think=false` and is the weakest on
+  English notes.
+- **A GPU makes the assistant feel instant** (~1 s per draft), so `OLLAMA_BASE_URL` in `.env` can point to Ollama on another
+  machine in the LAN (`--ollama http://<host>:11434/` for the evals).
+
+```bash
+docker compose up -d postgres
+docker compose --profile ai up -d ollama
+docker compose --profile ai exec ollama ollama pull qwen3:4b   # any model to compare
+dotnet run -c Release --project benchmarks/Kamada.Assistant.Evals -- --model qwen3:4b --out results.md
+```
+
 ## Design decisions
 
 | ADR | Decision |
@@ -460,6 +590,7 @@ dotnet run -c Release --project benchmarks/Kamada.Benchmarks -- --quality
 | [0005](docs/adr/0005-blazor-wasm-frontends.md) | Two Blazor WebAssembly frontends with a shared UI library |
 | [0006](docs/adr/0006-geocoding-never-blocks-saving.md) | Geocoding with Nominatim that never blocks saving an address |
 | [0007](docs/adr/0007-demo-data-through-real-use-cases.md) | Demo data seeded through the real use cases |
+| [0008](docs/adr/0008-local-ai-assistant-suggests-only.md) | Local AI order assistant: the model extracts, C# resolves, the admin accepts |
 
 Smaller decisions are logged in [CLAUDE.md](CLAUDE.md#minor-decisions-log).
 

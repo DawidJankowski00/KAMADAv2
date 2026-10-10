@@ -1,5 +1,7 @@
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
+using Kamada.Shared.Infrastructure.Auth;
 using Kamada.Shared.Infrastructure.Http;
 using Serilog;
 
@@ -41,12 +43,13 @@ internal static class HostingExtensions
     }
 
     /// <summary>
-    /// Fixed window per client IP on authentication endpoints. Limits are configurable so tests can raise them.
+    /// Fixed windows: per client IP on authentication endpoints, per signed-in user on AI inference.
+    /// Limits are configurable (<c>RateLimiting:&lt;Policy&gt;</c>) so tests can raise them.
     /// </summary>
     public static IServiceCollection AddKamadaRateLimiting(this IServiceCollection services, IConfiguration configuration)
     {
-        var permitLimit = configuration.GetValue("RateLimiting:Login:PermitLimit", 10);
-        var window = configuration.GetValue("RateLimiting:Login:Window", TimeSpan.FromMinutes(1));
+        var login = FixedWindow(configuration, "Login", permitLimit: 10, TimeSpan.FromMinutes(1));
+        var assistant = FixedWindow(configuration, "Assistant", permitLimit: 20, TimeSpan.FromMinutes(1));
 
         return services.AddRateLimiter(options =>
         {
@@ -58,21 +61,32 @@ internal static class HostingExtensions
                     context.HttpContext.Response.Headers.RetryAfter = ((int)retryAfter.TotalSeconds).ToString(System.Globalization.CultureInfo.InvariantCulture);
                 }
 
+                var policy = context.HttpContext.GetEndpoint()?.Metadata.GetMetadata<EnableRateLimitingAttribute>()?.PolicyName;
                 await TypedResults.Problem(
                         statusCode: StatusCodes.Status429TooManyRequests,
                         title: "Too many requests",
-                        detail: "Too many sign-in attempts. Try again later.")
+                        detail: policy == RateLimitPolicies.Login
+                            ? "Too many sign-in attempts. Try again later."
+                            : "Too many requests. Try again later.")
                     .ExecuteAsync(context.HttpContext);
             };
 
             options.AddPolicy(RateLimitPolicies.Login, httpContext => RateLimitPartition.GetFixedWindowLimiter(
                 httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-                _ => new FixedWindowRateLimiterOptions
-                {
-                    PermitLimit = permitLimit,
-                    Window = window,
-                    QueueLimit = 0,
-                }));
+                _ => login));
+
+            options.AddPolicy(RateLimitPolicies.Assistant, httpContext => RateLimitPartition.GetFixedWindowLimiter(
+                httpContext.User.FindFirst(KamadaClaimTypes.Subject)?.Value
+                    ?? httpContext.Connection.RemoteIpAddress?.ToString()
+                    ?? "unknown",
+                _ => assistant));
         });
     }
+
+    private static FixedWindowRateLimiterOptions FixedWindow(IConfiguration configuration, string policy, int permitLimit, TimeSpan window) => new()
+    {
+        PermitLimit = configuration.GetValue($"RateLimiting:{policy}:PermitLimit", permitLimit),
+        Window = configuration.GetValue($"RateLimiting:{policy}:Window", window),
+        QueueLimit = 0,
+    };
 }

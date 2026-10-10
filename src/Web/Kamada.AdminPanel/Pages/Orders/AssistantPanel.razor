@@ -1,0 +1,133 @@
+@* Order assistant: dictation or typing → editable text → draft (nothing is saved). Hidden when the assistant is disabled. *@
+@using Kamada.Web.Shared.Audio
+@implements IDisposable
+@inject ApiClient Api
+@inject ISnackbar Snackbar
+
+@if (_status?.Enabled == true)
+{
+    <MudPaper Class="pa-4 mb-4 kamada-assistant" Elevation="1">
+        <div class="d-flex flex-wrap align-center gap-2 mb-1">
+            <MudIcon Icon="@Icons.Material.Filled.AutoAwesome" Color="Color.Info" />
+            <MudText Typo="Typo.h6">Asystent</MudText>
+            <MudSpacer />
+            <MudText Typo="Typo.caption" Class="mud-text-secondary">Lokalny model: @_status.Model</MudText>
+        </div>
+        <MudText Typo="Typo.body2" Class="mud-text-secondary mb-2">
+            Podyktuj albo wpisz zamówienie własnymi słowami (po polsku lub angielsku). Asystent wypełni formularz – nic nie
+            zostanie zapisane, dopóki nie sprawdzisz danych i nie złożysz zamówienia.
+        </MudText>
+
+        <VoiceRecorder @bind-Language="_language" Available="_status.SpeechToText" Disabled="_busy" OnRecorded="TranscribeAsync"
+                       UnavailableText="Model rozpoznawania mowy jest jeszcze pobierany lub wyłączony – możesz wpisać tekst." />
+
+        <MudTextField @bind-Value="_text" Lines="3" Variant="Variant.Outlined" Immediate="true" MaxLength="MaxLength" Counter="MaxLength"
+                      Label="Treść zamówienia" Disabled="_busy" Class="mt-3" HelperText="@_transcriptHint"
+                      Placeholder="np. Nowe zamówienie dla Jana Kowalskiego, Grunwaldzka 15 mieszkania 4 w Gdańsku, telefon 600 100 200: sześć wód niegazowanych półtora litra i dwa chleby razowe" />
+
+        <div class="d-flex align-center mt-2">
+            <MudSpacer />
+            <MudButton Variant="Variant.Filled" Color="Color.Info" OnClick="FillAsync" Disabled="@(_busy || string.IsNullOrWhiteSpace(_text))"
+                       StartIcon="@Icons.Material.Filled.AutoAwesome">
+                Wypełnij formularz
+            </MudButton>
+        </div>
+
+        @if (_busy)
+        {
+            <MudProgressLinear Color="Color.Info" Indeterminate="true" Class="mt-3" />
+            <MudText Typo="Typo.caption" Class="mud-text-secondary">@_busyText</MudText>
+        }
+    </MudPaper>
+}
+
+@code {
+    private const int MaxLength = 2000;
+    private static readonly TimeSpan StatusRefresh = TimeSpan.FromSeconds(15);
+
+    private readonly CancellationTokenSource _disposed = new();
+    private AssistantStatusDto? _status;
+    private string _text = string.Empty;
+    private string _language = "auto";
+    private string? _transcriptHint;
+    private bool _busy;
+    private string _busyText = string.Empty;
+
+    /// <summary>Raised with the draft the form should be filled with.</summary>
+    [Parameter] public EventCallback<OrderDraftDto> OnDraft { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadStatusAsync();
+        _ = RefreshUntilSpeechIsReadyAsync(_disposed.Token);
+    }
+
+    private async Task LoadStatusAsync()
+    {
+        var result = await Api.GetAsync<AssistantStatusDto>("api/assistant/status");
+        _status = result.IsSuccess ? result.Value : null;
+    }
+
+    /// <summary>The speech model is downloaded on the server's first start: enable dictation as soon as it is ready.</summary>
+    private async Task RefreshUntilSpeechIsReadyAsync(CancellationToken cancellationToken)
+    {
+        using var timer = new PeriodicTimer(StatusRefresh);
+        try
+        {
+            while (_status is { Enabled: true, SpeechToText: false } && await timer.WaitForNextTickAsync(cancellationToken))
+            {
+                await LoadStatusAsync();
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private async Task TranscribeAsync(RecordedAudio recording)
+    {
+        await RunAsync("Rozpoznaję mowę…", async () =>
+        {
+            var result = await Api.PostFileAsync<TranscriptionDto>(
+                "api/assistant/transcriptions", "audio", recording.Wav, "nagranie.wav", "audio/wav",
+                new Dictionary<string, string> { ["language"] = recording.Language });
+            if (Snackbar.Report(result))
+            {
+                _text = result.Value.Text;
+                _transcriptHint = $"Rozpoznany tekst ({result.Value.Language}) – popraw go w razie potrzeby i kliknij „Wypełnij formularz”.";
+            }
+        });
+    }
+
+    private async Task FillAsync()
+    {
+        await RunAsync("Model działa lokalnie – bez karty graficznej może to potrwać kilkanaście sekund.", async () =>
+        {
+            var result = await Api.PostAsync<OrderDraftDto>("api/assistant/order-drafts", new OrderDraftRequest(_text.Trim(), _language));
+            if (Snackbar.Report(result))
+            {
+                await OnDraft.InvokeAsync(result.Value);
+            }
+        });
+    }
+
+    private async Task RunAsync(string busyText, Func<Task> action)
+    {
+        (_busy, _busyText) = (true, busyText);
+        try
+        {
+            await action();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    public void Dispose()
+    {
+        _disposed.Cancel();
+        _disposed.Dispose();
+    }
+}

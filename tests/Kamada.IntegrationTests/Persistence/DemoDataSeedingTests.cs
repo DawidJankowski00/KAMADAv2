@@ -21,7 +21,7 @@ public sealed class DemoDataSeedingTests(KamadaApiFactory factory)
         await using (var host = factory.WithDemoData(Database))
         {
             var admin = await SignInAsync(host, "admin", WorkforceSeeder.AdminPassword);
-            (await CountAsync<ProductDto>(admin, "/api/products")).ShouldBe(40);
+            (await CountAsync<ProductDto>(admin, "/api/products")).ShouldBe(46);
             (await CountAsync<ClientSummaryDto>(admin, "/api/clients")).ShouldBe(26);
 
             var orders = await GetAsync<PagedResult<OrderSummaryDto>>(admin, "/api/orders?pageSize=100");
@@ -68,7 +68,7 @@ public sealed class DemoDataSeedingTests(KamadaApiFactory factory)
         {
             var admin = await SignInAsync(restarted, "admin", WorkforceSeeder.AdminPassword);
             (await CountAsync<OrderSummaryDto>(admin, "/api/orders")).ShouldBe(36);
-            (await CountAsync<ProductDto>(admin, "/api/products")).ShouldBe(40);
+            (await CountAsync<ProductDto>(admin, "/api/products")).ShouldBe(46);
         }
     }
 

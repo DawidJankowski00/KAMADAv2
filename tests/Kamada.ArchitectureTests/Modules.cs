@@ -1,4 +1,5 @@
 using System.Reflection;
+using Kamada.Modules.Assistant;
 using Kamada.Modules.Catalog;
 using Kamada.Modules.Customers;
 using Kamada.Modules.Delivery;
@@ -23,6 +24,7 @@ internal static class Modules
         new(WorkforceModule.Name, typeof(WorkforceModule).Assembly),
         new(DeliveryModule.Name, typeof(DeliveryModule).Assembly),
         new(RouteOptimizationModule.Name, typeof(RouteOptimizationModule).Assembly),
+        new(AssistantModule.Name, typeof(AssistantModule).Assembly),
     ];
 
     public static TheoryData<string> Names => new(All.Select(m => m.Name));

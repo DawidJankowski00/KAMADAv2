@@ -1,0 +1,155 @@
+@* Dictation: records the microphone in the browser and hands over a 16 kHz mono WAV. Language toggle PL / EN / Auto. *@
+@using Kamada.Web.Shared.Audio
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+<div class="d-flex flex-wrap align-center gap-3">
+    <MudToggleGroup T="string" Value="Language" ValueChanged="LanguageChanged" Size="Size.Small" Color="Color.Info" Outlined="true"
+                    Disabled="_recording" Style="width: 210px">
+        <MudToggleItem Value="@("pl")" Text="PL" />
+        <MudToggleItem Value="@("en")" Text="EN" />
+        <MudToggleItem Value="@("auto")" Text="Auto" />
+    </MudToggleGroup>
+
+    @if (_recording)
+    {
+        <MudButton Variant="Variant.Filled" Color="Color.Error" StartIcon="@Icons.Material.Filled.Stop" OnClick="StopAsync">
+            Zakończ · @RecorderMessages.Elapsed(_elapsed, MaxDuration)
+        </MudButton>
+        <div style="width: 120px" title="Poziom dźwięku">
+            <MudProgressLinear Value="@(_level * 100)" Color="Color.Success" Rounded="true" Size="Size.Medium" />
+        </div>
+        <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" OnClick="CancelAsync" aria-label="Anuluj nagrywanie" />
+    }
+    else
+    {
+        <MudTooltip Text="@(Available ? "Nagraj zamówienie (do 60 s). Dźwięk nie jest zapisywany." : UnavailableText)">
+            <MudButton Variant="Variant.Outlined" Color="Color.Info" StartIcon="@Icons.Material.Filled.Mic" OnClick="StartAsync"
+                       Disabled="@(!Available || Disabled || _starting)">
+                Dyktuj
+            </MudButton>
+        </MudTooltip>
+    }
+</div>
+@if (_error is not null)
+{
+    <MudText Typo="Typo.caption" Color="Color.Error" Class="d-block mt-1">@_error</MudText>
+}
+
+@code {
+    private IJSObjectReference? _module;
+    private DotNetObjectReference<VoiceRecorder>? _self;
+    private bool _recording;
+    private bool _starting;
+    private bool _stopping;
+    private double _level;
+    private TimeSpan _elapsed;
+    private string? _error;
+
+    /// <summary><c>pl</c>, <c>en</c> or <c>auto</c>.</summary>
+    [Parameter] public string Language { get; set; } = "auto";
+
+    [Parameter] public EventCallback<string> LanguageChanged { get; set; }
+
+    /// <summary>False while the server's speech model is not ready; the language toggle still works.</summary>
+    [Parameter] public bool Available { get; set; } = true;
+
+    [Parameter] public string UnavailableText { get; set; } = "Rozpoznawanie mowy jest niedostępne.";
+
+    [Parameter] public bool Disabled { get; set; }
+
+    [Parameter] public TimeSpan MaxDuration { get; set; } = TimeSpan.FromSeconds(60);
+
+    [Parameter] public EventCallback<RecordedAudio> OnRecorded { get; set; }
+
+    private async Task StartAsync()
+    {
+        _error = null;
+        _starting = true;
+        try
+        {
+            _module ??= await JS.InvokeAsync<IJSObjectReference>("import", "./_content/Kamada.Web.Shared/voice-recorder.js");
+            _self ??= DotNetObjectReference.Create(this);
+            var result = await _module.InvokeAsync<string>("start", _self, MaxDuration.TotalSeconds);
+            if (result == "ok")
+            {
+                (_recording, _level, _elapsed) = (true, 0, TimeSpan.Zero);
+            }
+            else
+            {
+                _error = RecorderMessages.For(result);
+            }
+        }
+        catch (JSException)
+        {
+            _error = RecorderMessages.For("error");
+        }
+        finally
+        {
+            _starting = false;
+        }
+    }
+
+    private async Task StopAsync()
+    {
+        if (!_recording || _stopping || _module is null)
+        {
+            return;
+        }
+
+        _stopping = true;
+        try
+        {
+            var pcm = await _module.InvokeAsync<byte[]?>("stop");
+            _recording = false;
+            if (pcm is null || pcm.Length == 0)
+            {
+                _error = RecorderMessages.For("empty");
+                return;
+            }
+
+            await OnRecorded.InvokeAsync(new RecordedAudio(WavEncoder.Encode(pcm), WavEncoder.Duration(pcm.Length), Language));
+        }
+        finally
+        {
+            _stopping = false;
+        }
+    }
+
+    private async Task CancelAsync()
+    {
+        _recording = false;
+        if (_module is not null)
+        {
+            await _module.InvokeVoidAsync("discard");
+        }
+    }
+
+    [JSInvokable]
+    public Task OnLevel(double level, double seconds)
+    {
+        (_level, _elapsed) = (level, TimeSpan.FromSeconds(seconds));
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    [JSInvokable]
+    public Task OnLimitReached() => InvokeAsync(StopAsync);
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_module is not null)
+        {
+            try
+            {
+                await _module.InvokeVoidAsync("discard");
+                await _module.DisposeAsync();
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+        }
+
+        _self?.Dispose();
+    }
+}

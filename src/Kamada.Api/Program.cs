@@ -1,4 +1,5 @@
 using Kamada.Api.Extensions;
+using Kamada.Modules.Assistant;
 using Kamada.Modules.Catalog;
 using Kamada.Modules.Customers;
 using Kamada.Modules.Delivery;
@@ -31,7 +32,8 @@ builder.Services
     .AddOrderingModule(builder.Configuration)
     .AddPaymentsModule(builder.Configuration)
     .AddRouteOptimizationModule(builder.Configuration)
-    .AddDeliveryModule(builder.Configuration);
+    .AddDeliveryModule(builder.Configuration)
+    .AddAssistantModule(builder.Configuration);
 
 builder.Services.AddHealthChecks()
     .AddNpgSql(name: "postgres");
@@ -60,7 +62,8 @@ app.MapWorkforceEndpoints()
     .MapOrderingEndpoints()
     .MapPaymentsEndpoints()
     .MapRouteOptimizationEndpoints()
-    .MapDeliveryEndpoints();
+    .MapDeliveryEndpoints()
+    .MapAssistantEndpoints();
 
 await app.Services.InitializeDatabasesAsync(app.Lifetime.ApplicationStopping);
 

@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.Extensions.AI.Abstractions" />
+    <PackageReference Include="OllamaSharp" />
+    <PackageReference Include="Whisper.net" />
+    <PackageReference Include="Whisper.net.Runtime" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Kamada.Modules.Assistant.Contracts\Kamada.Modules.Assistant.Contracts.csproj" />
+    <ProjectReference Include="..\..\Customers\Kamada.Modules.Customers.Contracts\Kamada.Modules.Customers.Contracts.csproj" />
+    <ProjectReference Include="..\..\Catalog\Kamada.Modules.Catalog.Contracts\Kamada.Modules.Catalog.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Kamada.Shared.Kernel\Kamada.Shared.Kernel.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Kamada.Shared.Infrastructure\Kamada.Shared.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Kamada.Shared.Contracts\Kamada.Shared.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Kamada.Modules.Assistant.UnitTests" />
+    <InternalsVisibleTo Include="Kamada.IntegrationTests" />
+    <InternalsVisibleTo Include="Kamada.ArchitectureTests" />
+    <InternalsVisibleTo Include="Kamada.Assistant.Evals" />
+  </ItemGroup>
+
+</Project>

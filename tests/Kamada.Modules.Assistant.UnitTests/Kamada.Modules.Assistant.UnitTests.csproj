@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Modules\Assistant\Kamada.Modules.Assistant\Kamada.Modules.Assistant.csproj" />
+  </ItemGroup>
+
+</Project>

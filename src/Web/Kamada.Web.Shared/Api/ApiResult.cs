@@ -14,6 +14,8 @@ public sealed record ApiProblem(
 {
     public static ApiProblem Network { get; } = new(0, "Brak połączenia z serwerem. Sprawdź połączenie z internetem.");
 
+    public static ApiProblem Timeout { get; } = new(0, "Serwer nie odpowiedział na czas. Spróbuj ponownie.");
+
     /// <summary>Best message for the user: Polish text for known codes, otherwise the server's detail.</summary>
     public string Message =>
         (Code is not null ? ErrorMessages.TryTranslate(Code) : null)
@@ -68,6 +70,7 @@ public sealed record ApiProblem(
         404 => "Nie znaleziono.",
         409 => "Operacja niedozwolona w obecnym stanie.",
         429 => "Zbyt wiele prób. Spróbuj za chwilę.",
+        503 => "Usługa jest chwilowo niedostępna. Spróbuj za chwilę.",
         _ => "Wystąpił błąd serwera.",
     };
 }

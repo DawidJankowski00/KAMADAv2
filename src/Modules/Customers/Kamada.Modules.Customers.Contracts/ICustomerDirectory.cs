@@ -26,4 +26,19 @@ public interface ICustomerDirectory
     Task<Result<ShippingDetails>> GetShippingDetailsAsync(Guid clientId, Guid addressId, CancellationToken cancellationToken);
 
     Task<IReadOnlyDictionary<Guid, AddressLocation>> GetAddressLocationsAsync(IReadOnlyCollection<Guid> addressIds, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Active clients similar to the mention, best first: exact phone number (digits only) or e-mail, then name + surname
+    /// (diacritics folded, fuzzy). Returns at most <paramref name="limit"/> candidates; empty when nothing is similar.
+    /// </summary>
+    Task<IReadOnlyList<ClientCandidate>> FindClientCandidatesAsync(ClientMention mention, int limit, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The client's active shipping address with the same street, building and apartment (folded, fuzzy street name);
+    /// <c>null</c> when there is none or the match is not unique.
+    /// </summary>
+    Task<ShippingAddressMatch?> FindShippingAddressAsync(Guid clientId, AddressMention mention, CancellationToken cancellationToken);
+
+    /// <summary>A free username for a new client: <c>name.surname</c> in ASCII, with a numeric suffix when taken.</summary>
+    Task<string> SuggestUsernameAsync(string? name, string? surname, CancellationToken cancellationToken);
 }

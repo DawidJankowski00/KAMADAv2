@@ -51,6 +51,18 @@ public static class ErrorMessages
         ["Delivery.StopAlreadyCompleted"] = "Ten przystanek został już obsłużony.",
         ["Delivery.FailureReasonRequired"] = "Podaj powód nieudanej dostawy.",
         ["Delivery.InvalidTransition"] = "Tej operacji nie można wykonać w obecnym statusie trasy.",
+        ["Assistant.Disabled"] = "Asystent AI jest wyłączony.",
+        ["Assistant.ModelUnavailable"] = "Model AI jest niedostępny (czy działa Ollama i jest pobrany model?). Spróbuj za chwilę.",
+        ["Assistant.ExtractionFailed"] = "Asystent nie zrozumiał tekstu. Spróbuj sformułować go inaczej.",
+        ["Assistant.NothingRecognized"] = "Nie rozpoznano klienta, adresu ani produktów. Uzupełnij tekst.",
+        ["Assistant.SpeechToTextDisabled"] = "Dyktowanie jest wyłączone. Wpisz zamówienie ręcznie.",
+        ["Assistant.SpeechToTextNotReady"] = "Model rozpoznawania mowy jest jeszcze pobierany. Spróbuj za chwilę albo wpisz tekst.",
+        ["Assistant.AudioMissing"] = "Nie przesłano nagrania.",
+        ["Assistant.InvalidAudio"] = "Nieobsługiwany format nagrania.",
+        ["Assistant.AudioTooLarge"] = "Nagranie jest za duże.",
+        ["Assistant.AudioTooLong"] = "Nagranie może trwać najwyżej 60 sekund.",
+        ["Assistant.NothingHeard"] = "Nie rozpoznano mowy. Mów wyraźniej, bliżej mikrofonu.",
+        ["Assistant.InvalidLanguage"] = "Nieobsługiwany język.",
     };
 
     public static string? TryTranslate(string code) => Messages.GetValueOrDefault(code);

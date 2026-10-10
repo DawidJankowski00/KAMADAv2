@@ -24,6 +24,14 @@
     <PackageVersion Include="Bogus" Version="35.6.5" />
   </ItemGroup>
 
+  <!-- Local AI (order assistant) -->
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.Extensions.AI.Abstractions" Version="10.10.1" />
+    <PackageVersion Include="OllamaSharp" Version="5.5.0" />
+    <PackageVersion Include="Whisper.net" Version="1.9.1" />
+    <PackageVersion Include="Whisper.net.Runtime" Version="1.9.1" />
+  </ItemGroup>
+
   <!-- Blazor -->
   <ItemGroup>
     <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.12" />

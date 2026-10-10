@@ -1,47 +1,59 @@
 @* Address inputs rendered inside a parent MudForm/MudGrid. *@
 
-<MudItem xs="12" sm="4">
-    <MudSelect @bind-Value="Model.Type" Label="Typ adresu">
-        <MudSelectItem Value="AddressType.Shipping">@Labels.Of(AddressType.Shipping)</MudSelectItem>
-        <MudSelectItem Value="AddressType.Billing">@Labels.Of(AddressType.Billing)</MudSelectItem>
-    </MudSelect>
-</MudItem>
-<MudItem xs="12" sm="8">
-    <MudTextField @bind-Value="Model.Street" Label="Ulica" Required="Required" MaxLength="200" />
+@if (ShowType)
+{
+    <MudItem xs="12" sm="4">
+        <MudSelect @bind-Value="Model.Type" @bind-Value:after="Changed.InvokeAsync" Label="Typ adresu">
+            <MudSelectItem Value="AddressType.Shipping">@Labels.Of(AddressType.Shipping)</MudSelectItem>
+            <MudSelectItem Value="AddressType.Billing">@Labels.Of(AddressType.Billing)</MudSelectItem>
+        </MudSelect>
+    </MudItem>
+}
+<MudItem xs="12" sm="@(ShowType ? 8 : 12)">
+    <MudTextField @bind-Value="Model.Street" @bind-Value:after="Changed.InvokeAsync" Label="Ulica" Required="Required" MaxLength="200" Immediate="Immediate"
+                  Error="@Missing(Model.Street)" ErrorText="Wymagane" />
 </MudItem>
 <MudItem xs="6" sm="3">
-    <MudTextField @bind-Value="Model.BuildingNumber" Label="Nr budynku" Required="Required" MaxLength="20" />
+    <MudTextField @bind-Value="Model.BuildingNumber" @bind-Value:after="Changed.InvokeAsync" Label="Nr budynku" Required="Required" MaxLength="20" Immediate="Immediate"
+                  Error="@Missing(Model.BuildingNumber)" ErrorText="Wymagane" />
 </MudItem>
 <MudItem xs="6" sm="3">
-    <MudTextField @bind-Value="Model.ApartmentNumber" Label="Nr lokalu" MaxLength="20" />
+    <MudTextField @bind-Value="Model.ApartmentNumber" @bind-Value:after="Changed.InvokeAsync" Label="Nr lokalu" MaxLength="20" Immediate="Immediate" />
 </MudItem>
 <MudItem xs="5" sm="2">
-    <MudTextField @bind-Value="Model.PostalCode" Label="Kod" Required="Required" MaxLength="10" Placeholder="00-000"
-                  Validation="@(new Func<string, string?>(ValidatePostalCode))" />
+    <MudTextField @bind-Value="Model.PostalCode" @bind-Value:after="Changed.InvokeAsync" Label="Kod" Required="Required" MaxLength="10" Placeholder="00-000" Immediate="Immediate"
+                  Validation="@(new Func<string, string?>(ValidatePostalCode))"
+                  Error="@(Missing(Model.PostalCode) || (HighlightMissing && AddressModel.PostalCodeError(Model.PostalCode, Model.Country) is not null))"
+                  ErrorText="@(Missing(Model.PostalCode) ? "Wymagane" : AddressModel.PostalCodeError(Model.PostalCode, Model.Country))" />
 </MudItem>
 <MudItem xs="7" sm="4">
-    <MudTextField @bind-Value="Model.City" Label="Miasto" Required="Required" MaxLength="100" />
+    <MudTextField @bind-Value="Model.City" @bind-Value:after="Changed.InvokeAsync" Label="Miasto" Required="Required" MaxLength="100" Immediate="Immediate"
+                  Error="@Missing(Model.City)" ErrorText="Wymagane" />
 </MudItem>
 <MudItem xs="12" sm="4">
-    <MudTextField @bind-Value="Model.Country" Label="Kraj" Required="Required" MaxLength="60" />
+    <MudTextField @bind-Value="Model.Country" @bind-Value:after="Changed.InvokeAsync" Label="Kraj" Required="Required" MaxLength="60" Immediate="Immediate"
+                  Error="@Missing(Model.Country)" ErrorText="Wymagane" />
 </MudItem>
 
 @code {
     [Parameter, EditorRequired] public AddressModel Model { get; set; } = default!;
 
+    /// <summary>Raised after any field changed, so the parent can re-check what is still missing.</summary>
+    [Parameter] public EventCallback Changed { get; set; }
+
     /// <summary>False for the optional address in the "new client" form.</summary>
     [Parameter] public bool Required { get; set; } = true;
 
-    private string? ValidatePostalCode(string value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return null;
-        }
+    /// <summary>Hidden where the type is fixed (a new shipping address for an order).</summary>
+    [Parameter] public bool ShowType { get; set; } = true;
 
-        var isPoland = Model.Country.Trim() is "Polska" or "Poland" or "PL";
-        return isPoland && !System.Text.RegularExpressions.Regex.IsMatch(value.Trim(), "^[0-9]{2}-[0-9]{3}$")
-            ? "Format kodu: 00-000"
-            : null;
-    }
+    /// <summary>Marks empty required fields right away (address prefilled by the assistant), not only after validation.</summary>
+    [Parameter] public bool HighlightMissing { get; set; }
+
+    /// <summary>Update the model on every keystroke, so a parent can enable its submit button immediately.</summary>
+    [Parameter] public bool Immediate { get; set; }
+
+    private bool Missing(string? value) => HighlightMissing && string.IsNullOrWhiteSpace(value);
+
+    private string? ValidatePostalCode(string value) => AddressModel.PostalCodeError(value, Model.Country);
 }

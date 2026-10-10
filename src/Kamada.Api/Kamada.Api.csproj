@@ -21,6 +21,7 @@
     <ProjectReference Include="..\Modules\Workforce\Kamada.Modules.Workforce\Kamada.Modules.Workforce.csproj" />
     <ProjectReference Include="..\Modules\Delivery\Kamada.Modules.Delivery\Kamada.Modules.Delivery.csproj" />
     <ProjectReference Include="..\Modules\RouteOptimization\Kamada.Modules.RouteOptimization\Kamada.Modules.RouteOptimization.csproj" />
+    <ProjectReference Include="..\Modules\Assistant\Kamada.Modules.Assistant\Kamada.Modules.Assistant.csproj" />
   </ItemGroup>
 
 </Project>

@@ -23,6 +23,31 @@ public sealed class ApiClient(HttpClient http)
     public Task<ApiResult> PutAsync(string url, object body, CancellationToken cancellationToken = default) =>
         SendAsync(() => http.PutAsJsonAsync(url, body, KamadaJson.Options, cancellationToken), cancellationToken);
 
+    /// <summary>Uploads one file (plus optional text fields) as <c>multipart/form-data</c>.</summary>
+    public Task<ApiResult<T>> PostFileAsync<T>(
+        string url,
+        string fieldName,
+        byte[] content,
+        string fileName,
+        string contentType,
+        IReadOnlyDictionary<string, string>? fields = null,
+        CancellationToken cancellationToken = default) =>
+        SendAsync<T>(
+            async () =>
+            {
+                using var form = new MultipartFormDataContent();
+                var file = new ByteArrayContent(content);
+                file.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
+                form.Add(file, fieldName, fileName);
+                foreach (var (name, value) in fields ?? new Dictionary<string, string>())
+                {
+                    form.Add(new StringContent(value), name);
+                }
+
+                return await http.PostAsync(url, form, cancellationToken);
+            },
+            cancellationToken);
+
     public Task<ApiResult<T>> DeleteAsync<T>(string url, CancellationToken cancellationToken = default) =>
         SendAsync<T>(() => http.DeleteAsync(url, cancellationToken), cancellationToken);
 
@@ -46,6 +71,10 @@ public sealed class ApiClient(HttpClient http)
         {
             return ApiResult<T>.Fail(ApiProblem.Network);
         }
+        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return ApiResult<T>.Fail(ApiProblem.Timeout);
+        }
     }
 
     private static async Task<ApiResult> SendAsync(Func<Task<HttpResponseMessage>> send, CancellationToken cancellationToken)
@@ -60,6 +89,10 @@ public sealed class ApiClient(HttpClient http)
         catch (HttpRequestException)
         {
             return ApiResult.Fail(ApiProblem.Network);
+        }
+        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return ApiResult.Fail(ApiProblem.Timeout);
         }
     }
 

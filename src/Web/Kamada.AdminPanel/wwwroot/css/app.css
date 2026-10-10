@@ -118,3 +118,13 @@ h1:focus {
 .kamada-stop:active {
     cursor: grabbing;
 }
+
+/* Order assistant */
+.kamada-assistant {
+    border-left: 4px solid var(--mud-palette-info);
+}
+
+.kamada-warning-list {
+    margin: 4px 0 0 1.25rem;
+    padding: 0;
+}
