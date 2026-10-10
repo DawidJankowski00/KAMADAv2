@@ -38,6 +38,22 @@ public sealed class ProductMatcherTests
     }
 
     [Fact]
+    public void Rank_VariantWord_SeparatesStillFromSparklingByAClearMargin()
+    {
+        ProductRow[] products =
+        [
+            new(Guid.NewGuid(), "Woda mineralna niegazowana 1,5 l", "SP-NAP-001", 2.49m, 240),
+            new(Guid.NewGuid(), "Woda mineralna gazowana 1,5 l", "SP-NAP-002", 2.49m, 180),
+        ];
+
+        var candidates = ProductMatcher.Rank("woda niegazowana 1,5 l", products, 3);
+
+        candidates[0].Sku.ShouldBe("SP-NAP-001");
+        candidates[0].Score.ShouldBeGreaterThanOrEqualTo(0.9);
+        (candidates[0].Score - candidates[1].Score).ShouldBeGreaterThan(0.05);
+    }
+
+    [Fact]
     public void Rank_UnrelatedPhrase_ReturnsNothing() =>
         ProductMatcher.Rank("pralka automatyczna", Products, 3).ShouldBeEmpty();
 }

@@ -64,8 +64,8 @@ public static class TextSimilarity
 
     /// <summary>
     /// How well <paramref name="query"/> is covered by <paramref name="candidate"/>, 0 … 1: every query word is paired
-    /// with its most similar candidate word (numbers must be equal). Candidate words left unmatched lower the score
-    /// slightly, so "chleb razowy" prefers "Chleb razowy" over "Chleb razowy z ziarnami".
+    /// with its most similar candidate word (numbers must be equal), weighted by word length. Candidate words left
+    /// unmatched lower the score slightly, so "chleb razowy" prefers "Chleb razowy" over "Chleb razowy z ziarnami".
     /// </summary>
     public static double PhraseScore(string? query, string? candidate)
     {
@@ -77,7 +77,7 @@ public static class TextSimilarity
         }
 
         var used = new bool[candidateTokens.Length];
-        var total = 0.0;
+        var (total, weights) = (0.0, 0.0);
         foreach (var token in queryTokens)
         {
             var (bestIndex, bestScore) = (-1, 0.0);
@@ -95,10 +95,12 @@ public static class TextSimilarity
                 used[bestIndex] = true;
             }
 
-            total += bestScore;
+            // Longer words carry the meaning ("niegazowana"); short ones ("1", "l") would flatten differences.
+            total += bestScore * token.Length;
+            weights += token.Length;
         }
 
-        var coverage = total / queryTokens.Length;
+        var coverage = total / weights;
         var unmatched = used.Count(u => !u) / (double)candidateTokens.Length;
         return coverage * (1 - (0.15 * unmatched));
     }

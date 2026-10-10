@@ -1,0 +1,52 @@
+using System.Diagnostics;
+using Kamada.Modules.Assistant.Application;
+using Kamada.Modules.Assistant.Application.Abstractions;
+using Kamada.Modules.Assistant.Domain;
+using Kamada.Shared.Kernel.Results;
+using Microsoft.Extensions.AI;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using OllamaSharp.Models.Exceptions;
+
+namespace Kamada.Modules.Assistant.Infrastructure.Ollama;
+
+/// <summary>
+/// Extraction with a local model served by Ollama, through <see cref="IChatClient"/>: structured output (JSON schema)
+/// at temperature 0, so the same note gives the same answer. Neither the note nor the answer is logged (privacy).
+/// </summary>
+internal sealed partial class OllamaOrderExtractor(
+    [FromKeyedServices(AssistantServiceKeys.ChatClient)] IChatClient chat,
+    ILogger<OllamaOrderExtractor> logger) : IOrderExtractor
+{
+    private static readonly ChatOptions Options = new()
+    {
+        Temperature = 0,
+        ResponseFormat = ExtractionPrompt.ResponseFormat,
+    };
+
+    public async Task<Result<ExtractedOrder>> ExtractAsync(string text, AssistantLanguage language, CancellationToken cancellationToken)
+    {
+        var stopwatch = Stopwatch.StartNew();
+        ChatResponse response;
+        try
+        {
+            response = await chat.GetResponseAsync(ExtractionPrompt.Messages(text, language), Options, cancellationToken);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or OllamaException
+                                       || (ex is TaskCanceledException && !cancellationToken.IsCancellationRequested))
+        {
+            LogModelUnavailable(ex);
+            return AssistantErrors.ModelUnavailable;
+        }
+
+        var parsed = LlmOrderResponse.Parse(response.Text);
+        LogExtraction(stopwatch.ElapsedMilliseconds, parsed is not null, response.ModelId);
+        return parsed is null ? AssistantErrors.ExtractionFailed : parsed.ToDomain();
+    }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Language model unavailable")]
+    private partial void LogModelUnavailable(Exception exception);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Order extraction by {Model} took {ElapsedMs} ms (valid: {Valid})")]
+    private partial void LogExtraction(long elapsedMs, bool valid, string? model);
+}

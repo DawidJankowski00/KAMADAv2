@@ -1,3 +1,4 @@
+using Kamada.Modules.Assistant.Application.Abstractions;
 using Kamada.Shared.Infrastructure.Geocoding;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -12,7 +13,7 @@ namespace Kamada.IntegrationTests.Infrastructure;
 /// <summary>
 /// Boots the whole API against a throwaway PostgreSQL container. Shared by all tests in the assembly,
 /// so tests must not depend on global row counts – each test creates the data it needs.
-/// External services (geocoding) are replaced with deterministic fakes.
+/// External services (geocoding, the language model) are replaced with deterministic fakes.
 /// </summary>
 public sealed class KamadaApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
@@ -31,10 +32,19 @@ public sealed class KamadaApiFactory : WebApplicationFactory<Program>, IAsyncLif
         builder.UseSetting("RateLimiting:Login:PermitLimit", "100000");
         builder.UseSetting("Geocoding:Provider", "None");
         builder.UseSetting("RouteOptimization:MatrixProvider", "Haversine");
+        builder.UseSetting("Assistant:Enabled", "true");
+        builder.UseSetting("RateLimiting:Assistant:PermitLimit", "100000");
 
         builder.ConfigureTestServices(services =>
-            services.Replace(ServiceDescriptor.Singleton<IGeocodingService, FakeGeocodingService>()));
+        {
+            services.Replace(ServiceDescriptor.Singleton<IGeocodingService, FakeGeocodingService>());
+            services.Replace(ServiceDescriptor.Singleton<IOrderExtractor>(OrderExtractor));
+            services.Replace(ServiceDescriptor.Singleton<ILanguageModelProbe, FakeLanguageModelProbe>());
+        });
     }
+
+    /// <summary>Shared by every host built from this factory; tests register extractions for their own note texts.</summary>
+    internal FakeOrderExtractor OrderExtractor { get; } = new();
 
     /// <summary>
     /// A second host with demo seeding enabled, on its own (new) database in the same container, so seeding starts

@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Kamada.Modules.Catalog.Infrastructure.Seeding;
 
 /// <summary>
-/// Demo catalog: a two-level category tree and 40 products of a local online shop. A few products show
+/// Demo catalog: a two-level category tree and 46 products of a local online shop. A few products show
 /// edge cases – several categories, low stock, out of stock and one deactivated product.
 /// </summary>
 internal sealed class CatalogSeeder(CatalogDbContext db, DemoSeedData seedData) : IDataSeeder
@@ -16,7 +16,7 @@ internal sealed class CatalogSeeder(CatalogDbContext db, DemoSeedData seedData) 
     [
         ("Elektronika", ["Smartfony i akcesoria", "Komputery i peryferia", "Audio"]),
         ("Dom i kuchnia", ["Małe AGD", "Naczynia i garnki"]),
-        ("Artykuły spożywcze", ["Kawa i herbata", "Słodycze i przekąski"]),
+        ("Artykuły spożywcze", ["Kawa i herbata", "Słodycze i przekąski", "Napoje", "Pieczywo"]),
         ("Ogród", ["Narzędzia ogrodowe", "Nasiona i nawozy"]),
         ("Sport i rekreacja", ["Fitness", "Turystyka"]),
     ];
@@ -52,6 +52,12 @@ internal sealed class CatalogSeeder(CatalogDbContext db, DemoSeedData seedData) 
         new("SP-SLO-001", "Czekolada gorzka 70 % – 5 × 100 g", "Zestaw pięciu tabliczek.", 34.50m, 110, ["Słodycze i przekąski"]),
         new("SP-SLO-002", "Pierniki toruńskie w czekoladzie 300 g", "Tradycyjny przepis.", 18.99m, 130, ["Słodycze i przekąski"]),
         new("SP-SLO-003", "Mieszanka orzechów 500 g", "Nerkowce, migdały, orzechy laskowe.", 39.99m, 75, ["Słodycze i przekąski"]),
+        new("SP-NAP-001", "Woda mineralna niegazowana 1,5 l", "Niskozmineralizowana.", 2.49m, 240, ["Napoje"]),
+        new("SP-NAP-002", "Woda mineralna gazowana 1,5 l", "Wysokonasycona CO₂.", 2.49m, 180, ["Napoje"]),
+        new("SP-NAP-003", "Sok jabłkowy 1 l", "100 % soku, tłoczony.", 6.99m, 90, ["Napoje"]),
+        new("SP-NAP-004", "Sok pomarańczowy 1 l", "100 % soku, bez dodatku cukru.", 7.49m, 85, ["Napoje"]),
+        new("SP-PIE-001", "Chleb razowy 500 g", "Na zakwasie, z mąki żytniej pełnoziarnistej.", 6.49m, 40, ["Pieczywo"]),
+        new("SP-PIE-002", "Bułka grahamka", "Z mąki pszennej razowej.", 1.29m, 120, ["Pieczywo"]),
         new("OG-NAR-001", "Sekator nożycowy", "Ostrza ze stali hartowanej, do gałęzi do 20 mm.", 79.00m, 35, ["Narzędzia ogrodowe"]),
         new("OG-NAR-002", "Wąż ogrodowy 25 m z zestawem", "Pistolet zraszający i szybkozłączki.", 139.00m, 22, ["Narzędzia ogrodowe"]),
         new("OG-NAR-003", "Grabie do liści wachlarzowe", "Regulowana szerokość, trzonek aluminiowy.", 54.00m, 28, ["Narzędzia ogrodowe"]),
