@@ -20,6 +20,11 @@ it. A language model can read such notes (Polish and English), but:
   `Microsoft.Extensions.AI` `IChatClient` (OllamaSharp). Default `gemma3:4b`; any model with structured output is a
   configuration change (`Assistant:Ollama:Model`, e.g. `gemma4:e4b`, `qwen3:4b`, Bielik 4.5B). The feature is off
   unless `Assistant:Enabled`; `/health` reports it as `Degraded`, never `Unhealthy`.
+- **Dictation is local too.** The browser records and resamples the audio itself (no Web Speech API, which would send
+  it to Google); the API recognizes it with Whisper.net (whisper.cpp, model `small`, downloaded once into a volume).
+- **Privacy.** Recordings and transcripts are processed in memory only: never stored, never logged (logs contain
+  timings and model names). Nothing is sent to a third party; the only network calls are to the local Ollama server
+  and, for a new address, to the configured geocoder (as for any address typed by hand).
 - **The model extracts, C# resolves.** The model gets only the note and returns *mentions* (names in the nominative,
   phone as digits, address parts, product phrases with quantities, courier notes) through a JSON schema at
   temperature 0. It never sees the database and returns no ids. A new stateless `Assistant` module matches the
@@ -43,7 +48,8 @@ it. A language model can read such notes (Polish and English), but:
   can be switched off without touching the order flow.
 - A client (or address) created for an order that then fails is a valid record, not garbage – acceptable, and simpler
   than a dedicated "create client + address + order" transaction across three modules.
-- Matching is unit-testable without a model; model quality is measured separately (assistant evals).
+- Matching is unit-testable without a model; model quality is measured separately
+  (`benchmarks/Kamada.Assistant.Evals`, results in the README), so models can be compared before switching.
 - CPU-only inference takes seconds, so the endpoints are rate-limited per user and the panel shows progress.
 - Fuzzy matching loads narrow projections of active clients/products into memory – fine for a small shop; a large one
   would pre-filter in SQL (e.g. `pg_trgm`) first.
