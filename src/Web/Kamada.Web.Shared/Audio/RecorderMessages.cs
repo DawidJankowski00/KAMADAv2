@@ -10,6 +10,7 @@ public static class RecorderMessages
         "insecure" => "Mikrofon działa tylko na stronie otwartej przez HTTPS albo z adresu localhost.",
         "unsupported" => "Ta przeglądarka nie obsługuje nagrywania dźwięku. Użyj aktualnego Chrome, Edge lub Firefoksa.",
         "empty" => "Nic nie zostało nagrane.",
+        "silent" => "Mikrofon nic nie zarejestrował (cisza). Sprawdź, czy nie jest wyciszony i czy przeglądarka używa właściwego mikrofonu (ikona przy adresie strony).",
         _ => "Nie udało się uruchomić nagrywania.",
     };
 

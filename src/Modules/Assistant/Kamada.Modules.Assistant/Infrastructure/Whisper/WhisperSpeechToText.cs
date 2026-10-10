@@ -71,6 +71,7 @@ internal sealed partial class WhisperSpeechToText(
                 : new MemoryStream(wav.ToArray(), writable: false);
 
             var parts = new List<string>();
+            var dropped = 0;
             string? detected = null;
             await foreach (var result in processor.ProcessAsync(stream, cancellationToken))
             {
@@ -80,9 +81,13 @@ internal sealed partial class WhisperSpeechToText(
                 {
                     parts.Add(text);
                 }
+                else
+                {
+                    dropped++;
+                }
             }
 
-            LogTranscribed(stopwatch.ElapsedMilliseconds, detected);
+            LogTranscribed(stopwatch.ElapsedMilliseconds, detected, parts.Count, dropped);
             return new Transcription(string.Join(' ', parts), detected ?? language.ToCode());
         }
         finally
@@ -145,6 +150,7 @@ internal sealed partial class WhisperSpeechToText(
     [LoggerMessage(Level = LogLevel.Information, Message = "Whisper model '{Model}' loaded in {ElapsedMs} ms ({Threads} threads per recognition)")]
     private partial void LogModelLoaded(string model, long elapsedMs, int threads);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Speech recognized in {ElapsedMs} ms (language: {Language})")]
-    private partial void LogTranscribed(long elapsedMs, string? language);
+    [LoggerMessage(Level = LogLevel.Information,
+        Message = "Speech recognized in {ElapsedMs} ms (language: {Language}, {Segments} segments, {Dropped} non-speech)")]
+    private partial void LogTranscribed(long elapsedMs, string? language, int segments, int dropped);
 }

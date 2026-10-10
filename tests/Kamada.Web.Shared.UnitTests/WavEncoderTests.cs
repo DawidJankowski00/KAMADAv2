@@ -27,6 +27,17 @@ public sealed class WavEncoderTests
     }
 
     [Fact]
+    public void Peak_ReturnsLoudestSampleIncludingNegative()
+    {
+        var pcm = new byte[8];
+        BinaryPrimitives.WriteInt16LittleEndian(pcm.AsSpan(2), 1000);
+        BinaryPrimitives.WriteInt16LittleEndian(pcm.AsSpan(4), -16384);
+
+        WavEncoder.Peak(pcm).ShouldBe(0.5);
+        WavEncoder.Peak(new byte[3200]).ShouldBeLessThan(WavEncoder.SilencePeak);
+    }
+
+    [Fact]
     public void Encode_KeepsTheSamples()
     {
         byte[] pcm = [1, 2, 3, 4];

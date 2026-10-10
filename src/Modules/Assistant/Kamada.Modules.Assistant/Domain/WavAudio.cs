@@ -4,11 +4,23 @@ namespace Kamada.Modules.Assistant.Domain;
 
 /// <summary>
 /// Header facts of a RIFF/WAVE file. The browser records and encodes 16 kHz mono 16-bit PCM itself, so the server
-/// only has to check that it got exactly that (no ffmpeg) and how long it is.
+/// only has to check that it got exactly that (no ffmpeg), how long it is and whether anything is audible.
 /// </summary>
-internal sealed record WavAudio(int SampleRate, int Channels, int BitsPerSample, int DataLength)
+/// <param name="Peak">Loudest sample of 16-bit PCM, 0–1 (0 for other bit depths).</param>
+internal sealed record WavAudio(int SampleRate, int Channels, int BitsPerSample, int DataLength, double Peak)
 {
     public const int SpeechSampleRate = 16_000;
+
+    /// <summary>
+    /// Below about -46 dBFS nothing was captured (muted or wrong microphone). Even quiet speech peaks far higher;
+    /// Whisper would spend seconds on such a recording and return nothing or a made-up phrase.
+    /// </summary>
+    public const double SilencePeak = 0.005;
+
+    public bool IsSilent => Peak < SilencePeak;
+
+    /// <summary>Peak in dBFS for logs (-inf for digital silence).</summary>
+    public double PeakDecibels => 20 * Math.Log10(Peak);
 
     public TimeSpan Duration => TimeSpan.FromSeconds((double)DataLength / (SampleRate * Channels * (BitsPerSample / 8)));
 
@@ -54,12 +66,25 @@ internal sealed record WavAudio(int SampleRate, int Channels, int BitsPerSample,
                     return null;
                 }
 
-                return new WavAudio(f.SampleRate, f.Channels, f.Bits, Math.Min(size, file.Length - body));
+                var length = Math.Min(size, file.Length - body);
+                var peak = f.Bits == 16 ? PeakOf16Bit(file.Slice(body, length)) : 0;
+                return new WavAudio(f.SampleRate, f.Channels, f.Bits, length, peak);
             }
 
             offset = body + size + (size % 2); // chunks are word-aligned
         }
 
         return null;
+    }
+
+    private static double PeakOf16Bit(ReadOnlySpan<byte> data)
+    {
+        var peak = 0;
+        for (var i = 0; i + 1 < data.Length; i += 2)
+        {
+            peak = Math.Max(peak, Math.Abs((int)BinaryPrimitives.ReadInt16LittleEndian(data.Slice(i, 2))));
+        }
+
+        return peak / 32768.0;
     }
 }

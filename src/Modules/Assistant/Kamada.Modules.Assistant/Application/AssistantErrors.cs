@@ -34,6 +34,9 @@ internal static class AssistantErrors
     public static readonly Error NothingHeard = Error.Validation(
         "Assistant.NothingHeard", "No speech was recognized in the recording.");
 
+    public static readonly Error SilentRecording = Error.Validation(
+        "Assistant.SilentRecording", "The recording is silent – check that the microphone is on and selected.");
+
     public static Error AudioTooLarge(int maxBytes) => Error.Validation(
         "Assistant.AudioTooLarge", $"The recording can have at most {maxBytes / 1024} kB.");
 
