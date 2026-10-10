@@ -6,6 +6,8 @@ using Kamada.Shared.Kernel.Results;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using OllamaSharp.Models.Chat;
 using OllamaSharp.Models.Exceptions;
 
 namespace Kamada.Modules.Assistant.Infrastructure.Ollama;
@@ -16,6 +18,7 @@ namespace Kamada.Modules.Assistant.Infrastructure.Ollama;
 /// </summary>
 internal sealed partial class OllamaOrderExtractor(
     [FromKeyedServices(AssistantServiceKeys.ChatClient)] IChatClient chat,
+    IOptions<AssistantOptions> settings,
     ILogger<OllamaOrderExtractor> logger) : IOrderExtractor
 {
     public async Task<Result<ExtractedOrder>> ExtractAsync(string text, AssistantLanguage language, CancellationToken cancellationToken)
@@ -24,7 +27,13 @@ internal sealed partial class OllamaOrderExtractor(
         ChatResponse response;
         try
         {
-            var options = new ChatOptions { Temperature = 0, ResponseFormat = ExtractionPrompt.ResponseFormat };
+            var options = new ChatOptions
+            {
+                Temperature = 0,
+                ResponseFormat = ExtractionPrompt.ResponseFormat,
+                // Ollama-specific switch without an IChatClient equivalent: start from a native request.
+                RawRepresentationFactory = settings.Value.Ollama.Think is { } think ? _ => new ChatRequest { Think = think } : null,
+            };
             response = await chat.GetResponseAsync(ExtractionPrompt.Messages(text, language), options, cancellationToken);
         }
         catch (Exception ex) when (ex is HttpRequestException or OllamaException

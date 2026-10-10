@@ -15,6 +15,9 @@ namespace Kamada.Modules.Assistant.Api;
 
 internal static class AssistantEndpoints
 {
+    /// <summary>Hard request limit (multipart overhead included); the configured audio limits are checked by the handler.</summary>
+    private const long MaxUploadBytes = 25 * 1024 * 1024;
+
     public static IEndpointRouteBuilder MapOrderAssistantEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("/api/assistant")
@@ -42,8 +45,7 @@ internal static class AssistantEndpoints
             .Produces<OrderDraftDto>()
             .ProducesProblem(StatusCodes.Status400BadRequest);
 
-        // Multipart upload authenticated by a bearer token, so antiforgery does not apply. The request limit leaves room
-        // for multipart overhead; the handler enforces the configured audio limits with clear errors.
+        // Multipart upload authenticated by a bearer token, so antiforgery does not apply.
         inference.MapPost("/transcriptions", async (IFormFile? audio, [FromForm] string? language, TranscriptionHandler handler, CancellationToken ct) =>
             {
                 await using var content = audio?.OpenReadStream();
@@ -58,6 +60,4 @@ internal static class AssistantEndpoints
 
         return endpoints;
     }
-
-    private const long MaxUploadBytes = 25 * 1024 * 1024;
 }

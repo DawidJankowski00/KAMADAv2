@@ -71,6 +71,12 @@ internal sealed class OllamaOptions
 
     /// <summary>CPU-only inference of a 4B model plus the first model load can take a while.</summary>
     public TimeSpan RequestTimeout { get; init; } = TimeSpan.FromMinutes(2);
+
+    /// <summary>
+    /// Reasoning ("thinking") of models that support it, e.g. <c>qwen3</c>: <c>false</c> answers directly (several
+    /// times faster on a CPU), <c>null</c> keeps the model's default. Do not set it for models without thinking.
+    /// </summary>
+    public bool? Think { get; init; }
 }
 
 internal sealed class WhisperOptions
