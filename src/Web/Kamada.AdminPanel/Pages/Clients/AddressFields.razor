@@ -3,40 +3,43 @@
 @if (ShowType)
 {
     <MudItem xs="12" sm="4">
-        <MudSelect @bind-Value="Model.Type" Label="Typ adresu">
+        <MudSelect @bind-Value="Model.Type" @bind-Value:after="Changed.InvokeAsync" Label="Typ adresu">
             <MudSelectItem Value="AddressType.Shipping">@Labels.Of(AddressType.Shipping)</MudSelectItem>
             <MudSelectItem Value="AddressType.Billing">@Labels.Of(AddressType.Billing)</MudSelectItem>
         </MudSelect>
     </MudItem>
 }
 <MudItem xs="12" sm="@(ShowType ? 8 : 12)">
-    <MudTextField @bind-Value="Model.Street" Label="Ulica" Required="Required" MaxLength="200" Immediate="Immediate"
+    <MudTextField @bind-Value="Model.Street" @bind-Value:after="Changed.InvokeAsync" Label="Ulica" Required="Required" MaxLength="200" Immediate="Immediate"
                   Error="@Missing(Model.Street)" ErrorText="Wymagane" />
 </MudItem>
 <MudItem xs="6" sm="3">
-    <MudTextField @bind-Value="Model.BuildingNumber" Label="Nr budynku" Required="Required" MaxLength="20" Immediate="Immediate"
+    <MudTextField @bind-Value="Model.BuildingNumber" @bind-Value:after="Changed.InvokeAsync" Label="Nr budynku" Required="Required" MaxLength="20" Immediate="Immediate"
                   Error="@Missing(Model.BuildingNumber)" ErrorText="Wymagane" />
 </MudItem>
 <MudItem xs="6" sm="3">
-    <MudTextField @bind-Value="Model.ApartmentNumber" Label="Nr lokalu" MaxLength="20" Immediate="Immediate" />
+    <MudTextField @bind-Value="Model.ApartmentNumber" @bind-Value:after="Changed.InvokeAsync" Label="Nr lokalu" MaxLength="20" Immediate="Immediate" />
 </MudItem>
 <MudItem xs="5" sm="2">
-    <MudTextField @bind-Value="Model.PostalCode" Label="Kod" Required="Required" MaxLength="10" Placeholder="00-000" Immediate="Immediate"
+    <MudTextField @bind-Value="Model.PostalCode" @bind-Value:after="Changed.InvokeAsync" Label="Kod" Required="Required" MaxLength="10" Placeholder="00-000" Immediate="Immediate"
                   Validation="@(new Func<string, string?>(ValidatePostalCode))"
                   Error="@(Missing(Model.PostalCode) || (HighlightMissing && AddressModel.PostalCodeError(Model.PostalCode, Model.Country) is not null))"
                   ErrorText="@(Missing(Model.PostalCode) ? "Wymagane" : AddressModel.PostalCodeError(Model.PostalCode, Model.Country))" />
 </MudItem>
 <MudItem xs="7" sm="4">
-    <MudTextField @bind-Value="Model.City" Label="Miasto" Required="Required" MaxLength="100" Immediate="Immediate"
+    <MudTextField @bind-Value="Model.City" @bind-Value:after="Changed.InvokeAsync" Label="Miasto" Required="Required" MaxLength="100" Immediate="Immediate"
                   Error="@Missing(Model.City)" ErrorText="Wymagane" />
 </MudItem>
 <MudItem xs="12" sm="4">
-    <MudTextField @bind-Value="Model.Country" Label="Kraj" Required="Required" MaxLength="60" Immediate="Immediate"
+    <MudTextField @bind-Value="Model.Country" @bind-Value:after="Changed.InvokeAsync" Label="Kraj" Required="Required" MaxLength="60" Immediate="Immediate"
                   Error="@Missing(Model.Country)" ErrorText="Wymagane" />
 </MudItem>
 
 @code {
     [Parameter, EditorRequired] public AddressModel Model { get; set; } = default!;
+
+    /// <summary>Raised after any field changed, so the parent can re-check what is still missing.</summary>
+    [Parameter] public EventCallback Changed { get; set; }
 
     /// <summary>False for the optional address in the "new client" form.</summary>
     [Parameter] public bool Required { get; set; } = true;

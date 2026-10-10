@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 using Kamada.Shared.Kernel.Geography;
+using Kamada.Shared.Kernel.Text;
 using Microsoft.AspNetCore.WebUtilities;
 
 namespace Kamada.Shared.Infrastructure.Geocoding;
@@ -14,7 +15,23 @@ internal sealed class NominatimGeocodingService(HttpClient http) : IGeocodingSer
 {
     public const string ProviderName = "Nominatim";
 
+    private static readonly HashSet<string> StreetTypes =
+        new(["al", "aleja", "aleje", "ul", "ulica", "pl", "plac", "os", "osiedle", "rondo", "skwer"], StringComparer.Ordinal);
+
     public async Task<GeocodingResult?> GeocodeAsync(GeocodingRequest request, CancellationToken cancellationToken)
+    {
+        // OSM names many main streets "aleja …" while people (and speech) drop the word: try that once more.
+        return await SearchAsync(request, cancellationToken)
+            ?? (StartsWithStreetType(request.Street)
+                ? null
+                : await SearchAsync(request with { Street = "aleja " + request.Street.Trim() }, cancellationToken));
+    }
+
+    /// <summary>"al. Grunwaldzka", "ulica Długa", "plac Wolności", "os. Przymorze" – the type is already there.</summary>
+    private static bool StartsWithStreetType(string street) =>
+        TextSimilarity.Tokens(street).FirstOrDefault() is { } first && StreetTypes.Contains(first);
+
+    private async Task<GeocodingResult?> SearchAsync(GeocodingRequest request, CancellationToken cancellationToken)
     {
         var query = new Dictionary<string, string?>
         {

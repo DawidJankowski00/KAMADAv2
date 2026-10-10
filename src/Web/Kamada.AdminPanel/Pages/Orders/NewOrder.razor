@@ -61,7 +61,7 @@
                 <MudAlert Severity="Severity.Info" Dense="true" Icon="@Icons.Material.Filled.PersonAdd" Class="mb-3">
                     Zostanie utworzony nowy klient.
                 </MudAlert>
-                <NewClientFields Model="_newClient" />
+                <NewClientFields Model="_newClient" Changed="OnFormChanged" />
             }
             else
             {
@@ -298,7 +298,7 @@
             Nowy adres dostawy – zostanie dodany do klienta przy składaniu zamówienia.
         </MudAlert>
         <MudGrid Spacing="2">
-            <AddressFields Model="_newAddress" ShowType="false" HighlightMissing="true" Immediate="true" />
+            <AddressFields Model="_newAddress" ShowType="false" HighlightMissing="true" Immediate="true" Changed="OnFormChanged" />
         </MudGrid>
         @if (_newAddressPin is not null)
         {
@@ -317,6 +317,11 @@
         {
             await LoadClientAsync(clientId);
         }
+    }
+
+    /// <summary>Re-renders the page (summary, submit button) after a child form changed its model.</summary>
+    private static void OnFormChanged()
+    {
     }
 
     private async Task<IEnumerable<ClientSummaryDto>> SearchClientsAsync(string? text, CancellationToken cancellationToken)

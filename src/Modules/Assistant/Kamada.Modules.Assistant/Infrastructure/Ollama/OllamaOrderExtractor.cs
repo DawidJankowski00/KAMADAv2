@@ -18,19 +18,14 @@ internal sealed partial class OllamaOrderExtractor(
     [FromKeyedServices(AssistantServiceKeys.ChatClient)] IChatClient chat,
     ILogger<OllamaOrderExtractor> logger) : IOrderExtractor
 {
-    private static readonly ChatOptions Options = new()
-    {
-        Temperature = 0,
-        ResponseFormat = ExtractionPrompt.ResponseFormat,
-    };
-
     public async Task<Result<ExtractedOrder>> ExtractAsync(string text, AssistantLanguage language, CancellationToken cancellationToken)
     {
         var stopwatch = Stopwatch.StartNew();
         ChatResponse response;
         try
         {
-            response = await chat.GetResponseAsync(ExtractionPrompt.Messages(text, language), Options, cancellationToken);
+            var options = new ChatOptions { Temperature = 0, ResponseFormat = ExtractionPrompt.ResponseFormat };
+            response = await chat.GetResponseAsync(ExtractionPrompt.Messages(text, language), options, cancellationToken);
         }
         catch (Exception ex) when (ex is HttpRequestException or OllamaException
                                        || (ex is TaskCanceledException && !cancellationToken.IsCancellationRequested))

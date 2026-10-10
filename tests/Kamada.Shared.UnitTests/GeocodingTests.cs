@@ -53,6 +53,38 @@ public sealed class GeocodingTests
     }
 
     [Fact]
+    public async Task Nominatim_StreetNotFound_RetriesAsAleja()
+    {
+        var handler = new StubHttpMessageHandler(request => new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+        {
+            Content = new StringContent(
+                Uri.UnescapeDataString(request.RequestUri!.Query).Contains("aleja Grunwaldzka", StringComparison.Ordinal)
+                    ? """[{ "lat": "54.38", "lon": "18.60", "display_name": "Aleja Grunwaldzka 100" }]"""
+                    : "[]",
+                System.Text.Encoding.UTF8,
+                "application/json"),
+        });
+
+        var result = await Nominatim(handler).GeocodeAsync(
+            new GeocodingRequest("Grunwaldzka", "100", "Gdańsk", string.Empty, "Polska"), TestContext.Current.CancellationToken);
+
+        result.ShouldNotBeNull();
+        handler.Requests.Count.ShouldBe(2);
+    }
+
+    [Theory]
+    [InlineData("al. Grunwaldzka")]
+    [InlineData("Plac Wolności")]
+    public async Task Nominatim_StreetWithType_IsNotRetried(string street)
+    {
+        var handler = StubHttpMessageHandler.Json("[]");
+
+        await Nominatim(handler).GeocodeAsync(new GeocodingRequest(street, "1", "Gdańsk", string.Empty, "Polska"), TestContext.Current.CancellationToken);
+
+        handler.Requests.Count.ShouldBe(1);
+    }
+
+    [Fact]
     public void Request_ToQueryString_SkipsEmptyParts() =>
         new GeocodingRequest("Grunwaldzka", "15", "Gdańsk", " ", "Polska").ToQueryString().ShouldBe("Grunwaldzka 15, Gdańsk, Polska");
 

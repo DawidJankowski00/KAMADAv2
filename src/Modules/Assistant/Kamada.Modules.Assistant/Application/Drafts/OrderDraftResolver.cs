@@ -123,6 +123,13 @@ internal sealed partial class OrderDraftResolver(ICustomerDirectory customers, I
             return new DraftClientDto(DraftClientMode.Ambiguous, null, candidates, await NewClientAsync(spoken, cancellationToken));
         }
 
+        // Only a weak name match ("Marta …"), but exactly one look-alike lives at the spoken address: that is the client.
+        var onlyAtAddress = candidates.Where(c => c.MatchedAddressId is not null).ToList();
+        if (onlyAtAddress.Count == 1)
+        {
+            return Existing(onlyAtAddress[0].Id, candidates);
+        }
+
         // Nobody is similar enough: propose a new client, still listing look-alikes ("did you mean…?").
         return new DraftClientDto(DraftClientMode.New, null, candidates, await NewClientAsync(spoken, cancellationToken));
     }
@@ -173,8 +180,12 @@ internal sealed partial class OrderDraftResolver(ICustomerDirectory customers, I
         var result = await geocoding.GeocodeAsync(
             new GeocodingRequest(spoken.Street, spoken.BuildingNumber ?? string.Empty, spoken.City ?? string.Empty, spoken.PostalCode ?? string.Empty, DefaultCountry),
             cancellationToken);
+        // Only a hit on the same building is trusted: a street-level match has a pin in the middle of the street and
+        // possibly the postal code of another part of it.
         var found = result?.Address;
-        if (result is null || (found?.Street is { } street && TextSimilarity.PhraseScore(spoken.Street, street) < SamePlaceNameScore))
+        if (result is null
+            || (found?.Street is { } street && TextSimilarity.PhraseScore(spoken.Street, street) < SamePlaceNameScore)
+            || (spoken.BuildingNumber is { } building && TextSimilarity.Compact(found?.BuildingNumber) != TextSimilarity.Compact(building)))
         {
             warnings.Add(new DraftWarningDto(DraftWarningCodes.GeocodingFailed));
             return address;

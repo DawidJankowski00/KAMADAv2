@@ -96,6 +96,21 @@ public sealed class OrderDraftResolverTests
     }
 
     [Fact]
+    public async Task Resolve_FirstNameOnlyButOneLookAlikeLivesAtTheAddress_SelectsThatClient()
+    {
+        Candidate(0.8, CustomersMatchReason.Name, "Marta", "Kamińska");
+        var atAddress = Candidate(0.8, CustomersMatchReason.Name, "Marta", "Jaworska");
+        var addressId = Guid.NewGuid();
+        _customers.MatchingAddresses[atAddress.Id] = addressId;
+
+        var draft = await ResolveAsync(Order(new ExtractedClient("Marta", null, null, null), Grunwaldzka));
+
+        draft.Client.Mode.ShouldBe(DraftClientMode.Existing);
+        draft.Client.SelectedId.ShouldBe(atAddress.Id);
+        draft.Address.SelectedId.ShouldBe(addressId);
+    }
+
+    [Fact]
     public async Task Resolve_OnlyWeakNameMatches_ProposesNewClientButListsLookAlikes()
     {
         var lookAlike = Candidate(0.85, CustomersMatchReason.Name, "Jan", "Kowalczyk");
@@ -142,6 +157,18 @@ public sealed class OrderDraftResolverTests
     public async Task Resolve_GeocoderFindsADifferentStreet_IgnoresItAndWarns()
     {
         _geocoder = new FakeGeocoder(Gdansk with { Address = new GeocodedAddress("Kartuska", "15", "80-100", "Gdańsk") });
+
+        var draft = await ResolveAsync(Order(Jan, Grunwaldzka));
+
+        draft.Address.NewAddress!.PostalCode.ShouldBeNull();
+        draft.Address.NewAddress.Latitude.ShouldBeNull();
+        draft.Warnings.ShouldContain(new DraftWarningDto(DraftWarningCodes.GeocodingFailed));
+    }
+
+    [Fact]
+    public async Task Resolve_GeocoderFindsOnlyTheStreet_DoesNotTrustPostalCodeOrPin()
+    {
+        _geocoder = new FakeGeocoder(Gdansk with { Address = new GeocodedAddress("Aleja Grunwaldzka", null, "80-241", "Gdańsk") });
 
         var draft = await ResolveAsync(Order(Jan, Grunwaldzka));
 
