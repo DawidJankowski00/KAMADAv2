@@ -1,0 +1,327 @@
+[
+  {
+    "id": "pl-01-phone",
+    "language": "pl",
+    "text": "Zamówienie dla Julii Król, telefon 593 083 460: dwie kawy ziarniste i jedna czekolada gorzka.",
+    "client": "Existing:Julia Król",
+    "address": "None",
+    "lines": [ { "sku": "SP-KAW-001", "quantity": 2 }, { "sku": "SP-SLO-001", "quantity": 1 } ]
+  },
+  {
+    "id": "pl-02-inflected-name-and-street",
+    "language": "pl",
+    "text": "Dla pana Grzegorza Górskiego na Kartuską sto w Gdańsku: trzy herbaty zielone sencha.",
+    "client": "Existing:Grzegorz Górski",
+    "address": "Existing:Kartuska 100",
+    "lines": [ { "sku": "SP-KAW-003", "quantity": 3 } ]
+  },
+  {
+    "id": "pl-03-second-address",
+    "language": "pl",
+    "text": "Katarzyna Dąbrowska, dostawa na Partyzantów 20 w Gdańsku, poproszę pięć wód niegazowanych.",
+    "client": "Existing:Katarzyna Dąbrowska",
+    "address": "Existing:Partyzantów 20",
+    "lines": [ { "sku": "SP-NAP-001", "quantity": 5 } ]
+  },
+  {
+    "id": "pl-04-plan-example-new-client",
+    "language": "pl",
+    "text": "Nowe zamówienie dla Jana Kowalskiego, Grunwaldzka 15 mieszkania 4 w Gdańsku, telefon 600 100 200: sześć wód niegazowanych półtora litra i dwa chleby razowe",
+    "client": "New:Jan Kowalski",
+    "address": "New:Grunwaldzka 15",
+    "lines": [ { "sku": "SP-NAP-001", "quantity": 6 }, { "sku": "SP-PIE-001", "quantity": 2 } ]
+  },
+  {
+    "id": "pl-05-existing-client-new-address",
+    "language": "pl",
+    "text": "Marcin Jabłoński prosi o dostawę do pracy, ulica Wojska Polskiego 70 w Szczecinie: jeden powerbank.",
+    "client": "Existing:Marcin Jabłoński",
+    "address": "New:Wojska Polskiego 70",
+    "lines": [ { "sku": "EL-SMA-002", "quantity": 1 } ]
+  },
+  {
+    "id": "pl-06-number-words",
+    "language": "pl",
+    "text": "Zamówienie od Bartosza Michalskiego: dwanaście bułek grahamek i cztery soki jabłkowe.",
+    "client": "Existing:Bartosz Michalski",
+    "address": "None",
+    "lines": [ { "sku": "SP-PIE-002", "quantity": 12 }, { "sku": "SP-NAP-003", "quantity": 4 } ]
+  },
+  {
+    "id": "pl-07-apartment",
+    "language": "pl",
+    "text": "Barbara Stępień, Pilotów 10 mieszkania 13, Gdańsk – mata do ćwiczeń i butelka termiczna.",
+    "client": "Existing:Barbara Stępień",
+    "address": "Existing:Pilotów 10",
+    "lines": [ { "sku": "SR-FIT-001", "quantity": 1 }, { "sku": "SR-TUR-002", "quantity": 1 } ]
+  },
+  {
+    "id": "pl-08-new-client-spoken-email",
+    "language": "pl",
+    "text": "Nowa klientka Aleksandra Wiśniewska, mail ola.wisniewska małpa gmail kropka com, telefon 512 222 333, adres Bohaterów Monte Cassino 12 w Sopocie. Zamawia czajnik elektryczny.",
+    "client": "New:Aleksandra Wiśniewska",
+    "address": "New:Bohaterów Monte Cassino 12",
+    "lines": [ { "sku": "DK-AGD-001", "quantity": 1 } ]
+  },
+  {
+    "id": "pl-09-genitive-street",
+    "language": "pl",
+    "text": "Dla Tomasza Majewskiego z Wyszyńskiego 10 w Szczecinie: dwa opakowania kawy mielonej.",
+    "client": "Existing:Tomasz Majewski",
+    "address": "Existing:Wyszyńskiego 10",
+    "lines": [ { "sku": "SP-KAW-002", "quantity": 2 } ]
+  },
+  {
+    "id": "pl-10-ambiguous-water",
+    "language": "pl",
+    "text": "Natalia Kozłowska, Sopot, Bohaterów Monte Cassino 30: sześć wód.",
+    "client": "Existing:Natalia Kozłowska",
+    "address": "Existing:Bohaterów Monte Cassino 30",
+    "lines": [ { "ambiguous": [ "SP-NAP-001", "SP-NAP-002" ], "quantity": 6 } ]
+  },
+  {
+    "id": "pl-11-product-not-in-catalogue",
+    "language": "pl",
+    "text": "Paweł Malinowski chce pralkę automatyczną i dwa kable USB-C.",
+    "client": "Existing:Paweł Malinowski",
+    "address": "None",
+    "lines": [ { "notFound": true, "quantity": 1 }, { "sku": "EL-SMA-004", "quantity": 2 } ]
+  },
+  {
+    "id": "pl-12-first-name-and-address",
+    "language": "pl",
+    "text": "Marta zamawia trzy pierniki toruńskie, dostawa na Monte Cassino 20 w Szczecinie.",
+    "client": "Existing:Marta Jaworska",
+    "address": "Existing:Monte Cassino 20",
+    "lines": [ { "sku": "SP-SLO-002", "quantity": 3 } ]
+  },
+  {
+    "id": "pl-13-number-words-address",
+    "language": "pl",
+    "text": "Zamówienie dla Wojciecha, Grunwaldzka sto mieszkania czterdzieści osiem, Gdańsk: mieszanka orzechów.",
+    "client": "Existing:Wojciech Kwiatkowski",
+    "address": "Existing:Grunwaldzka 100",
+    "lines": [ { "sku": "SP-SLO-003", "quantity": 1 } ]
+  },
+  {
+    "id": "pl-14-courier-note",
+    "language": "pl",
+    "text": "Joanna Mazur, Jana Pawła II 30 m. 1, Szczecin. Dwie herbaty earl grey. Proszę zostawić paczkę u sąsiada.",
+    "client": "Existing:Joanna Mazur",
+    "address": "Existing:Jana Pawła II 30",
+    "lines": [ { "sku": "SP-KAW-004", "quantity": 2 } ]
+  },
+  {
+    "id": "pl-15-new-client-no-phone",
+    "language": "pl",
+    "text": "Zamówienie dla Krzysztofa Nowaka z ulicy Długiej 7 w Sopocie: patelnia granitowa.",
+    "client": "New:Krzysztof Nowak",
+    "address": "New:Długa 7",
+    "lines": [ { "sku": "DK-NAC-002", "quantity": 1 } ]
+  },
+  {
+    "id": "pl-16-phone-in-words",
+    "language": "pl",
+    "text": "Klient o numerze pięćset dwadzieścia dwa, czterysta dwa, sześćset trzy zamawia dwa zestawy rękawic ogrodowych.",
+    "client": "Existing:Rafał Piotrowski",
+    "address": "None",
+    "lines": [ { "sku": "OG-NAR-004", "quantity": 2 } ]
+  },
+  {
+    "id": "pl-17-no-diacritics",
+    "language": "pl",
+    "text": "zamowienie dla lukasza adamczyka, szeroka 50 gdansk, 2x kawa ziarnista",
+    "client": "Existing:Łukasz Adamczyk",
+    "address": "Existing:Szeroka 50",
+    "lines": [ { "sku": "SP-KAW-001", "quantity": 2 } ]
+  },
+  {
+    "id": "pl-18-known-phone-new-address",
+    "language": "pl",
+    "text": "Maria Olszewska, tel. 511 590 670, tym razem dostawa do biura: Bałtycka 4, Szczecin. Jeden kabel USB-C.",
+    "client": "Existing:Maria Olszewska",
+    "address": "New:Bałtycka 4",
+    "lines": [ { "sku": "EL-SMA-004", "quantity": 1 } ]
+  },
+  {
+    "id": "pl-19-new-client-gdynia",
+    "language": "pl",
+    "text": "Nowy klient: Adam Zieliński, Starowiejska 12 mieszkania 3, Gdynia, telefon 698 765 432. Cztery soki pomarańczowe.",
+    "client": "New:Adam Zieliński",
+    "address": "New:Starowiejska 12",
+    "lines": [ { "sku": "SP-NAP-004", "quantity": 4 } ]
+  },
+  {
+    "id": "pl-20-many-lines",
+    "language": "pl",
+    "text": "Kamil Woźniak: jedna kawa ziarnista, dwie mielone, trzy czekolady gorzkie i pół tuzina bułek grahamek.",
+    "client": "Existing:Kamil Woźniak",
+    "address": "None",
+    "lines": [
+      { "sku": "SP-KAW-001", "quantity": 1 },
+      { "sku": "SP-KAW-002", "quantity": 2 },
+      { "sku": "SP-SLO-001", "quantity": 3 },
+      { "sku": "SP-PIE-002", "quantity": 6 }
+    ]
+  },
+  {
+    "id": "pl-21-short",
+    "language": "pl",
+    "text": "Anna Pawłowska z Rayskiego 20 zamawia butelkę termiczną.",
+    "client": "Existing:Anna Pawłowska",
+    "address": "Existing:Rayskiego 20",
+    "lines": [ { "sku": "SR-TUR-002", "quantity": 1 } ]
+  },
+  {
+    "id": "pl-22-email",
+    "language": "pl",
+    "text": "Zamówienie od piotr.nowakowski@gmail.com – dwie maty do ćwiczeń.",
+    "client": "Existing:Piotr Nowakowski",
+    "address": "None",
+    "lines": [ { "sku": "SR-FIT-001", "quantity": 2 } ]
+  },
+  {
+    "id": "pl-23-street-starting-with-number",
+    "language": "pl",
+    "text": "Pani Małgorzata Pietrzak prosi na adres w Gdyni, 10 Lutego 20: sok jabłkowy i chleb razowy.",
+    "client": "Existing:Małgorzata Pietrzak",
+    "address": "Existing:10 Lutego 20",
+    "lines": [ { "sku": "SP-NAP-003", "quantity": 1 }, { "sku": "SP-PIE-001", "quantity": 1 } ]
+  },
+  {
+    "id": "pl-24-new-client-aleja",
+    "language": "pl",
+    "text": "Dla Ewy Kaczmarek, Aleja Piastów 15, Szczecin, telefon 501 300 400: trzy wody gazowane.",
+    "client": "New:Ewa Kaczmarek",
+    "address": "New:Piastów 15",
+    "lines": [ { "sku": "SP-NAP-002", "quantity": 3 } ]
+  },
+  {
+    "id": "pl-25-two-products",
+    "language": "pl",
+    "text": "Natalia Szymańska, Piastowska 50 mieszkania 46 w Gdańsku – herbata zielona i mieszanka orzechów.",
+    "client": "Existing:Natalia Szymańska",
+    "address": "Existing:Piastowska 50",
+    "lines": [ { "sku": "SP-KAW-003", "quantity": 1 }, { "sku": "SP-SLO-003", "quantity": 1 } ]
+  },
+  {
+    "id": "pl-26-slash-apartment",
+    "language": "pl",
+    "text": "Rafał Piotrowski, Ku Słońcu 50/59, Szczecin, jedna patelnia granitowa i jeden czajnik.",
+    "client": "Existing:Rafał Piotrowski",
+    "address": "Existing:Ku Słońcu 50",
+    "lines": [ { "sku": "DK-NAC-002", "quantity": 1 }, { "sku": "DK-AGD-001", "quantity": 1 } ]
+  },
+  {
+    "id": "en-01-plan-example",
+    "language": "en",
+    "text": "New order for Anna Nowak, 12 Wały Chrobrego, Szczecin: 3 apple juices",
+    "client": "New:Anna Nowak",
+    "address": "New:Wały Chrobrego 12",
+    "lines": [ { "sku": "SP-NAP-003", "quantity": 3 } ]
+  },
+  {
+    "id": "en-02-phone",
+    "language": "en",
+    "text": "Order for Julia Król, phone 593 083 460, two bags of coffee beans.",
+    "client": "Existing:Julia Król",
+    "address": "None",
+    "lines": [ { "sku": "SP-KAW-001", "quantity": 2 } ]
+  },
+  {
+    "id": "en-03-translated-products",
+    "language": "en",
+    "text": "Please deliver two sparkling waters and a loaf of wholemeal bread to Grzegorz Górski, 100 Kartuska Street, Gdańsk.",
+    "client": "Existing:Grzegorz Górski",
+    "address": "Existing:Kartuska 100",
+    "lines": [ { "sku": "SP-NAP-002", "quantity": 2 }, { "sku": "SP-PIE-001", "quantity": 1 } ]
+  },
+  {
+    "id": "en-04-new-client-email",
+    "language": "en",
+    "text": "New customer John Smith, email john.smith@example.com, 8 Długa Street apartment 3, Gdańsk: one electric kettle.",
+    "client": "New:John Smith",
+    "address": "New:Długa 8",
+    "lines": [ { "sku": "DK-AGD-001", "quantity": 1 } ]
+  },
+  {
+    "id": "en-05-existing-address",
+    "language": "en",
+    "text": "Marta Wieczorek wants four bottles of orange juice delivered to 800 Niepodległości, Sopot.",
+    "client": "Existing:Marta Wieczorek",
+    "address": "Existing:Niepodległości 800",
+    "lines": [ { "sku": "SP-NAP-004", "quantity": 4 } ]
+  },
+  {
+    "id": "en-06-dozen",
+    "language": "en",
+    "text": "Order from Kamil Woźniak: a dozen graham rolls.",
+    "client": "Existing:Kamil Woźniak",
+    "address": "None",
+    "lines": [ { "sku": "SP-PIE-002", "quantity": 12 } ]
+  },
+  {
+    "id": "en-07-two-products",
+    "language": "en",
+    "text": "For Mateusz Jankowski at 5 Obrońców Wybrzeża, Gdańsk: green tea and a pack of mixed nuts.",
+    "client": "Existing:Mateusz Jankowski",
+    "address": "Existing:Obrońców Wybrzeża 5",
+    "lines": [ { "sku": "SP-KAW-003", "quantity": 1 }, { "sku": "SP-SLO-003", "quantity": 1 } ]
+  },
+  {
+    "id": "en-08-phone-only",
+    "language": "en",
+    "text": "Customer phone 536 100 713 orders an exercise mat.",
+    "client": "Existing:Julia Krawczyk",
+    "address": "None",
+    "lines": [ { "sku": "SR-FIT-001", "quantity": 1 } ]
+  },
+  {
+    "id": "en-09-ambiguous-water",
+    "language": "en",
+    "text": "Order for Paul Brown, 25 Jagiellońska, Szczecin, phone 600 700 800: water, six bottles.",
+    "client": "New:Paul Brown",
+    "address": "New:Jagiellońska 25",
+    "lines": [ { "ambiguous": [ "SP-NAP-001", "SP-NAP-002" ], "quantity": 6 } ]
+  },
+  {
+    "id": "en-10-second-address",
+    "language": "en",
+    "text": "Wojciech Lewandowski, 20 Śląska Street, Szczecin: two power banks and one USB-C cable.",
+    "client": "Existing:Wojciech Lewandowski",
+    "address": "Existing:Śląska 20",
+    "lines": [ { "sku": "EL-SMA-002", "quantity": 2 }, { "sku": "EL-SMA-004", "quantity": 1 } ]
+  },
+  {
+    "id": "en-11-flat",
+    "language": "en",
+    "text": "Maria Olszewska needs three dark chocolates, deliver to Mazurska 20 flat 20 in Szczecin.",
+    "client": "Existing:Maria Olszewska",
+    "address": "Existing:Mazurska 20",
+    "lines": [ { "sku": "SP-SLO-001", "quantity": 3 } ]
+  },
+  {
+    "id": "en-12-no-diacritics",
+    "language": "en",
+    "text": "Order for Barbara Stepien: gingerbread, two packs.",
+    "client": "Existing:Barbara Stępień",
+    "address": "None",
+    "lines": [ { "sku": "SP-SLO-002", "quantity": 2 } ]
+  },
+  {
+    "id": "en-13-new-client-two-products",
+    "language": "en",
+    "text": "New client Emma Wilson, 3 Świętojańska Street, Gdynia, email emma.wilson@example.com: a thermal bottle and garden gloves.",
+    "client": "New:Emma Wilson",
+    "address": "New:Świętojańska 3",
+    "lines": [ { "sku": "SR-TUR-002", "quantity": 1 }, { "sku": "OG-NAR-004", "quantity": 1 } ]
+  },
+  {
+    "id": "en-14-short",
+    "language": "en",
+    "text": "For Tomasz Majewski: a frying pan.",
+    "client": "Existing:Tomasz Majewski",
+    "address": "None",
+    "lines": [ { "sku": "DK-NAC-002", "quantity": 1 } ]
+  }
+]
