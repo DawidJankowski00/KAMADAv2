@@ -28,11 +28,17 @@ internal static class AssistantEvals
         using var http = host.CreateClient();
         http.Timeout = TimeSpan.FromMinutes(6);
 
-        // Demo administrator from the seed data (WorkforceSeeder).
-        var login = await http.PostAsJsonAsync("/api/auth/login", new LoginRequest("admin", "Admin123!"), json);
-        login.EnsureSuccessStatusCode();
-        var tokens = (await login.Content.ReadFromJsonAsync<TokenResponse>(json))!;
-        http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", tokens.AccessToken);
+        // Demo administrator from the seed data (WorkforceSeeder). Signed in again before every case: a run with a slow
+        // model outlasts an access token.
+        async Task SignInAsync()
+        {
+            var login = await http.PostAsJsonAsync("/api/auth/login", new LoginRequest("admin", "Admin123!"), json);
+            login.EnsureSuccessStatusCode();
+            var tokens = (await login.Content.ReadFromJsonAsync<TokenResponse>(json))!;
+            http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", tokens.AccessToken);
+        }
+
+        await SignInAsync();
 
         // The first request loads the model into memory – not counted.
         Console.WriteLine("Warming up the model…");
@@ -41,6 +47,7 @@ internal static class AssistantEvals
         var results = new List<CaseResult>();
         foreach (var evalCase in cases)
         {
+            await SignInAsync();
             var stopwatch = Stopwatch.StartNew();
             var response = await http.PostAsJsonAsync("/api/assistant/order-drafts", new OrderDraftRequest(evalCase.Text, evalCase.Language), json);
             stopwatch.Stop();
