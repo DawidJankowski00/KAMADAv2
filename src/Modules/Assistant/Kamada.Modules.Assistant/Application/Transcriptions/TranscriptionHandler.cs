@@ -2,15 +2,20 @@ using Kamada.Modules.Assistant.Application.Abstractions;
 using Kamada.Modules.Assistant.Domain;
 using Kamada.Shared.Contracts.Assistant;
 using Kamada.Shared.Kernel.Results;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Kamada.Modules.Assistant.Application.Transcriptions;
 
 /// <summary>
-/// Recording → text. Checks size, format and length before the expensive recognition; the audio stays in memory only
-/// for the duration of the request.
+/// Recording → text. Checks size, format, length and loudness before the expensive recognition; the audio stays in
+/// memory only for the duration of the request. Only its length and peak level are logged (to tell a muted microphone
+/// from unclear speech).
 /// </summary>
-internal sealed class TranscriptionHandler(ISpeechToText speechToText, IOptions<AssistantOptions> options)
+internal sealed partial class TranscriptionHandler(
+    ISpeechToText speechToText,
+    IOptions<AssistantOptions> options,
+    ILogger<TranscriptionHandler> logger)
 {
     /// <param name="audio">Uploaded file content, <c>null</c> when the request has no <c>audio</c> field.</param>
     /// <param name="length">Declared size of the upload in bytes.</param>
@@ -59,6 +64,12 @@ internal sealed class TranscriptionHandler(ISpeechToText speechToText, IOptions<
             return AssistantErrors.SpeechToTextNotReady;
         }
 
+        LogRecording(format.Duration.TotalSeconds, format.PeakDecibels);
+        if (format.IsSilent)
+        {
+            return AssistantErrors.SilentRecording;
+        }
+
         var result = await speechToText.TranscribeAsync(wav, AssistantLanguages.Parse(language), cancellationToken);
         if (result.IsFailure)
         {
@@ -88,4 +99,7 @@ internal sealed class TranscriptionHandler(ISpeechToText speechToText, IOptions<
 
         return buffer.ToArray();
     }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Recording of {Seconds:0.0} s, peak {PeakDb:0.0} dBFS")]
+    private partial void LogRecording(double seconds, double peakDb);
 }

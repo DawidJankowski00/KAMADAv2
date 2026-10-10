@@ -108,6 +108,13 @@
                 return;
             }
 
+            // A muted or wrong microphone records digital silence; say so instead of sending it for recognition.
+            if (WavEncoder.Peak(pcm) < WavEncoder.SilencePeak)
+            {
+                _error = RecorderMessages.For("silent");
+                return;
+            }
+
             await OnRecorded.InvokeAsync(new RecordedAudio(WavEncoder.Encode(pcm), WavEncoder.Duration(pcm.Length), Language));
         }
         finally

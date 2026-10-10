@@ -46,6 +46,17 @@ public sealed class TranscriptionTests(KamadaApiFactory factory)
     }
 
     [Fact]
+    public async Task Transcribe_SilentRecording_Returns400()
+    {
+        var (admin, _) = await factory.CreateSignedInClientAsync(WorkerRole.Admin);
+
+        var response = await admin.PostAsync(Url, Upload(Wav(seconds: 2, amplitude: 0)), TestContext.Current.CancellationToken);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await response.ReadProblemCodeAsync()).ShouldBe("Assistant.SilentRecording");
+    }
+
+    [Fact]
     public async Task Transcribe_FileOver2MB_Returns400()
     {
         var (admin, _) = await factory.CreateSignedInClientAsync(WorkerRole.Admin);
@@ -102,8 +113,8 @@ public sealed class TranscriptionTests(KamadaApiFactory factory)
         return form;
     }
 
-    /// <summary>Silent 16-bit PCM mono WAV.</summary>
-    private static byte[] Wav(double seconds, int sampleRate = 16_000)
+    /// <summary>16-bit PCM mono WAV with a square wave (amplitude 0 = digital silence).</summary>
+    private static byte[] Wav(double seconds, int sampleRate = 16_000, int amplitude = 8000)
     {
         var dataLength = (int)(seconds * sampleRate) * 2;
         var wav = new byte[44 + dataLength];
@@ -120,6 +131,11 @@ public sealed class TranscriptionTests(KamadaApiFactory factory)
         BinaryPrimitives.WriteInt16LittleEndian(span[34..], 16);
         "data"u8.CopyTo(span[36..]);
         BinaryPrimitives.WriteInt32LittleEndian(span[40..], dataLength);
+        for (var i = 0; i < dataLength / 2; i++)
+        {
+            BinaryPrimitives.WriteInt16LittleEndian(span[(44 + i * 2)..], (short)(i / 40 % 2 == 0 ? amplitude : -amplitude));
+        }
+
         return wav;
     }
 }

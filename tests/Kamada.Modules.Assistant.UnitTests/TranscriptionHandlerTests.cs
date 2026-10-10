@@ -4,6 +4,7 @@ using Kamada.Modules.Assistant.Application.Abstractions;
 using Kamada.Modules.Assistant.Application.Transcriptions;
 using Kamada.Modules.Assistant.Domain;
 using Kamada.Shared.Kernel.Results;
+using Microsoft.Extensions.Logging.Abstractions;
 using MsOptions = Microsoft.Extensions.Options.Options;
 
 namespace Kamada.Modules.Assistant.UnitTests;
@@ -26,7 +27,7 @@ public sealed class TranscriptionHandlerTests
 
     [Fact]
     public async Task Transcribe_NoFile_FailsWithAudioMissing() =>
-        (await new TranscriptionHandler(_speech, Options()).TranscribeAsync(null, 0, null, TestContext.Current.CancellationToken))
+        (await Handler(Options()).TranscribeAsync(null, 0, null, TestContext.Current.CancellationToken))
             .Error.Code.ShouldBe("Assistant.AudioMissing");
 
     [Fact]
@@ -63,7 +64,7 @@ public sealed class TranscriptionHandlerTests
     }
 
     [Fact]
-    public async Task Transcribe_SilenceOnly_FailsWithNothingHeard()
+    public async Task Transcribe_NoSpeechRecognized_FailsWithNothingHeard()
     {
         _speech.Text = "  ";
 
@@ -71,11 +72,20 @@ public sealed class TranscriptionHandlerTests
     }
 
     [Fact]
+    public async Task Transcribe_SilentRecording_FailsWithoutTouchingTheModel()
+    {
+        var result = await TranscribeAsync(Wav(seconds: 2, amplitude: 50));
+
+        result.Error.ShouldBe(AssistantErrors.SilentRecording);
+        _speech.Calls.ShouldBe(0);
+    }
+
+    [Fact]
     public async Task Transcribe_DictationDisabled_FailsWithoutTouchingTheModel()
     {
         var options = Options(whisperEnabled: false);
 
-        var result = await new TranscriptionHandler(_speech, options).TranscribeAsync(
+        var result = await Handler(options).TranscribeAsync(
             new MemoryStream(Wav(seconds: 1)), 100, null, TestContext.Current.CancellationToken);
 
         result.Error.ShouldBe(AssistantErrors.SpeechToTextDisabled);
@@ -90,6 +100,18 @@ public sealed class TranscriptionHandlerTests
         wav.ShouldNotBeNull();
         wav.IsSpeechFormat.ShouldBeTrue();
         wav.Duration.ShouldBe(TimeSpan.FromSeconds(1.5));
+    }
+
+    [Theory]
+    [InlineData(0, true)]
+    [InlineData(100, true)]
+    [InlineData(1000, false)]
+    public void WavAudio_PeakLevel_TellsSilenceFromSound(int amplitude, bool silent)
+    {
+        var wav = WavAudio.TryRead(Wav(seconds: 1, amplitude: amplitude))!;
+
+        wav.Peak.ShouldBe(amplitude / 32768.0, tolerance: 0.0001);
+        wav.IsSilent.ShouldBe(silent);
     }
 
     [Fact]
@@ -111,8 +133,8 @@ public sealed class TranscriptionHandlerTests
         WavAudio.TryRead(wav).ShouldBeNull();
     }
 
-    /// <summary>Silent PCM WAV with the given format.</summary>
-    internal static byte[] Wav(double seconds, int sampleRate = 16_000, int channels = 1)
+    /// <summary>PCM WAV with the given format holding a square wave of the given amplitude (0 = digital silence).</summary>
+    internal static byte[] Wav(double seconds, int sampleRate = 16_000, int channels = 1, int amplitude = 8000)
     {
         var dataLength = (int)(seconds * sampleRate) * channels * 2;
         var wav = new byte[44 + dataLength];
@@ -129,12 +151,20 @@ public sealed class TranscriptionHandlerTests
         BinaryPrimitives.WriteInt16LittleEndian(span[34..], 16);
         "data"u8.CopyTo(span[36..]);
         BinaryPrimitives.WriteInt32LittleEndian(span[40..], dataLength);
+        for (var i = 0; i < dataLength / 2; i++)
+        {
+            BinaryPrimitives.WriteInt16LittleEndian(span[(44 + i * 2)..], (short)(i / 40 % 2 == 0 ? amplitude : -amplitude));
+        }
+
         return wav;
     }
 
+    private TranscriptionHandler Handler(Microsoft.Extensions.Options.IOptions<AssistantOptions> options) =>
+        new(_speech, options, NullLogger<TranscriptionHandler>.Instance);
+
     private Task<Result<Kamada.Shared.Contracts.Assistant.TranscriptionDto>> TranscribeAsync(
         byte[] audio, string? language = null, int maxBytes = 2 * 1024 * 1024) =>
-        new TranscriptionHandler(_speech, Options(maxBytes: maxBytes))
+        Handler(Options(maxBytes: maxBytes))
             .TranscribeAsync(new MemoryStream(audio), audio.Length, language, TestContext.Current.CancellationToken);
 
     private static Microsoft.Extensions.Options.IOptions<AssistantOptions> Options(int maxBytes = 2 * 1024 * 1024, bool whisperEnabled = true) =>

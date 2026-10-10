@@ -40,6 +40,21 @@ public static class WavEncoder
         return wav;
     }
 
+    /// <summary>Same limit as the API (<c>WavAudio.SilencePeak</c>, about -46 dBFS): below it the microphone captured nothing.</summary>
+    public const double SilencePeak = 0.005;
+
+    /// <summary>Loudest sample of little-endian 16-bit PCM, 0–1.</summary>
+    public static double Peak(ReadOnlySpan<byte> pcm)
+    {
+        var peak = 0;
+        for (var i = 0; i + 1 < pcm.Length; i += 2)
+        {
+            peak = Math.Max(peak, Math.Abs((int)BinaryPrimitives.ReadInt16LittleEndian(pcm.Slice(i, 2))));
+        }
+
+        return peak / 32768.0;
+    }
+
     /// <summary>Length of 16-bit mono PCM at the given sample rate.</summary>
     public static TimeSpan Duration(int pcmBytes, int sampleRate = SpeechSampleRate) =>
         TimeSpan.FromSeconds(pcmBytes / 2.0 / sampleRate);

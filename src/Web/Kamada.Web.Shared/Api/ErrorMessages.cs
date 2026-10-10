@@ -62,6 +62,7 @@ public static class ErrorMessages
         ["Assistant.AudioTooLarge"] = "Nagranie jest za duże.",
         ["Assistant.AudioTooLong"] = "Nagranie może trwać najwyżej 60 sekund.",
         ["Assistant.NothingHeard"] = "Nie rozpoznano mowy. Mów wyraźniej, bliżej mikrofonu.",
+        ["Assistant.SilentRecording"] = "Nagranie jest ciche – mikrofon nic nie zarejestrował. Sprawdź, czy jest włączony i wybrany w przeglądarce.",
         ["Assistant.InvalidLanguage"] = "Nieobsługiwany język.",
     };
 
