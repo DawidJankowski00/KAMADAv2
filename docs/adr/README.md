@@ -11,3 +11,4 @@ Short records of decisions that shape the codebase ([format](https://adr.github.
 | [0005](0005-blazor-wasm-frontends.md) | Two Blazor WebAssembly frontends with a shared UI library | Accepted |
 | [0006](0006-geocoding-never-blocks-saving.md) | Geocoding with Nominatim that never blocks saving an address | Accepted |
 | [0007](0007-demo-data-through-real-use-cases.md) | Demo data seeded through the real use cases | Accepted |
+| [0008](0008-local-ai-assistant-suggests-only.md) | Local AI order assistant: the model extracts, C# resolves, the admin accepts | Accepted |

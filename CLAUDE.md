@@ -30,7 +30,7 @@ and solves a fixed-start/fixed-end TSP locally (brute force / Held-Karp / NN + 2
 
 ## Architecture: modular monolith
 
-One API host (`src/Kamada.Api`), seven modules. Each module = **two projects**:
+One API host (`src/Kamada.Api`), eight modules. Each module = **two projects**:
 
 ```
 src/Modules/<Module>/Kamada.Modules.<Module>/            # internal implementation
@@ -49,7 +49,7 @@ Rules (enforced by `tests/Kamada.ArchitectureTests`):
 - Frontends reference only `Kamada.Shared.Contracts` (HTTP DTOs) and `Kamada.Web.Shared` (shared Blazor UI
   library, which itself references only `Kamada.Shared.Contracts`), never modules.
 
-Modules: `Catalog`, `Customers`, `Ordering`, `Payments`, `Workforce`, `Delivery`, `RouteOptimization`.
+Modules: `Catalog`, `Customers`, `Ordering`, `Payments`, `Workforce`, `Delivery`, `RouteOptimization`, `Assistant`.
 Shared: `Kamada.Shared.Kernel` (Result, Error, Entity/AggregateRoot base, domain events, clock abstractions),
 `Kamada.Shared.Infrastructure` (EF interceptors, shared connection/transaction, ProblemDetails mapping),
 `Kamada.Shared.Contracts` (HTTP request/response DTOs used by API and both Blazor apps, folder per module).
@@ -124,6 +124,7 @@ dotnet test --project tests/Kamada.ArchitectureTests
 docker compose up --build              # full stack
 docker compose up -d postgres          # DB only, for local dev
 docker compose --profile osrm up       # + self-hosted OSRM (set OSRM_BASE_URL/OSRM_MIN_DELAY in .env)
+docker compose --profile ai up         # + Ollama for the order assistant (set ASSISTANT_ENABLED=true in .env)
 docker compose down -v                 # reset the database (demo data is seeded again)
 dotnet run --project src/Kamada.Api
 dotnet run -c Release --project benchmarks/Kamada.Benchmarks -- --filter '*'   # solver timings
@@ -149,6 +150,7 @@ benign, EF probes the history table before creating it.
 | Courier app | http://localhost:5082 |
 | PostgreSQL | localhost:5432 |
 | OSRM (optional profile) | http://localhost:5000 |
+| Ollama (optional profile `ai`) | http://localhost:11434 |
 
 ## Minor decisions log
 
@@ -287,3 +289,22 @@ Record small decisions here (date — decision — reason).
   `kurier1`) and Szczecin (Zachodniopomorskie; `kurier2`). Orders alternate between areas so both get runs; runs never
   mix areas. Default OSRM map: Pomorskie + Zachodniopomorskie + Wielkopolskie + Kujawsko-Pomorskie (connected, ~480 MB);
   `osrm-download` uses `debian:trixie-slim` because the OSRM image (Debian 11) is past its support window for `apt`.
+- 2026-10-10 — Order assistant (ADR 0008): new stateless `Assistant` module (references only Customers/Catalog contracts).
+  Ollama via `Microsoft.Extensions.AI` `IChatClient` (OllamaSharp, keyed service), JSON schema + temperature 0; the model
+  returns mentions only, matching is deterministic C# (`TextSimilarity` in Shared Kernel: folding incl. `ł`, Jaro-Winkler,
+  length-weighted phrase score). Contracts: `ICustomerDirectory.FindClientCandidatesAsync` / `FindShippingAddressAsync` /
+  `SuggestUsernameAsync`, `ICatalogLookup.FindProductCandidatesAsync` (in-memory over narrow projections).
+- 2026-10-10 — Draft thresholds live in `OrderDraftResolver`: client selected on exact phone/e-mail or a single name match
+  ≥ 0.92 (namesakes broken by a matching address); product selected at ≥ 0.9 with a 0.05 margin over the runner-up.
+  Geocoder output replaces spoken street/city only when similar (≥ 0.85), otherwise the lookup is ignored with a warning.
+- 2026-10-10 — Accepting a draft = existing endpoints in sequence from the admin panel (create client with address / add
+  address → place order), no cross-module transaction; the page switches to "existing" after each create, so retries do
+  not duplicate. A client created for a failed order is acceptable data.
+- 2026-10-10 — `Assistant:Enabled` (default off, on in Development): when off, inference endpoints return 503
+  `Assistant.Disabled`, `GET /api/assistant/status` reports it and the panel hides; the `assistant` health check is
+  registered only when enabled (`Degraded` on failure). Rate limit policy `assistant` is per user (`sub`), configurable as
+  `RateLimiting:Assistant`. New `ErrorType.Unavailable` → 503.
+- 2026-10-10 — Integration tests replace the model with `FakeOrderExtractor` (extraction registered per unique note text)
+  and `FakeLanguageModelProbe`; `FakeGeocodingService` fills a missing postal code (`80-001`).
+- 2026-10-10 — Demo catalogue has "Napoje" and "Pieczywo" (water still/sparkling, juices, bread) so the example dictations
+  resolve, including an ambiguous "woda".
