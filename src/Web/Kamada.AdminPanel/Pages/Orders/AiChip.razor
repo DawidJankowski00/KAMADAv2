@@ -1,0 +1,13 @@
+@* Marks a value filled in by the assistant; uncertain matches are shown in the warning colour. *@
+
+<MudTooltip Text="@(Uncertain ? UncertainText : "Uzupełnione przez asystenta AI – sprawdź przed złożeniem zamówienia.")">
+    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Class="ma-0 ml-2"
+             Color="@(Uncertain ? Color.Warning : Color.Info)"
+             Icon="@(Uncertain ? Icons.Material.Filled.HelpOutline : Icons.Material.Filled.AutoAwesome)">AI</MudChip>
+</MudTooltip>
+
+@code {
+    [Parameter] public bool Uncertain { get; set; }
+
+    [Parameter] public string UncertainText { get; set; } = "Niepewne dopasowanie – sprawdź.";
+}

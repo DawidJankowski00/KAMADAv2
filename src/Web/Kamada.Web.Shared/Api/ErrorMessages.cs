@@ -51,6 +51,10 @@ public static class ErrorMessages
         ["Delivery.StopAlreadyCompleted"] = "Ten przystanek został już obsłużony.",
         ["Delivery.FailureReasonRequired"] = "Podaj powód nieudanej dostawy.",
         ["Delivery.InvalidTransition"] = "Tej operacji nie można wykonać w obecnym statusie trasy.",
+        ["Assistant.Disabled"] = "Asystent AI jest wyłączony.",
+        ["Assistant.ModelUnavailable"] = "Model AI jest niedostępny (czy działa Ollama i jest pobrany model?). Spróbuj za chwilę.",
+        ["Assistant.ExtractionFailed"] = "Asystent nie zrozumiał tekstu. Spróbuj sformułować go inaczej.",
+        ["Assistant.NothingRecognized"] = "Nie rozpoznano klienta, adresu ani produktów. Uzupełnij tekst.",
     };
 
     public static string? TryTranslate(string code) => Messages.GetValueOrDefault(code);

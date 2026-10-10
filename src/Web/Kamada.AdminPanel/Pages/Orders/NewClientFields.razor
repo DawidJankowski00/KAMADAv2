@@ -1,0 +1,30 @@
+@* Inputs of a client created together with the order; empty required fields are highlighted right away. *@
+
+<MudGrid Spacing="2">
+    <MudItem xs="12" sm="6">
+        <MudTextField @bind-Value="Model.Name" Label="Imię" Required="true" MaxLength="100" Immediate="true"
+                      Error="@(Model.NameError is not null)" ErrorText="@Model.NameError" />
+    </MudItem>
+    <MudItem xs="12" sm="6">
+        <MudTextField @bind-Value="Model.Surname" Label="Nazwisko" Required="true" MaxLength="100" Immediate="true"
+                      Error="@(Model.SurnameError is not null)" ErrorText="@Model.SurnameError" />
+    </MudItem>
+    <MudItem xs="12" sm="6">
+        <MudTextField @bind-Value="Model.Phone" Label="Telefon" Required="true" MaxLength="20" Immediate="true" Placeholder="600 100 200"
+                      Error="@(Model.PhoneError is not null)" ErrorText="@Model.PhoneError" />
+    </MudItem>
+    <MudItem xs="12" sm="6">
+        <MudTextField @bind-Value="Model.Email" Label="E-mail" Required="true" MaxLength="254" Immediate="true" InputType="InputType.Email"
+                      Error="@(Model.EmailError is not null)" ErrorText="@Model.EmailError"
+                      HelperText="Asystent nie uzupełnia e-maila, jeśli nie został podany." />
+    </MudItem>
+    <MudItem xs="12" sm="6">
+        <MudTextField @bind-Value="Model.Username" Label="Login klienta" Required="true" MaxLength="50" Immediate="true"
+                      Error="@(Model.UsernameError is not null)" ErrorText="@Model.UsernameError"
+                      HelperText="Wygenerowany z imienia i nazwiska – możesz zmienić." />
+    </MudItem>
+</MudGrid>
+
+@code {
+    [Parameter, EditorRequired] public NewClientModel Model { get; set; } = default!;
+}

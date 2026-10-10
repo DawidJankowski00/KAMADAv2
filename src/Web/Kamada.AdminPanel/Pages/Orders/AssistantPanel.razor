@@ -1,0 +1,77 @@
+@* Order assistant: free text → draft (nothing is saved). Hidden when the API reports the assistant as disabled. *@
+@inject ApiClient Api
+@inject ISnackbar Snackbar
+
+@if (_status?.Enabled == true)
+{
+    <MudPaper Class="pa-4 mb-4 kamada-assistant" Elevation="1">
+        <div class="d-flex flex-wrap align-center gap-2 mb-1">
+            <MudIcon Icon="@Icons.Material.Filled.AutoAwesome" Color="Color.Info" />
+            <MudText Typo="Typo.h6">Asystent</MudText>
+            <MudSpacer />
+            <MudText Typo="Typo.caption" Class="mud-text-secondary">Lokalny model: @_status.Model</MudText>
+        </div>
+        <MudText Typo="Typo.body2" Class="mud-text-secondary mb-2">
+            Opisz zamówienie własnymi słowami (po polsku lub angielsku). Asystent wypełni formularz – nic nie zostanie
+            zapisane, dopóki nie sprawdzisz danych i nie złożysz zamówienia.
+        </MudText>
+
+        <MudTextField @bind-Value="_text" Lines="3" Variant="Variant.Outlined" Immediate="true" MaxLength="MaxLength" Counter="MaxLength"
+                      Label="Treść zamówienia" Disabled="_busy"
+                      Placeholder="np. Nowe zamówienie dla Jana Kowalskiego, Grunwaldzka 15 mieszkania 4 w Gdańsku, telefon 600 100 200: sześć wód niegazowanych półtora litra i dwa chleby razowe" />
+
+        <div class="d-flex flex-wrap align-center gap-3 mt-2">
+            <MudSelect T="string" @bind-Value="_language" Label="Język" Dense="true" Variant="Variant.Outlined" Margin="Margin.Dense" Style="min-width: 190px; max-width: 220px">
+                <MudSelectItem Value="@("auto")">Automatycznie</MudSelectItem>
+                <MudSelectItem Value="@("pl")">Polski</MudSelectItem>
+                <MudSelectItem Value="@("en")">Angielski</MudSelectItem>
+            </MudSelect>
+            <MudSpacer />
+            <MudButton Variant="Variant.Filled" Color="Color.Info" OnClick="FillAsync" Disabled="@(_busy || string.IsNullOrWhiteSpace(_text))"
+                       StartIcon="@Icons.Material.Filled.AutoAwesome">
+                @(_busy ? "Analizuję…" : "Wypełnij formularz")
+            </MudButton>
+        </div>
+
+        @if (_busy)
+        {
+            <MudProgressLinear Color="Color.Info" Indeterminate="true" Class="mt-3" />
+            <MudText Typo="Typo.caption" Class="mud-text-secondary">Model działa lokalnie – bez karty graficznej może to potrwać kilkanaście sekund.</MudText>
+        }
+    </MudPaper>
+}
+
+@code {
+    private const int MaxLength = 2000;
+
+    private AssistantStatusDto? _status;
+    private string _text = string.Empty;
+    private string _language = "auto";
+    private bool _busy;
+
+    /// <summary>Raised with the draft the form should be filled with.</summary>
+    [Parameter] public EventCallback<OrderDraftDto> OnDraft { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await Api.GetAsync<AssistantStatusDto>("api/assistant/status");
+        _status = result.IsSuccess ? result.Value : null;
+    }
+
+    private async Task FillAsync()
+    {
+        _busy = true;
+        try
+        {
+            var result = await Api.PostAsync<OrderDraftDto>("api/assistant/order-drafts", new OrderDraftRequest(_text.Trim(), _language));
+            if (Snackbar.Report(result))
+            {
+                await OnDraft.InvokeAsync(result.Value);
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

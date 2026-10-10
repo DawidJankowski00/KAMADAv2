@@ -1,4 +1,5 @@
 using System.Globalization;
+using Kamada.Shared.Contracts.Assistant;
 using Kamada.Shared.Contracts.Customers;
 using Kamada.Shared.Contracts.Delivery;
 using Kamada.Shared.Contracts.Ordering;
@@ -179,4 +180,31 @@ public static class Labels
 
     public static string Format(DeliveryStopDto s) =>
         $"{s.Street} {s.BuildingNumber}{(s.ApartmentNumber is null ? string.Empty : "/" + s.ApartmentNumber)}, {s.PostalCode} {s.City}";
+
+    /// <summary>Polish explanation of an order-draft warning for the admin.</summary>
+    public static string Of(DraftWarningDto warning) => warning.Code switch
+    {
+        DraftWarningCodes.ClientNotMentioned => "Nie rozpoznano klienta – wybierz istniejącego albo uzupełnij dane nowego.",
+        DraftWarningCodes.ClientAmbiguous => "Pasuje kilku klientów – wybierz właściwego albo utwórz nowego.",
+        DraftWarningCodes.ClientDetailsDiffer =>
+            $"Klient rozpoznany po telefonie lub e-mailu, ale podane imię i nazwisko („{warning.Subject}”) jest inne – sprawdź.",
+        DraftWarningCodes.AddressNotMentioned => "Nie podano adresu dostawy.",
+        DraftWarningCodes.GeocodingFailed => "Nie udało się uzupełnić adresu (kod pocztowy, położenie) – uzupełnij go ręcznie.",
+        DraftWarningCodes.ProductNotFound => $"Nie znaleziono produktu „{warning.Subject}”.",
+        DraftWarningCodes.ProductAmbiguous => $"Kilka produktów pasuje do „{warning.Subject}” – wybierz właściwy.",
+        DraftWarningCodes.StockTooLow => $"Za mały stan magazynowy: {warning.Subject}.",
+        DraftWarningCodes.NoProducts => "Nie rozpoznano żadnych produktów.",
+        _ => warning.Code,
+    };
+
+    /// <summary>"telefon", "e-mail", "imię i nazwisko" – why a client was suggested.</summary>
+    public static string Of(ClientMatchReason reason) => reason switch
+    {
+        ClientMatchReason.Phone => "telefon",
+        ClientMatchReason.Email => "e-mail",
+        _ => "imię i nazwisko",
+    };
+
+    /// <summary>"92 %" – similarity score of a suggestion.</summary>
+    public static string Score(double score) => ((int)Math.Round(score * 100, MidpointRounding.AwayFromZero)).ToString(Polish) + " %";
 }

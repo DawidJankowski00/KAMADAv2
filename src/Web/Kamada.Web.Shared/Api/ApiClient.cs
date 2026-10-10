@@ -46,6 +46,10 @@ public sealed class ApiClient(HttpClient http)
         {
             return ApiResult<T>.Fail(ApiProblem.Network);
         }
+        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return ApiResult<T>.Fail(ApiProblem.Timeout);
+        }
     }
 
     private static async Task<ApiResult> SendAsync(Func<Task<HttpResponseMessage>> send, CancellationToken cancellationToken)
@@ -60,6 +64,10 @@ public sealed class ApiClient(HttpClient http)
         catch (HttpRequestException)
         {
             return ApiResult.Fail(ApiProblem.Network);
+        }
+        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return ApiResult.Fail(ApiProblem.Timeout);
         }
     }
 
