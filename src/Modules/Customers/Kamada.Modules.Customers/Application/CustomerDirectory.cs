@@ -1,4 +1,5 @@
 using Kamada.Modules.Customers.Application.Abstractions;
+using Kamada.Modules.Customers.Application.Lookup;
 using Kamada.Modules.Customers.Contracts;
 using Kamada.Modules.Customers.Domain.Clients;
 using Kamada.Shared.Kernel.Results;
@@ -59,5 +60,60 @@ internal sealed class CustomerDirectory(ICustomersDbContext db) : ICustomerDirec
         return await db.Addresses.AsNoTracking()
             .Where(a => ids.Contains(a.Id))
             .ToDictionaryAsync(a => a.Id, a => new AddressLocation(a.Id, a.Latitude, a.Longitude), cancellationToken);
+    }
+
+    /// <remarks>
+    /// Fuzzy matching runs in memory over a narrow projection of active clients – fine for a shop with thousands of
+    /// clients; a larger one would pre-filter in SQL (e.g. <c>pg_trgm</c> on folded names).
+    /// </remarks>
+    public async Task<IReadOnlyList<ClientCandidate>> FindClientCandidatesAsync(
+        ClientMention mention,
+        int limit,
+        CancellationToken cancellationToken)
+    {
+        if (mention.IsEmpty || limit <= 0)
+        {
+            return [];
+        }
+
+        var clients = await db.Clients.AsNoTracking()
+            .Where(c => c.IsActive)
+            .Select(c => new ClientRow(c.Id, c.Name, c.Surname, c.Email, c.PhoneNumber))
+            .ToListAsync(cancellationToken);
+
+        return ClientMatcher.Rank(mention, clients, limit);
+    }
+
+    public async Task<ShippingAddressMatch?> FindShippingAddressAsync(
+        Guid clientId,
+        AddressMention mention,
+        CancellationToken cancellationToken)
+    {
+        if (mention.IsEmpty)
+        {
+            return null;
+        }
+
+        var addresses = await db.Addresses.AsNoTracking()
+            .Where(a => a.ClientId == clientId && !a.IsArchived && a.Type == AddressType.Shipping)
+            .Select(a => new AddressRow(a.Id, a.Street, a.BuildingNumber, a.ApartmentNumber, a.City, a.PostalCode, a.Latitude, a.Longitude))
+            .ToListAsync(cancellationToken);
+
+        var match = AddressMatcher.FindSame(mention, addresses);
+        return match is null
+            ? null
+            : new ShippingAddressMatch(
+                match.Id, match.Street, match.BuildingNumber, match.ApartmentNumber, match.City, match.PostalCode, match.Latitude, match.Longitude);
+    }
+
+    public async Task<string> SuggestUsernameAsync(string? name, string? surname, CancellationToken cancellationToken)
+    {
+        var baseName = UsernameSuggestion.Base(name, surname);
+        var taken = await db.Clients.AsNoTracking()
+            .Where(c => c.Username.StartsWith(baseName))
+            .Select(c => c.Username)
+            .ToListAsync(cancellationToken);
+
+        return UsernameSuggestion.FirstFree(baseName, taken.ToHashSet(StringComparer.Ordinal));
     }
 }
