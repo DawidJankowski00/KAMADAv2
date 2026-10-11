@@ -362,3 +362,7 @@ Record small decisions here (date — decision — reason).
 - 2026-10-11 — Phone app roles: `AllowedRoles = [Courier, Admin]` (Seller joins first in stage 4). Admins can sign in; until the
   shared admin pages arrive (stage 3) `/admin` is a placeholder pointing to the web panel. MudBlazor 9 `MudMenu` with
   `ActivatorContent` needs `OnClick="@context.ToggleAsync"` on the activator (it is not wired automatically).
+- 2026-10-11 — Admin pages, dialogs and their helpers live in the Razor class library `src/Web/Kamada.Web.Admin`, used by the web
+  panel and the phone app (`Router.AdditionalAssemblies`), so both show the same pages. Its `_Imports.razor` puts
+  `[Authorize(Roles = Admin)]` on every page (in the phone app the role also selects the area). The dashboard is `/dashboard`;
+  the web panel redirects `/` to it. Page styles ship as `_content/Kamada.Web.Admin/kamada-admin.css`, linked by both hosts.

@@ -1,0 +1,26 @@
+@using System.Net.Http
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Routing
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.JSInterop
+@using MudBlazor
+@using Kamada.Web.Admin
+@using Kamada.Web.Admin.Components
+@using Kamada.Shared.Contracts.Assistant
+@using Kamada.Shared.Contracts.Auth
+@using Kamada.Shared.Contracts.Catalog
+@using Kamada.Shared.Contracts.Common
+@using Kamada.Shared.Contracts.Customers
+@using Kamada.Shared.Contracts.Delivery
+@using Kamada.Shared.Contracts.Ordering
+@using Kamada.Shared.Contracts.Payments
+@using Kamada.Shared.Contracts.Workforce
+@using Kamada.Web.Shared
+@using Kamada.Web.Shared.Api
+@using Kamada.Web.Shared.Auth
+@using Kamada.Web.Shared.Components
+@using Kamada.Web.Shared.Maps
+@* Admin pages are shared by the web panel and the phone app; in the phone app the role also selects the area. *@
+@attribute [Authorize(Roles = Roles.Admin)]

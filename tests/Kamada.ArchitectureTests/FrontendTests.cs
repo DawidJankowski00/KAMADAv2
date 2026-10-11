@@ -1,12 +1,12 @@
 namespace Kamada.ArchitectureTests;
 
 /// <summary>
-/// Frontends talk to the backend only over HTTP: they may reference the HTTP contracts and the shared UI library,
+/// Frontends talk to the backend only over HTTP: they may reference the HTTP contracts and the shared UI libraries,
 /// never a module or the API host.
 /// </summary>
 public sealed class FrontendTests
 {
-    private static readonly string[] AllowedFrontendReferences = ["Kamada.Shared.Contracts", "Kamada.Web.Shared"];
+    private static readonly string[] AllowedFrontendReferences = ["Kamada.Shared.Contracts", "Kamada.Web.Shared", "Kamada.Web.Admin"];
 
     [Theory]
     [InlineData("Kamada.AdminPanel")]
@@ -24,5 +24,13 @@ public sealed class FrontendTests
         var path = Path.Combine(RepositoryPaths.Root, "src", "Web", "Kamada.Web.Shared", "Kamada.Web.Shared.csproj");
 
         ProjectReferences.Of(path).ShouldBe(["Kamada.Shared.Contracts"]);
+    }
+
+    [Fact]
+    public void SharedAdminPages_ReferenceOnlyHttpContractsAndSharedUi()
+    {
+        var path = Path.Combine(RepositoryPaths.Root, "src", "Web", "Kamada.Web.Admin", "Kamada.Web.Admin.csproj");
+
+        ProjectReferences.Of(path).ShouldBe(["Kamada.Shared.Contracts", "Kamada.Web.Shared"], ignoreOrder: true);
     }
 }

@@ -2,7 +2,7 @@ using System.Text.RegularExpressions;
 using Kamada.Shared.Contracts.Assistant;
 using Kamada.Shared.Contracts.Customers;
 
-namespace Kamada.AdminPanel.Pages.Orders;
+namespace Kamada.Web.Admin.Pages.Orders;
 
 /// <summary>
 /// Client to be created together with the order. Rules mirror the API validators, so the submit button is enabled

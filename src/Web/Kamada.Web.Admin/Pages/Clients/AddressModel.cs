@@ -1,7 +1,7 @@
 using Kamada.Shared.Contracts.Assistant;
 using Kamada.Shared.Contracts.Customers;
 
-namespace Kamada.AdminPanel.Pages.Clients;
+namespace Kamada.Web.Admin.Pages.Clients;
 
 /// <summary>Mutable form model for an address.</summary>
 public sealed class AddressModel

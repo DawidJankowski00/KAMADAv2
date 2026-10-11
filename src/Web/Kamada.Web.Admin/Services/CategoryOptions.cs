@@ -1,7 +1,7 @@
 using Kamada.Shared.Contracts.Catalog;
 using Kamada.Web.Shared.Api;
 
-namespace Kamada.AdminPanel.Services;
+namespace Kamada.Web.Admin.Services;
 
 /// <summary>Flattened category tree for selects: "Spożywcze › Kawa".</summary>
 public sealed record CategoryOption(Guid Id, string Path, int Depth);

@@ -1,4 +1,4 @@
-namespace Kamada.AdminPanel.Pages.Workers;
+namespace Kamada.Web.Admin.Pages.Workers;
 
 /// <summary>Client-side mirror of the server password policy (the server validates again).</summary>
 internal static class PasswordRules
