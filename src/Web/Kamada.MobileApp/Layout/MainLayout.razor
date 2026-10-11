@@ -4,7 +4,7 @@
 @inject RoleContext RoleContext
 @inject NavigationManager Navigation
 
-<MudThemeProvider Theme="MobileTheme.Theme" />
+<MudThemeProvider Theme="MobileTheme.For(RoleContext.ActiveRole)" />
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
@@ -16,9 +16,11 @@
             <MudText Typo="Typo.h6">KAMADA</MudText>
         </MudLink>
         <MudSpacer />
+        <RoleSwitcher ActiveRole="@RoleContext.ActiveRole" AvailableRoles="RoleContext.AvailableRoles" />
         <AuthorizeView>
             <Authorized>
-                <MudText Typo="Typo.body2" Class="mr-1">
+                @* On a phone the role switcher takes the place of the name. *@
+                <MudText Typo="Typo.body2" Class="@(RoleContext.AvailableRoles.Count > 1 ? "ml-2 mr-1 d-none d-sm-flex" : "mr-1")">
                     @context.User.FindFirst("given_name")?.Value @context.User.FindFirst("family_name")?.Value
                 </MudText>
                 <MudIconButton Icon="@Icons.Material.Filled.Logout" Color="Color.Inherit" OnClick="LogoutAsync" aria-label="Wyloguj" />

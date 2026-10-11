@@ -1,6 +1,7 @@
 using System.Reflection;
 using Kamada.Shared.Contracts.Auth;
 using Microsoft.AspNetCore.Authorization;
+using MudBlazor;
 
 namespace Kamada.MobileApp;
 
@@ -14,6 +15,13 @@ internal static class RoleAreas
     {
         Roles.Courier => "courier",
         _ => null,
+    };
+
+    public static string IconOf(string role) => role switch
+    {
+        Roles.Courier => Icons.Material.Filled.LocalShipping,
+        Roles.Admin => Icons.Material.Filled.AdminPanelSettings,
+        _ => Icons.Material.Filled.Badge,
     };
 
     /// <summary>The role whose area the page belongs to; null for pages shared by every role.</summary>

@@ -1,0 +1,46 @@
+@inject RoleContext RoleContext
+@inject NavigationManager Navigation
+
+@* Only for workers with several roles in this app; with one role there is nothing to switch. *@
+@if (AvailableRoles.Count > 1 && ActiveRole is { } active)
+{
+    <MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" aria-label="Zmień rolę">
+        <ActivatorContent>
+            @* MudBlazor 9: a custom activator opens the menu itself. *@
+            <MudButton OnClick="@context.ToggleAsync" Color="Color.Inherit" Variant="Variant.Outlined" Size="Size.Small" Class="kamada-role-button"
+                       StartIcon="@RoleAreas.IconOf(active)" EndIcon="@Icons.Material.Filled.ArrowDropDown">
+                @Labels.Role(active)
+            </MudButton>
+        </ActivatorContent>
+        <ChildContent>
+            <MudText Typo="Typo.overline" Class="px-4 mud-text-secondary">Pracuję jako</MudText>
+            @foreach (var role in AvailableRoles)
+            {
+                <MudMenuItem Icon="@RoleAreas.IconOf(role)" OnClick="() => SwitchAsync(role)" Disabled="role == active">
+                    <div class="d-flex align-center gap-2">
+                        @Labels.Role(role)
+                        @if (role == active)
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Color="Color.Primary" />
+                        }
+                    </div>
+                </MudMenuItem>
+            }
+        </ChildContent>
+    </MudMenu>
+}
+
+@code {
+    [Parameter, EditorRequired] public string? ActiveRole { get; set; }
+
+    [Parameter, EditorRequired] public IReadOnlyList<string> AvailableRoles { get; set; } = [];
+
+    /// <summary>Switching keeps the session (the token has every role) and opens the new role's start page.</summary>
+    private async Task SwitchAsync(string role)
+    {
+        if (await RoleContext.SwitchToAsync(role))
+        {
+            Navigation.NavigateTo(RoleAreas.HomeOf(role) ?? string.Empty);
+        }
+    }
+}

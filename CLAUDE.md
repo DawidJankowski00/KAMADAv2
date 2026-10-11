@@ -355,3 +355,7 @@ Record small decisions here (date — decision — reason).
   `[Authorize(Roles = ...)]` (`RoleAreas.RoleOf`). `/` is `RoleHome`, which redirects to the active role's home. `MainLayout` gets
   the `RouteData` as a cascading value: a page of a role the user has but is not working in shows "Przełącz na …" instead of the
   page; a role the user does not have shows "Brak dostępu" (signed-out users still go to the login page).
+- 2026-10-11 — Phone app role switcher: app-bar menu with the active role (shown only with 2+ roles in the app); switching keeps the
+  session and opens the new role's home. Each role has its own accent colour (`MobileTheme.For(role)`: courier blue as before,
+  admin purple). Per-role bottom navigation waits for a role with several destinations (seller, stage 4): the courier has one
+  start page and the bottom of the run screen holds the stop buttons.

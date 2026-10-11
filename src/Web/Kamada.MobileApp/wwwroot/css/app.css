@@ -124,3 +124,10 @@ h1:focus {
 .kamada-stop-done {
     opacity: 0.75;
 }
+
+/* Role switcher in the app bar */
+.kamada-role-button {
+    text-transform: none;
+    border-color: rgba(255, 255, 255, 0.6);
+    white-space: nowrap;
+}
