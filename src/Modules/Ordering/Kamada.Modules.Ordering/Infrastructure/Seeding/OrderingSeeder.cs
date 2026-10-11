@@ -10,6 +10,7 @@ namespace Kamada.Modules.Ordering.Infrastructure.Seeding;
 /// Places 36 demo orders through <see cref="PlaceOrderHandler"/> (stock reservation, price snapshot and totals as
 /// in the real flow) for the seeded clients and products, spread over the last days during shop hours and alternating
 /// between the delivery areas, so both regions get enough orders for their runs.
+/// Every third order is taken by the demo seller, the rest by the demo admin.
 /// All orders start as <c>New</c>; payment, packing and delivery seeders move them on.
 /// </summary>
 internal sealed class OrderingSeeder(OrderingDbContext db, PlaceOrderHandler placeOrder, DemoSeedData seedData, TimeProvider clock) : IDataSeeder
@@ -33,7 +34,7 @@ internal sealed class OrderingSeeder(OrderingDbContext db, PlaceOrderHandler pla
 
     public async Task SeedAsync(CancellationToken cancellationToken)
     {
-        if (seedData.AdminId == Guid.Empty || seedData.ProductIds.Count == 0 || seedData.ShippingAddresses.Count == 0 || await db.Orders.AnyAsync(cancellationToken))
+        if (seedData.AdminId == Guid.Empty || seedData.SellerId == Guid.Empty || seedData.ProductIds.Count == 0 || seedData.ShippingAddresses.Count == 0 || await db.Orders.AnyAsync(cancellationToken))
         {
             return;
         }
@@ -60,7 +61,8 @@ internal sealed class OrderingSeeder(OrderingDbContext db, PlaceOrderHandler pla
                 .ToList();
             var notes = random.Next(100) < 25 ? Notes[random.Next(Notes.Length)] : null;
 
-            var placed = await placeOrder.HandleAsync(new PlaceOrderRequest(address.ClientId, address.AddressId, items, notes), seedData.AdminId, cancellationToken);
+            var placedBy = i % 3 == 2 ? seedData.SellerId : seedData.AdminId;
+            var placed = await placeOrder.HandleAsync(new PlaceOrderRequest(address.ClientId, address.AddressId, items, notes), placedBy, cancellationToken);
             if (placed.IsFailure)
             {
                 throw new InvalidOperationException($"Demo order could not be placed: {placed.Error.Code} – {placed.Error.Description}");

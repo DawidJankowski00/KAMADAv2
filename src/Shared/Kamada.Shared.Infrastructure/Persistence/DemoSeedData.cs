@@ -11,8 +11,11 @@ public sealed class DemoSeedData
     /// <summary>The demo data describes a company delivering in the Tricity and Szczecin: working hours and "today" are Polish local time.</summary>
     public static readonly TimeZoneInfo TimeZone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Warsaw");
 
-    /// <summary>The demo administrator; places the demo orders.</summary>
+    /// <summary>The demo administrator; places most demo orders.</summary>
     public Guid AdminId { get; set; }
+
+    /// <summary>The demo seller; places every third demo order, so the phone app shows them under "Moje zamówienia".</summary>
+    public Guid SellerId { get; set; }
 
     public IReadOnlyList<Guid> CourierIds { get; set; } = [];
 
