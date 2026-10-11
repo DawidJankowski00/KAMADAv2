@@ -1,5 +1,7 @@
 @inherits LayoutComponentBase
+@implements IDisposable
 @inject AuthService Auth
+@inject RoleContext RoleContext
 @inject NavigationManager Navigation
 
 <MudThemeProvider Theme="MobileTheme.Theme" />
@@ -27,7 +29,18 @@
         <MudContainer MaxWidth="MaxWidth.Small" Class="py-4 px-3">
             <ErrorBoundary @ref="_errorBoundary">
                 <ChildContent>
-                    @Body
+                    @if (!_rolesLoaded)
+                    {
+                        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+                    }
+                    else if (PageRole is { } role && role != RoleContext.ActiveRole && RoleContext.AvailableRoles.Contains(role))
+                    {
+                        <SwitchRolePrompt Role="@role" />
+                    }
+                    else
+                    {
+                        @Body
+                    }
                 </ChildContent>
                 <ErrorContent>
                     <MudAlert Severity="Severity.Error" Class="mb-4">
@@ -42,6 +55,27 @@
 
 @code {
     private ErrorBoundary? _errorBoundary;
+    private bool _rolesLoaded;
+
+    [CascadingParameter] public RouteData? RouteData { get; set; }
+
+    /// <summary>
+    /// The role whose area the current page belongs to. A page of a role the user has but is not working in shows a
+    /// prompt to switch instead of the page; a role the user does not have is handled by <c>[Authorize]</c>.
+    /// </summary>
+    private string? PageRole => RouteData is null ? null : RoleAreas.RoleOf(RouteData.PageType);
+
+    protected override void OnInitialized() => RoleContext.ActiveRoleChanged += OnActiveRoleChanged;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await RoleContext.LoadAsync();
+        _rolesLoaded = true;
+    }
+
+    public void Dispose() => RoleContext.ActiveRoleChanged -= OnActiveRoleChanged;
+
+    private void OnActiveRoleChanged() => InvokeAsync(StateHasChanged);
 
     private async Task LogoutAsync()
     {

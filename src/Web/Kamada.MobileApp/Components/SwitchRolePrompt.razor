@@ -1,0 +1,19 @@
+@inject RoleContext RoleContext
+
+<div class="d-flex flex-column align-center pa-8 gap-3">
+    <MudIcon Icon="@Icons.Material.Filled.SwitchAccount" Size="Size.Large" Class="mud-text-secondary" />
+    <MudText Align="Align.Center">
+        Ta strona należy do widoku roli <b>@Labels.Role(Role)</b>, a teraz pracujesz jako <b>@Labels.Role(RoleContext.ActiveRole ?? string.Empty)</b>.
+    </MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.SwapHoriz" OnClick="SwitchAsync">
+        Przełącz na: @Labels.Role(Role)
+    </MudButton>
+    <MudButton Href="" Variant="Variant.Text">Zostań w obecnej roli</MudButton>
+</div>
+
+@code {
+    /// <summary>The role whose page was opened; the user has it but works in another one.</summary>
+    [Parameter, EditorRequired] public string Role { get; set; } = string.Empty;
+
+    private Task SwitchAsync() => RoleContext.SwitchToAsync(Role);
+}

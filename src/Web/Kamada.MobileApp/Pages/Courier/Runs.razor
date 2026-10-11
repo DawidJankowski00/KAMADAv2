@@ -1,4 +1,5 @@
-@page "/"
+@page "/courier"
+@attribute [Authorize(Roles = Roles.Courier)]
 @inject ApiClient Api
 @inject NavigationManager Navigation
 
@@ -115,7 +116,7 @@ else
     private void OnTabChanged(int index)
     {
         var scope = (CourierRunScope)index;
-        Navigation.NavigateTo(scope == CourierRunScope.Current ? string.Empty : $"?scope={scope}");
+        Navigation.NavigateTo(scope == CourierRunScope.Current ? "courier" : $"courier?scope={scope}");
     }
 
     private static string DayLabel(DateOnly date)
@@ -124,5 +125,5 @@ else
         return date == today ? "Dziś" : date == today.AddDays(1) ? "Jutro" : Labels.Date(date);
     }
 
-    private static string RunUrl(Guid id) => $"runs/{id}";
+    private static string RunUrl(Guid id) => $"courier/runs/{id}";
 }

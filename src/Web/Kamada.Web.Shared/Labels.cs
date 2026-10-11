@@ -79,6 +79,9 @@ public static class Labels
 
     public static string Of(WorkerRole role) => role == WorkerRole.Admin ? "Administrator" : "Kurier";
 
+    /// <summary>Polish name of a role claim value; unknown roles are shown as they are.</summary>
+    public static string Role(string role) => Enum.GetNames<WorkerRole>().Contains(role) ? Of(Enum.Parse<WorkerRole>(role)) : role;
+
     public static string Format(AddressDto a) =>
         $"{a.Street} {a.BuildingNumber}{(a.ApartmentNumber is null ? string.Empty : "/" + a.ApartmentNumber)}, {a.PostalCode} {a.City}";
 

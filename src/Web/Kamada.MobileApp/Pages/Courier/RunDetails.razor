@@ -1,4 +1,5 @@
-@page "/runs/{Id:guid}"
+@page "/courier/runs/{Id:guid}"
+@attribute [Authorize(Roles = Roles.Courier)]
 @inject ApiClient Api
 @inject ISnackbar Snackbar
 @inject IDialogService Dialogs
@@ -131,9 +132,9 @@ else
 
     private string BackUrl => _run?.Status switch
     {
-        DeliveryRunStatus.Completed => "?scope=Completed",
-        DeliveryRunStatus.Planned when _run.PlannedDate > DateOnly.FromDateTime(DateTime.Today) => "?scope=Upcoming",
-        _ => "./",
+        DeliveryRunStatus.Completed => "courier?scope=Completed",
+        DeliveryRunStatus.Planned when _run.PlannedDate > DateOnly.FromDateTime(DateTime.Today) => "courier?scope=Upcoming",
+        _ => "courier",
     };
 
     private int Delivered => _run!.Stops.Count(s => s.Status == DeliveryStopStatus.Delivered);

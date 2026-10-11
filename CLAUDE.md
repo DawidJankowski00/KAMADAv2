@@ -351,3 +351,7 @@ Record small decisions here (date — decision — reason).
   `KamadaClientOptions.AllowedRoles` order (that order is the app's preference); the choice is remembered per user in
   localStorage (`<StorageKey>.role.<userId>`, kept after logout – it is only a role name). Default: the only role, otherwise the
   remembered one, otherwise the first available. It re-resolves on `AuthService.SessionChanged` and raises `ActiveRoleChanged`.
+- 2026-10-11 — Phone app areas: each role has its own URL prefix (`/courier/...`); a page belongs to the role in its
+  `[Authorize(Roles = ...)]` (`RoleAreas.RoleOf`). `/` is `RoleHome`, which redirects to the active role's home. `MainLayout` gets
+  the `RouteData` as a cascading value: a page of a role the user has but is not working in shows "Przełącz na …" instead of the
+  page; a role the user does not have shows "Brak dostępu" (signed-out users still go to the login page).
