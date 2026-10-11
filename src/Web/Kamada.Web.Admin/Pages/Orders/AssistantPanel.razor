@@ -1,7 +1,8 @@
 @* Order assistant: dictation or typing → editable text → draft (nothing is saved). Hidden when the assistant is disabled. *@
+@using Kamada.Web.Shared.Assistant
 @using Kamada.Web.Shared.Audio
 @implements IDisposable
-@inject ApiClient Api
+@inject IOrderAssistant Assistant
 @inject ISnackbar Snackbar
 
 @if (_status?.Enabled == true)
@@ -64,8 +65,7 @@
 
     private async Task LoadStatusAsync()
     {
-        var result = await Api.GetAsync<AssistantStatusDto>("api/assistant/status");
-        _status = result.IsSuccess ? result.Value : null;
+        _status = await Assistant.GetStatusAsync();
     }
 
     /// <summary>The speech model is downloaded on the server's first start: enable dictation as soon as it is ready.</summary>
@@ -89,9 +89,7 @@
     {
         await RunAsync("Rozpoznaję mowę…", async () =>
         {
-            var result = await Api.PostFileAsync<TranscriptionDto>(
-                "api/assistant/transcriptions", "audio", recording.Wav, "nagranie.wav", "audio/wav",
-                new Dictionary<string, string> { ["language"] = recording.Language });
+            var result = await Assistant.TranscribeAsync(recording);
             if (Snackbar.Report(result))
             {
                 _text = result.Value.Text;
@@ -104,7 +102,7 @@
     {
         await RunAsync("Model działa lokalnie – bez karty graficznej może to potrwać kilkanaście sekund.", async () =>
         {
-            var result = await Api.PostAsync<OrderDraftDto>("api/assistant/order-drafts", new OrderDraftRequest(_text.Trim(), _language));
+            var result = await Assistant.CreateDraftAsync(_text.Trim(), _language);
             if (Snackbar.Report(result))
             {
                 await OnDraft.InvokeAsync(result.Value);
