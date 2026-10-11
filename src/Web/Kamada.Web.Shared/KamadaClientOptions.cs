@@ -11,6 +11,9 @@ public sealed class KamadaClientOptions
     /// <summary>localStorage key for the session, different per app.</summary>
     public required string StorageKey { get; init; }
 
+    /// <summary>Key the app used before a rename; a session found there is moved to <see cref="StorageKey"/> once.</summary>
+    public string? PreviousStorageKey { get; init; }
+
     /// <summary>Where snackbars appear (<c>MudBlazor.Defaults.Classes.Position</c>); on phones the bottom is taken by action buttons.</summary>
     public string SnackbarPosition { get; init; } = MudBlazor.Defaults.Classes.Position.BottomRight;
 }

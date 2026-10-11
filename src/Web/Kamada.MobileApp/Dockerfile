@@ -5,8 +5,8 @@ WORKDIR /repo
 COPY global.json Directory.Build.props Directory.Packages.props ./
 COPY src/Shared/Kamada.Shared.Contracts/ src/Shared/Kamada.Shared.Contracts/
 COPY src/Web/Kamada.Web.Shared/ src/Web/Kamada.Web.Shared/
-COPY src/Web/Kamada.CourierApp/ src/Web/Kamada.CourierApp/
-RUN dotnet publish src/Web/Kamada.CourierApp/Kamada.CourierApp.csproj -c Release -o /app/publish
+COPY src/Web/Kamada.MobileApp/ src/Web/Kamada.MobileApp/
+RUN dotnet publish src/Web/Kamada.MobileApp/Kamada.MobileApp.csproj -c Release -o /app/publish
 
 FROM nginx:1.29-alpine AS runtime
 COPY deploy/nginx/spa.conf /etc/nginx/conf.d/default.conf

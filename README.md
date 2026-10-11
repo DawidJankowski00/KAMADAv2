@@ -74,7 +74,7 @@ docker compose up --build
 | Service | URL |
 |---|---|
 | Admin panel | http://localhost:5081 |
-| Courier app (PWA; use a phone or a narrow window) | http://localhost:5082 |
+| Phone app (PWA; use a phone or a narrow window) | http://localhost:5082 |
 | API docs (Scalar) | http://localhost:5080/scalar |
 | API health | http://localhost:5080/health |
 | Ollama (profile `ai` only) | http://localhost:11434 |
@@ -188,7 +188,7 @@ Requirements: .NET SDK 10.0.401+ and Docker (for PostgreSQL and the integration 
 docker compose up -d postgres
 dotnet run --project src/Kamada.Api               # http://localhost:5080
 dotnet run --project src/Web/Kamada.AdminPanel    # http://localhost:5081
-dotnet run --project src/Web/Kamada.CourierApp    # http://localhost:5082
+dotnet run --project src/Web/Kamada.MobileApp     # http://localhost:5082
 ```
 
 The API applies migrations and seeds demo data on startup (`Database:*` in `appsettings.Development.json`).
@@ -256,7 +256,7 @@ contracts: plain interfaces called in-process, sharing one database transaction 
 flowchart LR
     subgraph Browser
         Admin["Admin panel<br/>Blazor WASM + MudBlazor"]
-        CourierApp["Courier PWA<br/>Blazor WASM + MudBlazor"]
+        MobileApp["Phone PWA<br/>Blazor WASM + MudBlazor"]
     end
 
     subgraph Host["Kamada.Api (ASP.NET Core Minimal APIs)"]
@@ -271,7 +271,7 @@ flowchart LR
     end
 
     Admin -- "HTTP/JSON + JWT" --> Host
-    CourierApp -- "HTTP/JSON + JWT" --> Host
+    MobileApp -- "HTTP/JSON + JWT" --> Host
 
     Ordering -- ICatalogInventory --> Catalog
     Ordering -- ICustomerDirectory --> Customers
@@ -304,7 +304,7 @@ src/
   Web/
     Kamada.Web.Shared/              # shared Blazor library: API client, auth, map, labels
     Kamada.AdminPanel/              # admin SPA
-    Kamada.CourierApp/              # courier PWA
+    Kamada.MobileApp/               # phone PWA for workers (courier views)
 tests/                              # unit tests per module, integration tests, architecture tests
 benchmarks/Kamada.Benchmarks/       # solver speed and heuristic quality
 benchmarks/Kamada.Assistant.Evals/  # order assistant accuracy and latency against a real model

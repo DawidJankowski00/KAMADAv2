@@ -148,7 +148,7 @@ benign, EF probes the history table before creating it.
 |---|---|
 | API (+ `/scalar`, `/health`) | http://localhost:5080 |
 | Admin panel | http://localhost:5081 |
-| Courier app | http://localhost:5082 |
+| Phone app | http://localhost:5082 |
 | PostgreSQL | localhost:5432 |
 | OSRM (optional profile) | http://localhost:5000 |
 | Ollama (optional profile `ai`) | http://localhost:11434 |
@@ -221,7 +221,7 @@ Record small decisions here (date — decision — reason).
   Coordinates are always shown with invariant decimals (`Labels.Coordinates`).
 - 2026-09-28 — Frontends in Docker: nginx (`deploy/nginx/spa.conf`, SPA fallback, `gzip_static`), API address injected
   at container start by `deploy/nginx/40-kamada-config.sh` from `API_BASE_URL` (compose: `PUBLIC_API_URL`).
-- 2026-09-28 — Local UI testing: `.claude/launch.json` has `admin-panel` (5081) and `courier-app` (5082) dev servers;
+- 2026-09-28 — Local UI testing: `.claude/launch.json` has `admin-panel` (5081) and `mobile-app` (5082) dev servers;
   API runs from `docker compose up -d` (5080). Stop the dockerized `admin` service before starting the dev server on 5081.
 - 2026-09-28 — RouteOptimization is stateless (no schema/DbContext). Contracts: `IRoutePlanner` (`OptimizeAsync` with an
   optional current order evaluated on the *same* matrix, `EvaluateAsync` for manual orders; stop indexes refer to
@@ -344,3 +344,6 @@ Record small decisions here (date — decision — reason).
   refresh (≤ 15 min). Frontends declare `KamadaClientOptions.AllowedRoles` (admin panel `[Admin]`, courier app `[Courier]`);
   a refresh without any allowed role signs out, a refresh with changed roles raises `SessionChanged`. Sessions stored in the
   old single-role format are dropped by `TokenStore` (the user signs in again).
+- 2026-10-11 — The courier PWA became the KAMADA phone app: `src/Web/Kamada.MobileApp` (compose service `mobile`, launch config
+  `mobile-app`, port 5082 unchanged). Session key `kamada.mobile.session`; `KamadaClientOptions.PreviousStorageKey` moves a session
+  stored under the old `kamada.courier.session` once, so signed-in couriers stay signed in.

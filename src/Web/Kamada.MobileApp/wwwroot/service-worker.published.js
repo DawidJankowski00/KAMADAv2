@@ -1,4 +1,4 @@
-// Offline support for the courier app: the app shell (framework, assemblies, styles) is cached on install,
+// Offline support for the KAMADA phone app: the app shell (framework, assemblies, styles) is cached on install,
 // so the app starts without network. API calls always go to the network. See https://aka.ms/blazor-offline-considerations
 
 self.importScripts('./service-worker-assets.js');

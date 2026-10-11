@@ -10,7 +10,7 @@ public sealed class FrontendTests
 
     [Theory]
     [InlineData("Kamada.AdminPanel")]
-    [InlineData("Kamada.CourierApp")]
+    [InlineData("Kamada.MobileApp")]
     public void Frontend_ReferencesOnlyContractsAndSharedUi(string project)
     {
         var path = Path.Combine(RepositoryPaths.Root, "src", "Web", project, $"{project}.csproj");

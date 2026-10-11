@@ -1,7 +1,7 @@
 {
-  "name": "KAMADA – aplikacja kuriera",
-  "short_name": "KAMADA Kurier",
-  "description": "Trasy dostaw, kolejność przystanków i nawigacja dla kurierów KAMADA.",
+  "name": "KAMADA",
+  "short_name": "KAMADA",
+  "description": "Aplikacja na telefon dla pracowników KAMADA: trasy dostaw, nawigacja i statusy przystanków.",
   "lang": "pl",
   "id": "./",
   "start_url": "./",

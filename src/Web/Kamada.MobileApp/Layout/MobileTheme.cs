@@ -1,8 +1,8 @@
 using MudBlazor;
 
-namespace Kamada.CourierApp.Layout;
+namespace Kamada.MobileApp.Layout;
 
-internal static class CourierTheme
+internal static class MobileTheme
 {
     public static MudTheme Theme { get; } = new()
     {
