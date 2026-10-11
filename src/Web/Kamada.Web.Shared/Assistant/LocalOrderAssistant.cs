@@ -86,7 +86,7 @@ public sealed class LocalOrderAssistant(LocalAssistantRuntime runtime, LocalAssi
             return ApiResult<OrderDraftDto>.Fail(Problem("Assistant.NothingRecognized"));
         }
 
-        var draft = await new OrderDraftResolver(new LocalDraftSource(lookup)).ResolveAsync(extracted, text.Trim(), cancellationToken);
+        var draft = await new OrderDraftResolver(new LocalDraftSource(lookup.Clients?.Items ?? [], lookup.Products?.Items ?? [])).ResolveAsync(extracted, text.Trim(), cancellationToken);
         return ApiResult<OrderDraftDto>.Ok(draft);
     }
 
