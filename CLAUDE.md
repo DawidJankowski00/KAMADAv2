@@ -413,3 +413,12 @@ Record small decisions here (date — decision — reason).
   (and at app start). Sign-out wipes the whole database; an expired session wipes the lookup lists but keeps the outbox for the
   same worker (`meta.owner`); another worker signing in on the device starts from an empty database. Registered by the phone
   app only (`AddKamadaOffline`).
+- 2026-10-11 — Offline orders (stage 5): `OrderOutbox` (Web.Shared/Offline) keeps orders taken on the phone as `OutboxEntry` in the
+  `outbox` store and sends them oldest first in steps client → address → order, each with its `RequestId`; ids the server returns
+  are stored in the entry, so an interrupted send resumes. Transport failures, 401, 429, 5xx and `Concurrency.Conflict` stop the run
+  (retried when the connection is `Good`, on app start, after queueing, on demand); other refusals (e.g. `Products.InsufficientStock`)
+  mark the entry `NeedsAttention` with the Polish message, and the run goes on. `OrderForm` (`AllowQueue`, seller only) works on
+  `OfflineLookup` data (`LocalSearch`: words, no case/diacritics) while the connection is not `Good`, and also queues the order when
+  an online submit fails with a transient error. The seller's "Moje zamówienia" lists the outbox (edit = `/seller?outbox=<id>`,
+  discard); the bottom navigation badge turns red when something needs attention; logging out with queued orders asks first
+  (they are wiped). The AI assistant needs the server and is hidden while the form works locally.

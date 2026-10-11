@@ -1,7 +1,9 @@
 @* Shown under the app bar while the connection to the server is poor or gone. *@
 @using Kamada.Web.Shared.Connectivity
+@using Kamada.Web.Shared.Offline
 @implements IDisposable
 @inject ConnectionMonitor Monitor
+@inject OrderOutbox Outbox
 
 @if (Monitor.Quality != ConnectionQuality.Good)
 {
@@ -16,14 +18,26 @@
     private bool _checking;
 
     private string Text => Monitor.Quality == ConnectionQuality.Offline
-        ? "Brak połączenia" + LastContact
-        : "Słabe połączenie z serwerem";
+        ? "Brak połączenia" + (Outbox.Entries.Count > 0 ? Waiting : LastContact)
+        : "Słabe połączenie z serwerem" + Waiting;
+
+    private string Waiting => Outbox.Entries.Count > 0 ? $" · do wysłania: {Outbox.Entries.Count}" : string.Empty;
 
     private string LastContact => Monitor.LastContactAt is { } at ? $" (ostatnio {Labels.Time(at)})" : string.Empty;
 
-    protected override void OnInitialized() => Monitor.QualityChanged += OnQualityChanged;
+    protected override void OnInitialized()
+    {
+        Monitor.QualityChanged += OnQualityChanged;
+        Outbox.Changed += OnOutboxChanged;
+    }
 
-    public void Dispose() => Monitor.QualityChanged -= OnQualityChanged;
+    public void Dispose()
+    {
+        Monitor.QualityChanged -= OnQualityChanged;
+        Outbox.Changed -= OnOutboxChanged;
+    }
+
+    private void OnOutboxChanged() => InvokeAsync(StateHasChanged);
 
     private void OnQualityChanged(ConnectionQuality quality) => InvokeAsync(StateHasChanged);
 

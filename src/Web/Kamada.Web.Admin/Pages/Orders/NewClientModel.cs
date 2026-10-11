@@ -44,6 +44,15 @@ public sealed partial class NewClientModel
         Username = client.Username,
     };
 
+    public static NewClientModel From(CreateClientRequest client) => new()
+    {
+        Name = client.Name,
+        Surname = client.Surname,
+        Phone = client.PhoneNumber,
+        Email = client.Email,
+        Username = client.Username,
+    };
+
     public CreateClientRequest ToRequest(AddressRequest shippingAddress) =>
         new(Username.Trim(), Email.Trim(), Name.Trim(), Surname.Trim(), Phone.Trim(), [shippingAddress]);
 

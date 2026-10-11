@@ -5,6 +5,9 @@
 @inject NavigationManager Navigation
 @inject Kamada.Web.Shared.Connectivity.BrowserNetworkEvents NetworkEvents
 @inject Kamada.Web.Shared.Offline.OfflineLookup OfflineLookup
+@inject Kamada.Web.Shared.Offline.OrderOutbox Outbox
+@inject IDialogService Dialogs
+@inject ISnackbar Snackbar
 
 <MudThemeProvider Theme="MobileTheme.For(RoleContext.ActiveRole)" />
 <MudPopoverProvider />
@@ -103,6 +106,7 @@
     {
         RoleContext.ActiveRoleChanged += OnActiveRoleChanged;
         Navigation.LocationChanged += OnLocationChanged;
+        Outbox.OrderSent += OnOrderSent;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -111,6 +115,7 @@
         {
             await NetworkEvents.StartAsync();
             await OfflineLookup.StartAsync();
+            await Outbox.StartAsync();
         }
     }
 
@@ -124,6 +129,7 @@
     {
         RoleContext.ActiveRoleChanged -= OnActiveRoleChanged;
         Navigation.LocationChanged -= OnLocationChanged;
+        Outbox.OrderSent -= OnOrderSent;
     }
 
     private void OnActiveRoleChanged() => InvokeAsync(StateHasChanged);
@@ -137,8 +143,20 @@
         }
     }
 
+    private void OnOrderSent(Kamada.Shared.Contracts.Ordering.OrderDto order) =>
+        InvokeAsync(() => Snackbar.Add($"Wysłano zamówienie z telefonu – nadano numer #{order.Number}.", Severity.Success));
+
     private async Task LogoutAsync()
     {
+        if (Outbox.Entries.Count > 0 && !await Dialogs.ConfirmAsync(
+                "Wylogować się?",
+                $"W telefonie czeka na wysłanie zamówień: {Outbox.Entries.Count}. Wylogowanie usunie je z telefonu i nie trafią do systemu.",
+                "Wyloguj i usuń",
+                Color.Error))
+        {
+            return;
+        }
+
         // The device keeps clients' data only while someone is signed in.
         await OfflineLookup.ForgetAsync();
         await Auth.LogoutAsync();

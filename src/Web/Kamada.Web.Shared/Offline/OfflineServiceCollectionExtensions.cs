@@ -11,6 +11,7 @@ public static class OfflineServiceCollectionExtensions
     {
         services.AddSingleton<ILocalStore, IndexedDbLocalStore>();
         services.AddSingleton<OfflineLookup>();
+        services.AddSingleton<OrderOutbox>();
         return services;
     }
 }

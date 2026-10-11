@@ -1,11 +1,27 @@
 @* The seller has two destinations, so they sit at the bottom of the screen within thumb reach. *@
+@using Kamada.Web.Shared.Offline
+@implements IDisposable
+@inject OrderOutbox Outbox
+
 <nav class="kamada-bottom-nav mud-elevation-8" aria-label="Nawigacja sprzedawcy">
     <NavLink href="seller" Match="NavLinkMatch.All" class="kamada-bottom-nav-item">
         <MudIcon Icon="@Icons.Material.Filled.AddShoppingCart" />
         <span>Nowe zamówienie</span>
     </NavLink>
     <NavLink href="seller/orders" Match="NavLinkMatch.Prefix" class="kamada-bottom-nav-item">
-        <MudIcon Icon="@Icons.Material.Filled.ReceiptLong" />
+        @* Queued orders: red when one needs the seller's attention. *@
+        <MudBadge Content="@Outbox.Entries.Count" Visible="@(Outbox.Entries.Count > 0)" Overlap="true" Bordered="true"
+                  Color="@(Outbox.NeedsAttentionCount > 0 ? Color.Error : Color.Warning)">
+            <MudIcon Icon="@Icons.Material.Filled.ReceiptLong" />
+        </MudBadge>
         <span>Moje zamówienia</span>
     </NavLink>
 </nav>
+
+@code {
+    protected override void OnInitialized() => Outbox.Changed += OnChanged;
+
+    public void Dispose() => Outbox.Changed -= OnChanged;
+
+    private void OnChanged() => InvokeAsync(StateHasChanged);
+}

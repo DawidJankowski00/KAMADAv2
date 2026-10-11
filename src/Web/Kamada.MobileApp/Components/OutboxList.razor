@@ -1,0 +1,137 @@
+@* Orders kept on the phone until they reach the server; shown above the seller's order history. *@
+@using Kamada.Web.Shared.Connectivity
+@using Kamada.Web.Shared.Offline
+@implements IDisposable
+@inject OrderOutbox Outbox
+@inject OfflineLookup Lookup
+@inject ConnectionMonitor Monitor
+@inject IDialogService Dialogs
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+
+@if (Outbox.Entries.Count > 0)
+{
+    <div class="d-flex align-center mb-2">
+        <MudText Typo="Typo.subtitle1" HtmlTag="h2" Class="flex-grow-1" Style="font-weight:600">Oczekujące na wysłanie (@Outbox.Entries.Count)</MudText>
+        <MudButton Size="Size.Small" Variant="Variant.Text" Color="Color.Primary" StartIcon="@Icons.Material.Filled.CloudUpload"
+                   Disabled="@(Outbox.IsSending || Monitor.Quality == ConnectionQuality.Offline)" OnClick="SendNowAsync">Wyślij teraz</MudButton>
+    </div>
+
+    @foreach (var entry in Outbox.Entries)
+    {
+        var attention = entry.Status == OutboxStatus.NeedsAttention;
+        <MudPaper Elevation="1" Class="@($"pa-3 mb-3 kamada-outbox-card{(attention ? " attention" : string.Empty)}")">
+            <div class="d-flex align-center gap-2">
+                <MudText Typo="Typo.subtitle1" Style="font-weight:600" Class="flex-grow-1">@entry.Client.Name @entry.Client.Surname</MudText>
+                @if (entry.Id == Outbox.SendingId)
+                {
+                    <MudChip T="string" Size="Size.Small" Color="Color.Info" Icon="@Icons.Material.Filled.CloudUpload">Wysyłanie…</MudChip>
+                }
+                else if (attention)
+                {
+                    <MudChip T="string" Size="Size.Small" Color="Color.Error" Icon="@Icons.Material.Filled.ErrorOutline">Wymaga uwagi</MudChip>
+                }
+                else
+                {
+                    <MudChip T="string" Size="Size.Small" Color="Color.Warning" Icon="@Icons.Material.Filled.Schedule">Oczekuje</MudChip>
+                }
+            </div>
+            <MudText Typo="Typo.body2" Class="mud-text-secondary">@entry.ShippingAddressLabel · przyjęte @Labels.DateTime(entry.CreatedAt)</MudText>
+            <MudText Typo="Typo.body2">
+                Pozycji: @entry.Lines.Count · około <b>@Labels.Money(entry.EstimatedTotal)</b>
+                @if (entry.NewClient is not null && entry.ClientId is null)
+                {
+                    <span> · nowy klient</span>
+                }
+            </MudText>
+
+            @if (attention)
+            {
+                <MudAlert Severity="Severity.Error" Dense="true" Class="mt-2">@entry.Problem</MudAlert>
+                @foreach (var issue in LineIssues(entry))
+                {
+                    <MudText Typo="Typo.caption" Color="Color.Error" Class="d-block">@issue</MudText>
+                }
+                <div class="d-flex gap-2 mt-2">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" StartIcon="@Icons.Material.Filled.Edit"
+                               OnClick="() => Navigation.NavigateTo(Pages.Seller.NewOrder.EditUrl(entry.Id))">Popraw</MudButton>
+                    <MudButton Variant="Variant.Text" Color="Color.Error" Size="Size.Small" StartIcon="@Icons.Material.Filled.Delete"
+                               OnClick="() => DiscardAsync(entry)">Odrzuć</MudButton>
+                </div>
+            }
+            else if (entry.Id != Outbox.SendingId)
+            {
+                <div class="d-flex justify-end">
+                    <MudButton Variant="Variant.Text" Color="Color.Error" Size="Size.Small" OnClick="() => DiscardAsync(entry)">Odrzuć</MudButton>
+                </div>
+            }
+        </MudPaper>
+    }
+
+    <MudDivider Class="mb-3" />
+}
+
+@code {
+    protected override void OnInitialized()
+    {
+        Outbox.Changed += OnChanged;
+        Lookup.Changed += OnChanged;
+        Monitor.QualityChanged += OnQualityChanged;
+    }
+
+    public void Dispose()
+    {
+        Outbox.Changed -= OnChanged;
+        Lookup.Changed -= OnChanged;
+        Monitor.QualityChanged -= OnQualityChanged;
+    }
+
+    private void OnChanged() => InvokeAsync(StateHasChanged);
+
+    private void OnQualityChanged(ConnectionQuality quality) => InvokeAsync(StateHasChanged);
+
+    /// <summary>What the device's (refreshed) copy of the catalogue says about the lines: why the server may have refused them.</summary>
+    private IEnumerable<string> LineIssues(OutboxEntry entry)
+    {
+        if (Lookup.Products?.Items is not { } products)
+        {
+            yield break;
+        }
+
+        foreach (var line in entry.Lines)
+        {
+            var product = products.FirstOrDefault(p => p.Id == line.ProductId);
+            if (product is null)
+            {
+                yield return $"{line.Name}: produkt nie jest już w sprzedaży.";
+            }
+            else if (product.StockQuantity < line.Quantity)
+            {
+                yield return $"{line.Name}: zamówiono {line.Quantity} szt., dostępne {product.StockQuantity} szt.";
+            }
+        }
+    }
+
+    private async Task SendNowAsync()
+    {
+        await Monitor.CheckAsync();
+        var sent = await Outbox.SendAsync();
+        if (sent == 0 && Outbox.Entries.Any(e => e.Status == OutboxStatus.Pending))
+        {
+            Snackbar.Add("Nie udało się wysłać zamówień – spróbujemy ponownie, gdy połączenie się poprawi.", Severity.Warning);
+        }
+    }
+
+    private async Task DiscardAsync(OutboxEntry entry)
+    {
+        var confirmed = await Dialogs.ConfirmAsync(
+            "Odrzucić zamówienie?",
+            $"Zamówienie dla {entry.Client.Name} {entry.Client.Surname} zostanie usunięte z telefonu i nie trafi do systemu.",
+            "Odrzuć",
+            Color.Error);
+        if (confirmed && !await Outbox.DiscardAsync(entry.Id))
+        {
+            Snackbar.Add("Zamówienie jest właśnie wysyłane – spróbuj za chwilę.", Severity.Info);
+        }
+    }
+}

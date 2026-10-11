@@ -101,6 +101,9 @@ public static class Labels
     public static string Format(ShippingAddressDto a) =>
         $"{a.Street} {a.BuildingNumber}{(a.ApartmentNumber is null ? string.Empty : "/" + a.ApartmentNumber)}, {a.PostalCode} {a.City}";
 
+    public static string Format(AddressRequest a) =>
+        $"{a.Street} {a.BuildingNumber}{(string.IsNullOrWhiteSpace(a.ApartmentNumber) ? string.Empty : "/" + a.ApartmentNumber)}, {a.PostalCode} {a.City}";
+
     public static string Date(DateOnly value) => value.ToString("dd.MM.yyyy", Polish);
 
     /// <summary>"14:05" in the device's time zone.</summary>

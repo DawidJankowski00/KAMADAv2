@@ -62,5 +62,16 @@ public sealed class AddressModel
         Country = address.Country,
     };
 
+    public static AddressModel From(AddressRequest address) => new()
+    {
+        Type = address.Type,
+        Street = address.Street,
+        BuildingNumber = address.BuildingNumber,
+        ApartmentNumber = address.ApartmentNumber,
+        City = address.City,
+        PostalCode = address.PostalCode,
+        Country = address.Country,
+    };
+
     public AddressRequest ToRequest() => new(Type, Street, BuildingNumber, ApartmentNumber, City, PostalCode, Country);
 }

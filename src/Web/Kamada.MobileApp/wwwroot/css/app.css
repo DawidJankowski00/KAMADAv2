@@ -187,3 +187,12 @@ h1:focus {
         background: var(--mud-palette-dark);
         color: var(--mud-palette-dark-text);
     }
+
+/* Orders kept on the phone (OutboxList) */
+.kamada-outbox-card {
+    border-left: 4px solid var(--mud-palette-warning);
+}
+
+    .kamada-outbox-card.attention {
+        border-left-color: var(--mud-palette-error);
+    }
