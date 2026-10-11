@@ -58,4 +58,17 @@ internal sealed class ClientQueries(ICustomersDbContext db)
 
         return client is null ? ClientErrors.NotFound : client.ToDto();
     }
+
+    /// <summary>Every active client with their current shipping addresses (the phone app's offline copy).</summary>
+    public async Task<IReadOnlyList<ClientLookupDto>> LookupAsync(CancellationToken cancellationToken)
+    {
+        var clients = await db.Clients.AsNoTracking()
+            .Where(c => c.IsActive)
+            .OrderBy(c => c.Surname).ThenBy(c => c.Name).ThenBy(c => c.Id)
+            .Include(c => c.Addresses)
+            .AsSplitQuery()
+            .ToListAsync(cancellationToken);
+
+        return [.. clients.Select(c => c.ToLookupDto())];
+    }
 }

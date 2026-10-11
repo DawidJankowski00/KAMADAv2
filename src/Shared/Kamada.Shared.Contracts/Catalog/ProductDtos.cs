@@ -50,3 +50,12 @@ public sealed record ProductListQuery(
     bool Descending = false,
     int Page = 1,
     int PageSize = Common.Paging.DefaultPageSize);
+
+/// <summary>An active product as the phone app keeps it for ordering without a connection (<c>GET /api/products/lookup</c>).</summary>
+public sealed record ProductLookupDto(
+    Guid Id,
+    string Sku,
+    string Name,
+    decimal Price,
+    int StockQuantity,
+    IReadOnlyList<CategoryRefDto> Categories);

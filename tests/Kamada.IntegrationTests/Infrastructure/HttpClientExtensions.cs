@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -55,5 +56,32 @@ internal static class HttpClientExtensions
         var client = factory.CreateClient();
         var tokens = await client.LoginAsync(worker.Username, worker.Password);
         return (client.WithBearer(tokens.AccessToken), worker);
+    }
+
+    public static async Task<HttpResponseMessage> GetIfNoneMatchAsync(this HttpClient client, string url, EntityTagHeaderValue etag)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.IfNoneMatch.Add(etag);
+        return await client.SendAsync(request, TestContext.Current.CancellationToken);
+    }
+
+    /// <summary>
+    /// Whether a request with the tag just returned answers <c>304</c>. Other tests write to the same database in parallel, so
+    /// the data may change between the two requests: a few attempts make that negligible.
+    /// </summary>
+    public static async Task<bool> AnswersNotModifiedForCurrentTagAsync(this HttpClient client, string url)
+    {
+        for (var attempt = 0; attempt < 5; attempt++)
+        {
+            var etag = (await client.GetAsync(url, TestContext.Current.CancellationToken)).Headers.ETag!;
+            var response = await client.GetIfNoneMatchAsync(url, etag);
+            if (response.StatusCode == HttpStatusCode.NotModified)
+            {
+                (await response.Content.ReadAsByteArrayAsync(TestContext.Current.CancellationToken)).ShouldBeEmpty();
+                return true;
+            }
+        }
+
+        return false;
     }
 }

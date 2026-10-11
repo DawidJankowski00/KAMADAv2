@@ -402,3 +402,7 @@ Record small decisions here (date — decision — reason).
   unique violation (`DbUpdateExceptionExtensions.IsUniqueViolation`, not by index name: Postgres may report the username index
   first) and answered with the winner; for orders the loser may instead hit the product's `xmin` (409 `Concurrency.Conflict`)
   and gets the order on its next retry. Addresses created together with a client ignore their own `RequestId`.
+- 2026-10-11 — Phone lookup data: `GET /api/products/lookup` (active products: SKU, name, price, stock, categories) and
+  `GET /api/clients/lookup` (active clients + current shipping addresses), both `SalesAccess`, unpaged (the phone keeps the whole
+  list). `HttpContext.OkWithETag` serializes the body, tags it with a hash of it and answers `304` to a matching `If-None-Match`
+  (the server still runs the query; the saving is the download). `Cache-Control: private, no-cache`; CORS exposes `ETag`.

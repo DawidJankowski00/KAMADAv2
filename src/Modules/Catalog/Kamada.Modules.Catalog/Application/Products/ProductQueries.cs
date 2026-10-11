@@ -59,6 +59,20 @@ internal sealed class ProductQueries(ICatalogDbContext db)
         return product.ToDto(names);
     }
 
+    /// <summary>Every active product, sorted by name (the phone app's offline copy of the catalogue).</summary>
+    public async Task<IReadOnlyList<ProductLookupDto>> LookupAsync(CancellationToken cancellationToken)
+    {
+        var products = await db.Products.AsNoTracking()
+            .Where(p => p.IsActive)
+            .OrderBy(p => p.Name).ThenBy(p => p.Sku)
+            .Include(p => p.Categories)
+            .AsSplitQuery()
+            .ToListAsync(cancellationToken);
+
+        var names = await CategoryNamesAsync(products.SelectMany(p => p.Categories.Select(c => c.CategoryId)), cancellationToken);
+        return [.. products.Select(p => p.ToLookupDto(names))];
+    }
+
     private async Task<CategoryTree> LoadTreeAsync(CancellationToken cancellationToken)
     {
         var nodes = await db.Categories.AsNoTracking()

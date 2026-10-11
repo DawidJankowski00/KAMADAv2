@@ -88,3 +88,16 @@ public sealed record ClientListQuery(
     bool? IsActive = null,
     int Page = 1,
     int PageSize = Common.Paging.DefaultPageSize);
+
+/// <summary>
+/// An active client with their shipping addresses, as the phone app keeps it for ordering without a connection
+/// (<c>GET /api/clients/lookup</c>).
+/// </summary>
+public sealed record ClientLookupDto(
+    Guid Id,
+    string Username,
+    string Email,
+    string Name,
+    string Surname,
+    string PhoneNumber,
+    IReadOnlyList<AddressDto> ShippingAddresses);

@@ -27,6 +27,12 @@ internal static class ProductEndpoints
             .WithSummary("Search, filter (category incl. subcategories) and page products; sellers see active products only")
             .Produces<PagedResult<ProductDto>>();
 
+        sales.MapGet("/lookup", async (HttpContext context, ProductQueries queries, CancellationToken ct) =>
+                context.OkWithETag(await queries.LookupAsync(ct)))
+            .WithSummary("All active products in one compact list (the phone app's offline copy); supports If-None-Match")
+            .Produces<IReadOnlyList<ProductLookupDto>>()
+            .Produces(StatusCodes.Status304NotModified);
+
         admin.MapGet("/{id:guid}", async (Guid id, ProductQueries queries, CancellationToken ct) =>
                 (await queries.GetAsync(id, ct)).ToHttpResult(TypedResults.Ok))
             .WithName("GetProduct")
