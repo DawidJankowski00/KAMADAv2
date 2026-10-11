@@ -386,3 +386,7 @@ Record small decisions here (date — decision — reason).
   value; new orders always get the signed-in worker, demo orders the demo admin). Names come from `IWorkerDirectory`
   (Workforce.Contracts, used by Ordering) into `PlacedByDto` on order DTOs. `GET /api/orders/mine` = the list filtered by
   `PlacedBy = current user`; `GET /api/orders/{id}` is `SalesAccess` but answers 404 to a non-admin for someone else's order.
+- 2026-10-11 — Phone seller area (`/seller`, `/seller/orders`, `/seller/orders/{id}`): the order form is `OrderForm` in
+  `Kamada.Web.Admin` (hosted by the admin `NewOrder` page and the seller home; it calls only `SalesAccess` endpoints), the
+  seller's details page is read-only. The seller is the first role with a bottom navigation (`SellerNavigation`, fixed,
+  `kamada-with-bottom-nav` keeps content clear of it). Role order in the phone app: Seller → Courier → Admin; seller accent teal.

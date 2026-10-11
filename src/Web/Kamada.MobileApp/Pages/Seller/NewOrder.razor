@@ -18,6 +18,8 @@
         <MudText Typo="Typo.body2">Pozycji: <b>@order.Items.Count</b> · razem <b>@Labels.Money(order.TotalAmount)</b></MudText>
         <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" Class="mt-4" StartIcon="@Icons.Material.Filled.Add"
                    OnClick="StartNew">Przyjmij kolejne zamówienie</MudButton>
+        <MudButton Href="@MyOrders.OrderUrl(order.Id)" Variant="Variant.Text" Color="Color.Primary" FullWidth="true" Class="mt-2"
+                   StartIcon="@Icons.Material.Filled.ReceiptLong">Szczegóły zamówienia</MudButton>
     </MudPaper>
 }
 else

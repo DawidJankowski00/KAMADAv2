@@ -1,0 +1,86 @@
+@page "/seller/orders/{Id:guid}"
+@attribute [Authorize(Roles = Roles.Seller)]
+@using Kamada.Shared.Contracts.Ordering
+@using Kamada.Web.Admin.Components
+@inject ApiClient Api
+
+@* Read-only: payments, packing and cancelling stay with the admin. *@
+
+<PageTitle>Zamówienie – KAMADA</PageTitle>
+
+<MudButton Href="seller/orders" Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack" Class="mb-2 px-0">Moje zamówienia</MudButton>
+
+@if (_error is not null)
+{
+    <MudAlert Severity="Severity.Error">@_error</MudAlert>
+}
+else if (_order is null)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+else
+{
+    <div class="d-flex align-center gap-2">
+        <MudText Typo="Typo.h5" HtmlTag="h1" Class="flex-grow-1">Zamówienie #@_order.Number</MudText>
+        <OrderStatusChip Status="_order.Status" />
+    </div>
+    <MudText Typo="Typo.body2" Class="mud-text-secondary mb-3">Złożone @Labels.DateTime(_order.CreatedAt)</MudText>
+
+    <MudPaper Class="pa-3 mb-3" Elevation="1">
+        <MudText Typo="Typo.h6" Class="mb-1">Pozycje</MudText>
+        @foreach (var item in _order.Items)
+        {
+            <div class="d-flex align-start gap-2 py-1">
+                <div class="flex-grow-1">
+                    <MudText Typo="Typo.body2">@item.ProductName</MudText>
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary">@item.Quantity × @Labels.Money(item.UnitPrice)</MudText>
+                </div>
+                <MudText Typo="Typo.body2" Style="white-space:nowrap">@Labels.Money(item.LineTotal)</MudText>
+            </div>
+        }
+        <MudDivider Class="my-2" />
+        <div class="d-flex">
+            <MudText Typo="Typo.subtitle1" Class="flex-grow-1"><b>Razem</b></MudText>
+            <MudText Typo="Typo.subtitle1"><b>@Labels.Money(_order.TotalAmount)</b></MudText>
+        </div>
+        @if (_order.Notes is not null)
+        {
+            <MudAlert Severity="Severity.Normal" Dense="true" Class="mt-3">Uwagi: @_order.Notes</MudAlert>
+        }
+    </MudPaper>
+
+    <MudPaper Class="pa-3" Elevation="1">
+        <MudText Typo="Typo.h6" Class="mb-1">Dostawa</MudText>
+        <MudText><b>@_order.ShippingAddress.RecipientName</b></MudText>
+        <MudText Typo="Typo.body2">@Labels.Format(_order.ShippingAddress)</MudText>
+        <MudText Typo="Typo.body2" Class="mb-2">
+            <MudLink Href="@($"tel:{_order.ShippingAddress.PhoneNumber.Replace(" ", string.Empty)}")">@_order.ShippingAddress.PhoneNumber</MudLink>
+        </MudText>
+        @if (_order.ShippingAddress.Latitude is { } lat && _order.ShippingAddress.Longitude is { } lng)
+        {
+            <LeafletMap Markers="@([new MapMarker(lat, lng, _order.ShippingAddress.RecipientName)])" Height="200px" Zoom="15" />
+        }
+    </MudPaper>
+}
+
+@code {
+    private OrderDto? _order;
+    private string? _error;
+
+    [Parameter] public Guid Id { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _order = null;
+        _error = null;
+        var result = await Api.GetAsync<OrderDto>($"api/orders/{Id}");
+        if (result.IsSuccess)
+        {
+            _order = result.Value;
+        }
+        else
+        {
+            _error = result.Problem!.Message;
+        }
+    }
+}

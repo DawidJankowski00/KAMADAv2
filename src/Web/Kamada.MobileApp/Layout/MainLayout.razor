@@ -39,7 +39,11 @@
             <AdminNavMenu />
         </MudDrawer>
     }
-    <MudMainContent>
+    @if (IsSeller)
+    {
+        <SellerNavigation />
+    }
+    <MudMainContent Class="@(IsSeller ? "kamada-with-bottom-nav" : null)">
         @* Admin pages hold tables and forms, so on a tablet they may use the width; the order form gets a little less, courier pages stay phone-sized. *@
         <MudContainer MaxWidth="@ContainerWidth" Class="py-4 px-3">
             <ErrorBoundary @ref="_errorBoundary">
@@ -76,6 +80,8 @@
     [CascadingParameter] public RouteData? RouteData { get; set; }
 
     private bool IsAdmin => _rolesLoaded && RoleContext.ActiveRole == Roles.Admin;
+
+    private bool IsSeller => _rolesLoaded && RoleContext.ActiveRole == Roles.Seller;
 
     private MaxWidth ContainerWidth => !_rolesLoaded ? MaxWidth.Small : RoleContext.ActiveRole switch
     {
