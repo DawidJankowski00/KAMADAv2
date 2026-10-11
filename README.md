@@ -628,7 +628,7 @@ The server assistant above needs a connection. In the phone app a seller can als
 ```bash
 # libraries: fetched during the image build; for local development once:
 sh deploy/assistant/fetch-runtime.sh
-# models: into the volume the phone app serves (default set ~1.7 GB, see ASSISTANT_DEVICE_MODELS in .env.example)
+# models: into the volume the phone app serves (default set ~1.4 GB, see ASSISTANT_DEVICE_MODELS in .env.example)
 docker compose --profile assistant up assistant-models
 ```
 

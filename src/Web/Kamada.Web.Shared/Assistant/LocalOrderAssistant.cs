@@ -67,12 +67,20 @@ public sealed class LocalOrderAssistant(LocalAssistantRuntime runtime, LocalAssi
         string answer;
         try
         {
-            await runtime.LoadAsync(settings.LanguageModel);
-            answer = await runtime.ExtractAsync(text.Trim(), AssistantLanguages.Parse(language));
+            answer = await ExtractAsync(text.Trim(), language);
         }
         catch (JSException)
         {
-            return ApiResult<OrderDraftDto>.Fail(Problem("Assistant.DeviceModelFailed"));
+            // The GPU device can be lost (memory pressure, driver reset): load the model again and try once more.
+            try
+            {
+                await runtime.UnloadAsync();
+                answer = await ExtractAsync(text.Trim(), language);
+            }
+            catch (JSException)
+            {
+                return ApiResult<OrderDraftDto>.Fail(Problem("Assistant.DeviceModelFailed"));
+            }
         }
 
         var extracted = ExtractionAnswer.Parse(answer);
@@ -88,6 +96,12 @@ public sealed class LocalOrderAssistant(LocalAssistantRuntime runtime, LocalAssi
 
         var draft = await new OrderDraftResolver(new LocalDraftSource(lookup.Clients?.Items ?? [], lookup.Products?.Items ?? [])).ResolveAsync(extracted, text.Trim(), cancellationToken);
         return ApiResult<OrderDraftDto>.Ok(draft);
+    }
+
+    private async Task<string> ExtractAsync(string text, string language)
+    {
+        await runtime.LoadAsync(settings.LanguageModel);
+        return await runtime.ExtractAsync(text, AssistantLanguages.Parse(language));
     }
 
     private async Task<bool> IsInstalledAsync(LocalModel model)

@@ -135,13 +135,20 @@ export async function extract(messages, schema) {
     if (!state.engine) {
         throw new Error("The language model is not loaded.");
     }
-    const reply = await state.engine.chat.completions.create({
-        messages,
-        temperature: 0,
-        max_tokens: 800,
-        response_format: { type: "json_object", schema },
-    });
-    return reply.choices[0]?.message?.content ?? "";
+    try {
+        const reply = await state.engine.chat.completions.create({
+            messages,
+            temperature: 0,
+            max_tokens: 800,
+            response_format: { type: "json_object", schema },
+        });
+        return reply.choices[0]?.message?.content ?? "";
+    } catch (error) {
+        // A lost GPU device (memory pressure, driver reset) leaves the engine unusable: drop it so the next call reloads it.
+        state.engine = null;
+        state.llmId = null;
+        throw error;
+    }
 }
 
 // ---------------------------------------------------------------------------------------------------------------
