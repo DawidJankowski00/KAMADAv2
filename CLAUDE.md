@@ -333,3 +333,6 @@ Record small decisions here (date — decision — reason).
 - 2026-10-10 — Default model stays `gemma3:4b` after the evals (README table): as accurate as Bielik 4.5B, 2–3× faster, the
   only one usable on a laptop CPU. On a GPU any of them answers in 1–2 s, so `OLLAMA_BASE_URL` may point to another
   machine in the LAN (evals: `--ollama http://<host>:11434/`).
+- 2026-10-11 — `KamadaApiFactory` starts the shared host in `InitializeAsync`: hosts built later with `WithWebHostBuilder` then
+  find the database migrated. EF's migration lock is held per migration transaction, so two hosts starting together could
+  both apply a module's second migration.

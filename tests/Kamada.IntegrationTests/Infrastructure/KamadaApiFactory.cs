@@ -19,7 +19,15 @@ public sealed class KamadaApiFactory : WebApplicationFactory<Program>, IAsyncLif
 {
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:17-alpine").Build();
 
-    public async ValueTask InitializeAsync() => await _postgres.StartAsync();
+    public async ValueTask InitializeAsync()
+    {
+        await _postgres.StartAsync();
+
+        // Start the host (and apply migrations) before any test runs. Otherwise a test building a second host with
+        // WithWebHostBuilder can migrate the same database in parallel: EF's migration lock is held per migration
+        // transaction, so with two migrations in a module both hosts may apply the second one.
+        _ = Services;
+    }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
