@@ -366,3 +366,5 @@ Record small decisions here (date — decision — reason).
   panel and the phone app (`Router.AdditionalAssemblies`), so both show the same pages. Its `_Imports.razor` puts
   `[Authorize(Roles = Admin)]` on every page (in the phone app the role also selects the area). The dashboard is `/dashboard`;
   the web panel redirects `/` to it. Page styles ship as `_content/Kamada.Web.Admin/kamada-admin.css`, linked by both hosts.
+- 2026-10-11 — The admin menu is data (`AdminNavigation` in `Kamada.Web.Admin`), rendered by `AdminNavMenu` in the web panel's
+  drawer and in the phone app's admin drawer, so the two cannot offer different pages.
