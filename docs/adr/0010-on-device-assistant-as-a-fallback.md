@@ -1,6 +1,6 @@
 # 0010. On-device assistant as a fallback
 
-- **Status:** Accepted (default models provisional until the phone measurements in [on-device-assistant.md](../on-device-assistant.md))
+- **Status:** Accepted (default models chosen from desktop measurements; phone measurements pending, see [on-device-assistant.md](../on-device-assistant.md))
 - **Date:** 2026-10-11
 
 ## Context
@@ -29,7 +29,7 @@ that can run in WebAssembly too.
 - **Models in the browser.** A language model through WebLLM (WebGPU, MLC format, JSON-schema grammar, temperature 0) and
   Whisper through transformers.js / ONNX Runtime Web (WebGPU, WebAssembly otherwise). Without WebGPU and 16-bit shaders the
   language models cannot run: the option is hidden and the phone keeps using the server.
-- **Opt-in download, own origin.** Models are large (hundreds of MB to ~0.9 GB), so the worker downloads them on a settings
+- **Opt-in download, own origin.** Models are large (hundreds of MB to ~1 GB), so the worker downloads them on a settings
   page (progress, storage used, delete, "keep my data" via `navigator.storage.persist()`). Files live in Cache Storage;
   nothing is downloaded in the background. They are served by the phone app's nginx under `/models`
   (`deploy/assistant/fetch-models.sh`, compose profile `assistant`), and the pinned libraries come from
