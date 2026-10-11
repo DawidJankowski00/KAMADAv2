@@ -359,3 +359,6 @@ Record small decisions here (date — decision — reason).
   session and opens the new role's home. Each role has its own accent colour (`MobileTheme.For(role)`: courier blue as before,
   admin purple). Per-role bottom navigation waits for a role with several destinations (seller, stage 4): the courier has one
   start page and the bottom of the run screen holds the stop buttons.
+- 2026-10-11 — Phone app roles: `AllowedRoles = [Courier, Admin]` (Seller joins first in stage 4). Admins can sign in; until the
+  shared admin pages arrive (stage 3) `/admin` is a placeholder pointing to the web panel. MudBlazor 9 `MudMenu` with
+  `ActivatorContent` needs `OnClick="@context.ToggleAsync"` on the activator (it is not wired automatically).

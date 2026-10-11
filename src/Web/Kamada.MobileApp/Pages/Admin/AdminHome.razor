@@ -1,0 +1,16 @@
+@page "/admin"
+@attribute [Authorize(Roles = Roles.Admin)]
+
+<PageTitle>Administrator – KAMADA</PageTitle>
+
+<MudText Typo="Typo.h5" HtmlTag="h1" GutterBottom="true">Administrator</MudText>
+
+<div class="d-flex flex-column align-center pa-6 gap-3">
+    <MudIcon Icon="@Icons.Material.Filled.AdminPanelSettings" Size="Size.Large" Color="Color.Primary" />
+    <MudText Align="Align.Center">
+        Widok administratora w aplikacji na telefon jest w przygotowaniu.
+    </MudText>
+    <MudText Align="Align.Center" Class="mud-text-secondary">
+        Do tego czasu zamówieniami, klientami i trasami zarządzaj w panelu administratora w przeglądarce.
+    </MudText>
+</div>

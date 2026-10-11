@@ -14,6 +14,7 @@ internal static class RoleAreas
     public static string? HomeOf(string role) => role switch
     {
         Roles.Courier => "courier",
+        Roles.Admin => "admin",
         _ => null,
     };
 

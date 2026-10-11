@@ -12,7 +12,8 @@ var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? builder.HostEnvironment.
 builder.Services.AddKamadaClient(new KamadaClientOptions
 {
     ApiBaseUrl = new Uri(apiBaseUrl.EndsWith('/') ? apiBaseUrl : apiBaseUrl + "/"),
-    AllowedRoles = [Roles.Courier],
+    // Order = default role for a worker with several roles who has not picked one yet (most common daily work first).
+    AllowedRoles = [Roles.Courier, Roles.Admin],
     StorageKey = "kamada.mobile.session",
     PreviousStorageKey = "kamada.courier.session",
     SnackbarPosition = MudBlazor.Defaults.Classes.Position.TopCenter,
