@@ -31,8 +31,15 @@
  * - kamada-dialog-phone-fullscreen: put on <MudDialog Class="..."> of form dialogs, so they use the whole phone screen
  *   (actions stay at the bottom, content scrolls).
  * - Tables hide secondary columns with "d-none d-sm-table-cell" and repeat the essentials in the main cell ("d-sm-none").
+ * - Maps take their height from a variable with the desktop height as fallback:
+ *   Height="var(--kamada-phone-map-height, 460px)" on pages, var(--kamada-phone-dialog-map-height, 400px) in dialogs.
  */
 @media (max-width: 599.98px) {
+    :root {
+        --kamada-phone-map-height: 300px;
+        --kamada-phone-dialog-map-height: 55vh;
+    }
+
     .kamada-page-title {
         font-size: 1.6rem;
         line-height: 1.3;

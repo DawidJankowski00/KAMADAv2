@@ -90,10 +90,13 @@ else
                             @foreach (var order in _orders)
                             {
                                 <tr>
-                                    <td><MudLink Href="@($"orders/{order.Id}")">#@order.Number</MudLink></td>
-                                    <td>@Labels.DateTime(order.CreatedAt)</td>
+                                    <td>
+                                        <MudLink Href="@($"orders/{order.Id}")">#@order.Number</MudLink>
+                                        <MudText Typo="Typo.caption" Class="d-block d-sm-none mud-text-secondary">@Labels.DateTime(order.CreatedAt)</MudText>
+                                    </td>
+                                    <td class="d-none d-sm-table-cell">@Labels.DateTime(order.CreatedAt)</td>
                                     <td><OrderStatusChip Status="order.Status" /></td>
-                                    <td style="text-align:right">@Labels.Money(order.TotalAmount)</td>
+                                    <td style="text-align:right; white-space:nowrap">@Labels.Money(order.TotalAmount)</td>
                                 </tr>
                             }
                         </tbody>
@@ -103,7 +106,7 @@ else
         </MudItem>
         <MudItem xs="12" lg="5">
             <MudPaper Class="pa-2" Elevation="1">
-                <LeafletMap Markers="Markers" Height="460px" />
+                <LeafletMap Markers="Markers" Height="var(--kamada-phone-map-height, 460px)" />
             </MudPaper>
         </MudItem>
     </MudGrid>

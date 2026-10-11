@@ -1,11 +1,11 @@
 @inject ApiClient Api
 @inject ISnackbar Snackbar
 
-<MudDialog>
+<MudDialog Class="kamada-dialog-phone-fullscreen">
     <DialogContent>
         <MudText Typo="Typo.body2" Class="mb-2">@Labels.Format(Address)</MudText>
         <MudText Typo="Typo.caption" Class="mud-text-secondary mb-3 d-block">Kliknij na mapie, aby wskazać dokładne miejsce dostawy.</MudText>
-        <LeafletMap Markers="Markers" Height="400px" OnMapClick="OnPicked" Zoom="14" />
+        <LeafletMap Markers="Markers" Height="var(--kamada-phone-dialog-map-height, 400px)" OnMapClick="OnPicked" Zoom="14" />
         @if (_picked is not null)
         {
             <MudText Typo="Typo.caption" Class="mt-2 d-block">Wybrano: @Labels.Coordinates(_picked.Latitude, _picked.Longitude)</MudText>

@@ -45,14 +45,14 @@
         </MudTd>
         <MudTd DataLabel="E-mail">@context.Email</MudTd>
         <MudTd DataLabel="Telefon">@context.PhoneNumber</MudTd>
-        <MudTd DataLabel="Adresy">@context.AddressCount</MudTd>
+        <MudTd DataLabel="Adresy" HideSmall="true">@context.AddressCount</MudTd>
         <MudTd DataLabel="Status">
             @if (!context.IsActive)
             {
                 <MudChip T="string" Size="Size.Small">Nieaktywny</MudChip>
             }
         </MudTd>
-        <MudTd DataLabel="Utworzony">@Labels.Date(context.CreatedAt)</MudTd>
+        <MudTd DataLabel="Utworzony" HideSmall="true">@Labels.Date(context.CreatedAt)</MudTd>
     </RowTemplate>
     <NoRecordsContent><MudText Class="pa-4">Brak klientów spełniających kryteria.</MudText></NoRecordsContent>
     <PagerContent><MudTablePager RowsPerPageString="Na stronie:" InfoFormat="{first_item}–{last_item} z {all_items}" /></PagerContent>
