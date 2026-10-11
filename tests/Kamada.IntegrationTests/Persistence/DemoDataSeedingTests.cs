@@ -1,5 +1,6 @@
 using Kamada.IntegrationTests.Infrastructure;
 using Kamada.Modules.Workforce.Infrastructure.Seeding;
+using Kamada.Shared.Contracts.Auth;
 using Kamada.Shared.Contracts.Catalog;
 using Kamada.Shared.Contracts.Common;
 using Kamada.Shared.Contracts.Customers;
@@ -58,6 +59,9 @@ public sealed class DemoDataSeedingTests(KamadaApiFactory factory)
             szczecinRun.Name.ShouldBe("Szczecin – dzienna");
             szczecinRun.Status.ShouldBe(DeliveryRunStatus.Planned);
             szczecinRun.StopCount.ShouldBe(7);
+
+            var manager = await host.CreateClient().LoginAsync("kierownik", WorkforceSeeder.ManagerPassword);
+            manager.User.Roles.ShouldBe([Roles.Admin, Roles.Courier], ignoreOrder: true);
 
             var locations = await GetAsync<List<RouteLocationDto>>(admin, "/api/route-locations");
             locations.Select(l => l.City).Distinct().ShouldBe(["Gdańsk", "Gdynia", "Szczecin"], ignoreOrder: true);

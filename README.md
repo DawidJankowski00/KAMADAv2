@@ -85,6 +85,7 @@ Demo accounts (seeded in the Development environment):
 |---|---|---|
 | Administrator | `admin` | `Admin123!` |
 | Courier | `kurier1`, `kurier2`, `kurier3` | `Kurier123!` |
+| Administrator + courier (switches roles in the phone app) | `kierownik` | `Kierownik123!` |
 
 ### Demo data
 
