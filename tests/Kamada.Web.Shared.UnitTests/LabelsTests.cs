@@ -48,6 +48,7 @@ public sealed class LabelsTests
     [Theory]
     [InlineData("Admin", "Administrator")]
     [InlineData("Courier", "Kurier")]
+    [InlineData("Seller", "Sprzedawca")]
     [InlineData("Accountant", "Accountant")]
     [InlineData("1", "1")]
     public void Role_RoleClaimValue_IsTranslatedWhenKnown(string role, string expected) =>

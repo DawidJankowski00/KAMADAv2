@@ -105,6 +105,20 @@ public sealed class WorkerManagementTests(KamadaApiFactory factory)
     }
 
     [Fact]
+    public async Task Create_Seller_NewWorkerSignsInWithSellerRole()
+    {
+        var (admin, _) = await factory.CreateSignedInClientAsync(DomainRole.Admin);
+        var request = NewCourierRequest() with { Roles = [WorkerRole.Seller] };
+
+        var response = await admin.PostJsonAsync("/api/workers", request);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Created);
+        (await response.ReadAsAsync<WorkerDto>()).Roles.ShouldBe([WorkerRole.Seller]);
+        var tokens = await factory.CreateClient().LoginAsync(request.Username, request.Password);
+        tokens.User.Roles.ShouldBe([Roles.Seller]);
+    }
+
+    [Fact]
     public async Task Create_WithoutRoles_Returns400()
     {
         var (admin, _) = await factory.CreateSignedInClientAsync(DomainRole.Admin);

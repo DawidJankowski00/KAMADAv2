@@ -42,7 +42,8 @@ public static class AuthServiceCollectionExtensions
         services.AddAuthorizationBuilder()
             .SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build())
             .AddPolicy(AuthorizationPolicies.AdminOnly, policy => policy.RequireRole(Roles.Admin))
-            .AddPolicy(AuthorizationPolicies.CourierOnly, policy => policy.RequireRole(Roles.Courier));
+            .AddPolicy(AuthorizationPolicies.CourierOnly, policy => policy.RequireRole(Roles.Courier))
+            .AddPolicy(AuthorizationPolicies.SalesAccess, policy => policy.RequireRole(Roles.Admin, Roles.Seller));
 
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUser, HttpContextCurrentUser>();

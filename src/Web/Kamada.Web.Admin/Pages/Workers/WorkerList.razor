@@ -21,6 +21,7 @@
             <MudSelect T="WorkerRole?" Value="_role" ValueChanged="OnRoleChanged" Label="Ma rolę" Clearable="true">
                 <MudSelectItem T="WorkerRole?" Value="WorkerRole.Admin">@Labels.Of(WorkerRole.Admin)</MudSelectItem>
                 <MudSelectItem T="WorkerRole?" Value="WorkerRole.Courier">@Labels.Of(WorkerRole.Courier)</MudSelectItem>
+                <MudSelectItem T="WorkerRole?" Value="WorkerRole.Seller">@Labels.Of(WorkerRole.Seller)</MudSelectItem>
             </MudSelect>
         </MudItem>
         <MudItem xs="6" md="3">
@@ -48,7 +49,7 @@
         <MudTd DataLabel="Role">
             @foreach (var role in context.Roles)
             {
-                <MudChip T="string" Size="Size.Small" Color="@(role == WorkerRole.Admin ? Color.Secondary : Color.Primary)">@Labels.Of(role)</MudChip>
+                <MudChip T="string" Size="Size.Small" Color="@Labels.ColorOf(role)">@Labels.Of(role)</MudChip>
             }
         </MudTd>
         <MudTd DataLabel="Telefon">@context.PhoneNumber</MudTd>

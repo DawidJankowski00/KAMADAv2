@@ -30,6 +30,7 @@
                                Error="@(_roles.Count == 0)" ErrorText="Wybierz co najmniej jedną rolę."
                                HelperText="Pracownik może mieć kilka ról">
                         <MudSelectItem Value="WorkerRole.Courier">@Labels.Of(WorkerRole.Courier)</MudSelectItem>
+                        <MudSelectItem Value="WorkerRole.Seller">@Labels.Of(WorkerRole.Seller)</MudSelectItem>
                         <MudSelectItem Value="WorkerRole.Admin">@Labels.Of(WorkerRole.Admin)</MudSelectItem>
                     </MudSelect>
                 </MudItem>

@@ -380,3 +380,5 @@ Record small decisions here (date — decision — reason).
 - 2026-10-11 — Run stops on touch screens: drag and drop needs a mouse, so `(pointer: coarse)` hides the drag handle and the drag
   hint (`kamada-fine-pointer-only` / `kamada-touch-only`) and the existing up/down buttons reorder the stops. Full-screen
   dialogs wrap their actions (a status text gets its own line) and size scrolling lists with `--kamada-phone-dialog-list-height`.
+- 2026-10-11 — `Seller` role (stage 4): takes orders. Policy `SalesAccess` = Admin or Seller (`RequireRole` with both); endpoints a
+  seller needs use it, everything else stays `AdminOnly`. Role chips: admin = secondary, seller = tertiary, courier = primary colour.

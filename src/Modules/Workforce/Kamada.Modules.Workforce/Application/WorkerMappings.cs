@@ -25,6 +25,7 @@ internal static class WorkerMappings
     {
         DomainRole.Admin => ContractRole.Admin,
         DomainRole.Courier => ContractRole.Courier,
+        DomainRole.Seller => ContractRole.Seller,
         _ => throw new ArgumentOutOfRangeException(nameof(role), role, null),
     };
 
@@ -32,6 +33,7 @@ internal static class WorkerMappings
     {
         ContractRole.Admin => DomainRole.Admin,
         ContractRole.Courier => DomainRole.Courier,
+        ContractRole.Seller => DomainRole.Seller,
         _ => throw new ArgumentOutOfRangeException(nameof(role), role, null),
     };
 
@@ -40,6 +42,7 @@ internal static class WorkerMappings
     {
         DomainRole.Admin => Roles.Admin,
         DomainRole.Courier => Roles.Courier,
+        DomainRole.Seller => Roles.Seller,
         _ => throw new ArgumentOutOfRangeException(nameof(role), role, null),
     };
 }
