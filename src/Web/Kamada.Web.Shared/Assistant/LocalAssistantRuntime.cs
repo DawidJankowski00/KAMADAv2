@@ -8,10 +8,9 @@ namespace Kamada.Web.Shared.Assistant;
 /// – dictation to text and note to extraction JSON. One language model and one speech model are in memory at a time (both
 /// only on phones with enough memory), because a phone does not have room for more.
 /// </summary>
-public sealed class LocalAssistantRuntime(IJSRuntime js) : IAsyncDisposable
+public sealed class LocalAssistantRuntime(IJSRuntime js, KamadaClientOptions options) : IAsyncDisposable
 {
     public const string VendorUrl = "assistant/vendor/";
-    public const string ModelsUrl = "models/";
 
     private readonly SemaphoreSlim _lock = new(1, 1);
     private IJSObjectReference? _module;
@@ -131,7 +130,7 @@ public sealed class LocalAssistantRuntime(IJSRuntime js) : IAsyncDisposable
         if (_module is null)
         {
             _module = await js.InvokeAsync<IJSObjectReference>("import", "./_content/Kamada.Web.Shared/local-assistant.js");
-            await _module.InvokeVoidAsync("configure", new { vendorUrl = VendorUrl, modelsUrl = ModelsUrl });
+            await _module.InvokeVoidAsync("configure", new { vendorUrl = VendorUrl, modelsUrl = options.AssistantModelsUrl });
         }
 
         return _module;

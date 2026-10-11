@@ -18,6 +18,7 @@ builder.Services.AddKamadaClient(new KamadaClientOptions
     StorageKey = "kamada.mobile.session",
     PreviousStorageKey = "kamada.courier.session",
     SnackbarPosition = MudBlazor.Defaults.Classes.Position.TopCenter,
+    AssistantModelsUrl = builder.Configuration["AssistantModelsUrl"] ?? "models/",
 });
 builder.Services.AddKamadaOffline();
 
