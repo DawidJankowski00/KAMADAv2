@@ -347,3 +347,7 @@ Record small decisions here (date — decision — reason).
 - 2026-10-11 — The courier PWA became the KAMADA phone app: `src/Web/Kamada.MobileApp` (compose service `mobile`, launch config
   `mobile-app`, port 5082 unchanged). Session key `kamada.mobile.session`; `KamadaClientOptions.PreviousStorageKey` moves a session
   stored under the old `kamada.courier.session` once, so signed-in couriers stay signed in.
+- 2026-10-11 — `RoleContext` (Web.Shared, singleton) holds the phone app's active role: available roles = the user's roles in
+  `KamadaClientOptions.AllowedRoles` order (that order is the app's preference); the choice is remembered per user in
+  localStorage (`<StorageKey>.role.<userId>`, kept after logout – it is only a role name). Default: the only role, otherwise the
+  remembered one, otherwise the first available. It re-resolves on `AuthService.SessionChanged` and raises `ActiveRoleChanged`.

@@ -18,6 +18,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<TokenStore>();
         services.AddSingleton<AuthService>();
+        services.AddSingleton<RoleContext>();
         services.AddTransient<AuthorizingHandler>();
 
         services.AddHttpClient(AuthService.AnonymousClientName, http => http.BaseAddress = options.ApiBaseUrl);
