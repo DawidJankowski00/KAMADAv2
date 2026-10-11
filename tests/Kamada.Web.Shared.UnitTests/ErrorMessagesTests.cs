@@ -9,7 +9,8 @@ public sealed class ErrorMessagesTests
     [InlineData("Delivery.StopsWithoutCoordinates")]
     [InlineData("Delivery.RunNotEditable")]
     [InlineData("Workers.CourierInactive")]
-    public void TryTranslate_DeliveryCodes_HavePolishMessages(string code) =>
+    [InlineData("Workers.CannotRemoveOwnAdminRole")]
+    public void TryTranslate_KnownCodes_HavePolishMessages(string code) =>
         ErrorMessages.TryTranslate(code).ShouldNotBeNullOrWhiteSpace();
 
     [Fact]
