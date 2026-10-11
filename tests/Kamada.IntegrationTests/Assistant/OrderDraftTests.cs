@@ -99,7 +99,8 @@ public sealed class OrderDraftTests(KamadaApiFactory factory)
 
         var line = draft.Lines.Single();
         line.SelectedProductId.ShouldBeNull();
-        line.Candidates.Select(c => c.Id).ShouldBe([sparkling.Id, still.Id], ignoreOrder: true);
+        // Products of other tests share the database and a random name may pass the candidate threshold too.
+        line.Candidates.Take(2).Select(c => c.Id).ShouldBe([sparkling.Id, still.Id], ignoreOrder: true);
         draft.Warnings.ShouldContain(new DraftWarningDto(DraftWarningCodes.ProductAmbiguous, $"woda {word}"));
         draft.Warnings.ShouldContain(new DraftWarningDto(DraftWarningCodes.ClientNotMentioned));
     }
