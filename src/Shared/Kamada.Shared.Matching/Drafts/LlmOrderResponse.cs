@@ -146,9 +146,15 @@ internal sealed partial record LlmOrderResponse(
         return digits.Length == 5 ? $"{digits[..2]}-{digits[2..]}" : null;
     }
 
+    /// <summary>Removes what reasoning models put around the JSON: an (even empty) <c>&lt;think&gt;</c> block and a code fence.</summary>
     private static string StripCodeFence(string text)
     {
         var trimmed = text.Trim();
+        if (trimmed.StartsWith("<think>", StringComparison.Ordinal) && trimmed.IndexOf("</think>", StringComparison.Ordinal) is var thinkEnd and >= 0)
+        {
+            trimmed = trimmed[(thinkEnd + "</think>".Length)..].Trim();
+        }
+
         if (!trimmed.StartsWith("```", StringComparison.Ordinal))
         {
             return trimmed;

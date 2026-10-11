@@ -84,6 +84,12 @@ public sealed class LlmOrderResponseTests
     public void Parse_AnswerInCodeFence_IsUnwrapped() =>
         LlmOrderResponse.Parse("```json\n{\"items\":[{\"product\":\"kawa\",\"quantity\":1}]}\n```").ShouldNotBeNull();
 
+    [Theory]
+    [InlineData("<think>\n\n</think>\n\n{\"items\":[{\"product\":\"kawa\",\"quantity\":1}]}")]
+    [InlineData("<think>Najpierw pomyślę.</think>```json\n{\"items\":[{\"product\":\"kawa\",\"quantity\":1}]}\n```")]
+    public void Parse_AnswerAfterAThinkBlock_IsUnwrapped(string answer) =>
+        LlmOrderResponse.Parse(answer)!.ToDomain().Lines.ShouldBe([new ExtractedLine("kawa", 1)]);
+
     [Fact]
     public void Parse_MissingSections_GiveAnEmptyExtraction() =>
         LlmOrderResponse.Parse("{}")!.ToDomain().IsEmpty.ShouldBeTrue();
