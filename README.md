@@ -32,8 +32,10 @@ a Blazor WebAssembly admin panel and a Blazor PWA for couriers.
 
 - **Role-based views.** A worker signs in once and lands in the view of their role. A worker with several roles
   (demo account `kierownik`) switches between them from the app bar without signing in again; each role has its own
-  accent colour. Opening a page of the other role offers a one-tap switch. The admin view is a placeholder until the
-  admin pages are shared with the phone app.
+  accent colour. Opening a page of the other role offers a one-tap switch.
+- **Admin view.** Everything the web admin panel does, on the phone: both apps show the same pages from the shared
+  `Kamada.Web.Admin` library, laid out for small screens (cards instead of wide tables, full-screen dialogs, stops
+  reordered with arrows on touch screens). See the [parity checklist](docs/admin-parity.md).
 
 **Courier view** (in the phone app):
 
@@ -69,6 +71,10 @@ a Blazor WebAssembly admin panel and a Blazor PWA for couriers.
 | Courier: my runs | Courier: run details |
 |---|---|
 | ![My runs](docs/images/courier-runs.png) | ![Run details](docs/images/courier-run.png) |
+
+| Phone, admin: dashboard | Phone, admin: order | Phone, admin: run |
+|---|---|---|
+| ![Phone dashboard](docs/images/phone-admin-dashboard.png) | ![Phone order](docs/images/phone-admin-order.png) | ![Phone run](docs/images/phone-admin-run.png) |
 
 ## Quick start
 
@@ -311,8 +317,9 @@ src/
     Kamada.Shared.Contracts/        # HTTP DTOs shared by the API and both frontends
   Web/
     Kamada.Web.Shared/              # shared Blazor library: API client, auth, map, labels
-    Kamada.AdminPanel/              # admin SPA
-    Kamada.MobileApp/               # phone PWA for workers (courier views)
+    Kamada.Web.Admin/               # admin pages and menu, shared by the admin SPA and the phone app
+    Kamada.AdminPanel/              # admin SPA (host: login, layout)
+    Kamada.MobileApp/               # phone PWA for workers (courier and admin views)
 tests/                              # unit tests per module, integration tests, architecture tests
 benchmarks/Kamada.Benchmarks/       # solver speed and heuristic quality
 benchmarks/Kamada.Assistant.Evals/  # order assistant accuracy and latency against a real model

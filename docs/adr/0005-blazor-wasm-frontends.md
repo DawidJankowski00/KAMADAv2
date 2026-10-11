@@ -55,3 +55,10 @@ app has one area per role (`/courier/...`, `/admin`), and the active role is a c
 (`RoleContext`) while the API keeps checking roles per endpoint. Admin pages will be shared through a Razor class
 library rather than copied, so the phone app ships them alongside the courier views (the larger download is accepted
 for one app per worker).
+
+Done in stage 3: the admin pages, dialogs and menu live in `Kamada.Web.Admin` (references only
+`Kamada.Shared.Contracts` and `Kamada.Web.Shared`, enforced by the architecture tests). The web panel keeps only its
+host (Program, App, layouts, login); both apps add the library to the router, so the pages are identical by
+construction. Small screens are handled inside the shared pages with CSS (MudBlazor breakpoint classes, a full-screen
+dialog class, map height variables, `pointer: coarse` for drag and drop), so the desktop layout does not change.
+The admin home moved to `/dashboard`, because `/` in the phone app is the active role's home.
