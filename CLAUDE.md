@@ -336,3 +336,11 @@ Record small decisions here (date — decision — reason).
 - 2026-10-11 — `KamadaApiFactory` starts the shared host in `InitializeAsync`: hosts built later with `WithWebHostBuilder` then
   find the database migrated. EF's migration lock is held per migration transaction, so two hosts starting together could
   both apply a module's second migration.
+- 2026-10-11 — Workers have a set of roles (`workforce.workers.roles text[]`, enum names, check `cardinality(roles) > 0`,
+  EF primitive collection over the `_roles` field, kept in enum order). Domain rules in `Worker.SetRoles`: at least one role,
+  no duplicates, nobody removes their own `Admin` role (`Workers.CannotRemoveOwnAdminRole`, 409). The workers list filter
+  `role` means "has this role". `ICourierDirectory` treats any active worker with the Courier role as assignable.
+- 2026-10-11 — One `role` claim per role in the access token; `AuthenticatedUserDto.Roles`. Role changes apply at the next
+  refresh (≤ 15 min). Frontends declare `KamadaClientOptions.AllowedRoles` (admin panel `[Admin]`, courier app `[Courier]`);
+  a refresh without any allowed role signs out, a refresh with changed roles raises `SessionChanged`. Sessions stored in the
+  old single-role format are dropped by `TokenStore` (the user signs in again).
