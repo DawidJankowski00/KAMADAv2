@@ -2,7 +2,9 @@ using System.Collections.Concurrent;
 using Kamada.Modules.Assistant.Application;
 using Kamada.Modules.Assistant.Application.Abstractions;
 using Kamada.Modules.Assistant.Domain;
+using Kamada.Shared.Matching.Drafts;
 using Kamada.Shared.Kernel.Results;
+using Kamada.Shared.Matching.Drafts;
 
 namespace Kamada.IntegrationTests.Infrastructure;
 

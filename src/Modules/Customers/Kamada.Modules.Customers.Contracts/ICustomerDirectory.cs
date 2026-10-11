@@ -1,4 +1,6 @@
 using Kamada.Shared.Kernel.Results;
+using Kamada.Shared.Matching.Addresses;
+using Kamada.Shared.Matching.Clients;
 
 namespace Kamada.Modules.Customers.Contracts;
 

@@ -1,5 +1,6 @@
 using Kamada.Modules.Catalog.Application.Abstractions;
 using Kamada.Modules.Catalog.Contracts;
+using Kamada.Shared.Matching.Products;
 using Microsoft.EntityFrameworkCore;
 
 namespace Kamada.Modules.Catalog.Application.Lookup;

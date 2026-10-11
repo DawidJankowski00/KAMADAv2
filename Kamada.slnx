@@ -43,6 +43,7 @@
     <Project Path="src/Shared/Kamada.Shared.Contracts/Kamada.Shared.Contracts.csproj" />
     <Project Path="src/Shared/Kamada.Shared.Infrastructure/Kamada.Shared.Infrastructure.csproj" />
     <Project Path="src/Shared/Kamada.Shared.Kernel/Kamada.Shared.Kernel.csproj" />
+    <Project Path="src/Shared/Kamada.Shared.Matching/Kamada.Shared.Matching.csproj" />
   </Folder>
   <Folder Name="/src/Web/">
     <Project Path="src/Web/Kamada.AdminPanel/Kamada.AdminPanel.csproj" />
@@ -61,6 +62,7 @@
     <Project Path="tests/Kamada.Modules.Payments.UnitTests/Kamada.Modules.Payments.UnitTests.csproj" />
     <Project Path="tests/Kamada.Modules.RouteOptimization.UnitTests/Kamada.Modules.RouteOptimization.UnitTests.csproj" />
     <Project Path="tests/Kamada.Modules.Workforce.UnitTests/Kamada.Modules.Workforce.UnitTests.csproj" />
+    <Project Path="tests/Kamada.Shared.Matching.UnitTests/Kamada.Shared.Matching.UnitTests.csproj" />
     <Project Path="tests/Kamada.Shared.UnitTests/Kamada.Shared.UnitTests.csproj" />
     <Project Path="tests/Kamada.Web.Shared.UnitTests/Kamada.Web.Shared.UnitTests.csproj" />
   </Folder>

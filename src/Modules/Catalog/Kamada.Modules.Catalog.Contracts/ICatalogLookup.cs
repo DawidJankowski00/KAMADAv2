@@ -1,7 +1,6 @@
-namespace Kamada.Modules.Catalog.Contracts;
+using Kamada.Shared.Matching.Products;
 
-/// <summary>An active product similar to a phrase; <see cref="Score"/> is 0 … 1 (1 = exact SKU or name).</summary>
-public sealed record ProductCandidate(Guid Id, string Name, string Sku, decimal Price, int StockQuantity, double Score);
+namespace Kamada.Modules.Catalog.Contracts;
 
 /// <summary>Read-only product search for other modules (e.g. resolving products named in an order draft).</summary>
 public interface ICatalogLookup

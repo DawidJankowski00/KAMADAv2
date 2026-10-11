@@ -1,4 +1,5 @@
 using Kamada.Modules.Assistant.Domain;
+using Kamada.Shared.Matching.Drafts;
 using Kamada.Shared.Kernel.Results;
 
 namespace Kamada.Modules.Assistant.Application.Abstractions;

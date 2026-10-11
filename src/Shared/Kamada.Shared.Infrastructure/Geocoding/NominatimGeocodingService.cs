@@ -2,7 +2,7 @@ using System.Globalization;
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 using Kamada.Shared.Kernel.Geography;
-using Kamada.Shared.Kernel.Text;
+using Kamada.Shared.Matching.Text;
 using Microsoft.AspNetCore.WebUtilities;
 
 namespace Kamada.Shared.Infrastructure.Geocoding;

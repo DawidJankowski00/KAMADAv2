@@ -7,6 +7,7 @@ using Kamada.Modules.Assistant.Application.Transcriptions;
 using Kamada.Modules.Assistant.Infrastructure;
 using Kamada.Modules.Assistant.Infrastructure.Ollama;
 using Kamada.Modules.Assistant.Infrastructure.Whisper;
+using Kamada.Shared.Matching.Drafts;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.AI;
@@ -57,6 +58,7 @@ public static class AssistantModule
 
         services.AddScoped<IOrderExtractor, OllamaOrderExtractor>();
         services.AddSingleton<ILanguageModelProbe, OllamaModelProbe>();
+        services.AddScoped<IOrderDraftSource, ModuleOrderDraftSource>();
         services.AddScoped<OrderDraftResolver>();
         services.AddScoped<OrderDraftHandler>();
         services.AddSingleton<AssistantStatusQuery>();
