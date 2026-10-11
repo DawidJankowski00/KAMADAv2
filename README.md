@@ -28,7 +28,14 @@ a Blazor WebAssembly admin panel and a Blazor PWA for couriers.
   - see it on a Leaflet map with Google Maps navigation links.
 - **Dashboard.** Order counts per status and today's runs.
 
-**Courier app** (phone, installable PWA):
+**Phone app** (installable PWA for workers):
+
+- **Role-based views.** A worker signs in once and lands in the view of their role. A worker with several roles
+  (demo account `kierownik`) switches between them from the app bar without signing in again; each role has its own
+  accent colour. Opening a page of the other role offers a one-tap switch. The admin view is a placeholder until the
+  admin pages are shared with the phone app.
+
+**Courier view** (in the phone app):
 
 - Own runs only: today, upcoming, completed.
 - Stops in the optimized order. Each stop shows the recipient, a `tel:` link, items, notes and the estimated
