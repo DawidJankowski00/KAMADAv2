@@ -43,6 +43,7 @@ public static class WorkforceModule
         services.AddScoped<WorkerQueries>();
         services.AddScoped<WorkerCommands>();
         services.AddScoped<ICourierDirectory, CourierDirectory>();
+        services.AddScoped<IWorkerDirectory, WorkerDirectory>();
 
         services.AddValidatorsFromAssemblyContaining<WorkerQueries>(includeInternalTypes: true);
         services.AddScoped<IDataSeeder, WorkforceSeeder>();

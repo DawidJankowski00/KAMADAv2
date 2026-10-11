@@ -380,3 +380,13 @@ Record small decisions here (date — decision — reason).
 - 2026-10-11 — Run stops on touch screens: drag and drop needs a mouse, so `(pointer: coarse)` hides the drag handle and the drag
   hint (`kamada-fine-pointer-only` / `kamada-touch-only`) and the existing up/down buttons reorder the stops. Full-screen
   dialogs wrap their actions (a status text gets its own line) and size scrolling lists with `--kamada-phone-dialog-list-height`.
+- 2026-10-11 — `Seller` role (stage 4): takes orders. Policy `SalesAccess` = Admin or Seller (`RequireRole` with both); endpoints a
+  seller needs use it, everything else stays `AdminOnly`. Role chips: admin = secondary, seller = tertiary, courier = primary colour.
+- 2026-10-11 — Orders record who placed them: `orders.placed_by_worker_id` (nullable: orders placed before stage 4 have no
+  value; new orders always get the signed-in worker, demo orders the demo admin). Names come from `IWorkerDirectory`
+  (Workforce.Contracts, used by Ordering) into `PlacedByDto` on order DTOs. `GET /api/orders/mine` = the list filtered by
+  `PlacedBy = current user`; `GET /api/orders/{id}` is `SalesAccess` but answers 404 to a non-admin for someone else's order.
+- 2026-10-11 — Phone seller area (`/seller`, `/seller/orders`, `/seller/orders/{id}`): the order form is `OrderForm` in
+  `Kamada.Web.Admin` (hosted by the admin `NewOrder` page and the seller home; it calls only `SalesAccess` endpoints), the
+  seller's details page is read-only. The seller is the first role with a bottom navigation (`SellerNavigation`, fixed,
+  `kamada-with-bottom-nav` keeps content clear of it). Role order in the phone app: Seller → Courier → Admin; seller accent teal.

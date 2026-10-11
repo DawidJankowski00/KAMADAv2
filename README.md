@@ -3,7 +3,7 @@
 [![CI](https://github.com/DawidJankowski00/KAMADAv2/actions/workflows/ci.yml/badge.svg)](https://github.com/DawidJankowski00/KAMADAv2/actions/workflows/ci.yml)
 
 Order management and courier delivery platform with **route optimization**. It is a .NET 10 modular monolith with
-a Blazor WebAssembly admin panel and a Blazor PWA for couriers.
+a Blazor WebAssembly admin panel and a Blazor PWA for workers (couriers, sellers and administrators).
 
 **Admin panel** (desktop):
 
@@ -12,7 +12,8 @@ a Blazor WebAssembly admin panel and a Blazor PWA for couriers.
 - **Clients.** Clients and addresses. Addresses are geocoded (OpenStreetMap Nominatim) and shown as a pin on a
   map. When geocoding fails, the admin pins the address by hand.
 - **Orders.** New order in a few steps: client → shipping address → products with autocomplete. Stock is
-  checked and reserved in one transaction and the total is computed on the server.
+  checked and reserved in one transaction and the total is computed on the server. Every order records who took
+  it (an admin or a seller); the list can be filtered by that worker.
 - **AI order assistant** (optional, fully local). Dictate or type *"Nowe zamówienie dla Jana Kowalskiego,
   Grunwaldzka 15 m. 4, Gdańsk: sześć wód niegazowanych i dwa chleby razowe"*, and the form fills itself in. It
   matches existing clients, addresses and products or proposes new ones. The admin reviews and accepts; nothing
@@ -36,6 +37,14 @@ a Blazor WebAssembly admin panel and a Blazor PWA for couriers.
 - **Admin view.** Everything the web admin panel does, on the phone: both apps show the same pages from the shared
   `Kamada.Web.Admin` library, laid out for small screens (cards instead of wide tables, full-screen dialogs, stops
   reordered with arrows on touch screens). See the [parity checklist](docs/admin-parity.md).
+
+**Seller view** (in the phone app):
+
+- **New order** with the same form and AI assistant as the admin panel: find or create the client, pick or add
+  the shipping address, add products, place the order.
+- **"Moje zamówienia"**: the orders the seller took, newest first, with read-only details. Payments, packing,
+  cancelling and delivery planning stay with the admin; the API answers 403 for those endpoints and 404 for other
+  workers' orders.
 
 **Courier view** (in the phone app):
 
@@ -98,7 +107,8 @@ Demo accounts (seeded in the Development environment):
 |---|---|---|
 | Administrator | `admin` | `Admin123!` |
 | Courier | `kurier1`, `kurier2`, `kurier3` | `Kurier123!` |
-| Administrator + courier (switches roles in the phone app) | `kierownik` | `Kierownik123!` |
+| Seller | `sprzedawca1` | `Sprzedawca123!` |
+| All roles: administrator, courier and seller (switches roles in the phone app) | `kierownik` | `Kierownik123!` |
 
 ### Demo data
 
@@ -112,7 +122,8 @@ the real use cases ([ADR 0007](docs/adr/0007-demo-data-through-real-use-cases.md
 - **Clients:** 25 clients with real, pre-geocoded addresses: 13 in the Tricity and 12 in Szczecin. Five of them have a second shipping
   address. Edge cases: one address without coordinates (pin it on the map), one billing address and one
   deactivated client.
-- **Orders:** 36 orders from the last days, split evenly between the two areas, paid by card, cash or transfer, in every status:
+- **Orders:** 36 orders from the last days, split evenly between the two areas (every third taken by `sprzedawca1`, the rest by
+  `admin`), paid by card, cash or transfer, in every status:
   - new and awaiting payment;
   - paid and being packed;
   - ready for delivery;
@@ -289,6 +300,7 @@ flowchart LR
 
     Ordering -- ICatalogInventory --> Catalog
     Ordering -- ICustomerDirectory --> Customers
+    Ordering -- IWorkerDirectory --> Workforce
     Payments -- IOrderPayments --> Ordering
     Delivery -- IOrderFulfillment --> Ordering
     Delivery -- ICustomerDirectory --> Customers
@@ -390,6 +402,7 @@ erDiagram
         uuid id PK
         bigint number UK
         uuid client_id
+        uuid placed_by_worker_id
         uuid shipping_address_id
         varchar status
         numeric total_amount

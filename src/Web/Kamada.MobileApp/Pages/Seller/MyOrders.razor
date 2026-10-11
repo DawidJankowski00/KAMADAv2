@@ -1,0 +1,95 @@
+@page "/seller/orders"
+@attribute [Authorize(Roles = Roles.Seller)]
+@using Kamada.Shared.Contracts.Common
+@using Kamada.Shared.Contracts.Ordering
+@using Kamada.Web.Admin.Components
+@inject ApiClient Api
+@inject NavigationManager Navigation
+
+<PageTitle>Moje zamówienia – KAMADA</PageTitle>
+
+<div class="d-flex align-center mb-2">
+    <MudText Typo="Typo.h5" HtmlTag="h1">Moje zamówienia</MudText>
+    <MudSpacer />
+    <MudIconButton Icon="@Icons.Material.Filled.Refresh" OnClick="ReloadAsync" Disabled="_loading" aria-label="Odśwież" />
+</div>
+
+@if (_error is not null)
+{
+    <MudAlert Severity="Severity.Error" Class="mb-3">
+        @_error
+        <MudButton Size="Size.Small" OnClick="ReloadAsync">Spróbuj ponownie</MudButton>
+    </MudAlert>
+}
+else if (_orders.Count == 0 && _loading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+else if (_orders.Count == 0)
+{
+    <div class="d-flex flex-column align-center pa-8 gap-2">
+        <MudIcon Icon="@Icons.Material.Filled.ReceiptLong" Size="Size.Large" Class="mud-text-secondary" />
+        <MudText Align="Align.Center" Class="mud-text-secondary">Nie masz jeszcze zamówień. Złożone przez Ciebie zamówienia pojawią się tutaj.</MudText>
+        <MudButton Href="seller" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" Class="mt-2">Nowe zamówienie</MudButton>
+    </div>
+}
+else
+{
+    @foreach (var order in _orders)
+    {
+        <MudPaper Elevation="1" Class="pa-3 mb-3 kamada-order-card" @onclick="() => Navigation.NavigateTo(OrderUrl(order.Id))">
+            <div class="d-flex align-center gap-2">
+                <MudText Typo="Typo.subtitle1" Style="font-weight:600" Class="flex-grow-1">#@order.Number · @order.RecipientName</MudText>
+                <OrderStatusChip Status="order.Status" />
+            </div>
+            <MudText Typo="Typo.body2" Class="mud-text-secondary">@order.City · @Labels.DateTime(order.CreatedAt)</MudText>
+            <MudText Typo="Typo.body2">Pozycji: @order.ItemCount · <b>@Labels.Money(order.TotalAmount)</b></MudText>
+        </MudPaper>
+    }
+
+    @if (_orders.Count < _totalCount)
+    {
+        <MudButton Variant="Variant.Outlined" Color="Color.Primary" FullWidth="true" OnClick="LoadMoreAsync" Disabled="_loading">
+            Pokaż więcej (@(_totalCount - _orders.Count))
+        </MudButton>
+    }
+}
+
+@code {
+    private readonly List<OrderSummaryDto> _orders = [];
+    private int _page;
+    private int _totalCount;
+    private bool _loading;
+    private string? _error;
+
+    public static string OrderUrl(Guid id) => $"seller/orders/{id}";
+
+    protected override Task OnInitializedAsync() => ReloadAsync();
+
+    private Task ReloadAsync()
+    {
+        _orders.Clear();
+        _page = 0;
+        _totalCount = 0;
+        return LoadMoreAsync();
+    }
+
+    /// <summary>Newest first, one page at a time; an order placed meanwhile may shift a page, so ids already shown are skipped.</summary>
+    private async Task LoadMoreAsync()
+    {
+        _loading = true;
+        _error = null;
+        var result = await Api.GetAsync<PagedResult<OrderSummaryDto>>(
+            $"api/orders/mine{QueryString.Build(("page", _page + 1), ("pageSize", Paging.DefaultPageSize))}");
+        _loading = false;
+        if (!result.IsSuccess)
+        {
+            _error = result.Problem!.Message;
+            return;
+        }
+
+        _page++;
+        _totalCount = result.Value.TotalCount;
+        _orders.AddRange(result.Value.Items.Where(o => _orders.All(existing => existing.Id != o.Id)));
+    }
+}

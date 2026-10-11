@@ -4,6 +4,7 @@ public enum WorkerRole
 {
     Admin,
     Courier,
+    Seller,
 }
 
 /// <param name="Roles">One or more roles, in enum order.</param>

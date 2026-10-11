@@ -4,4 +4,5 @@ internal enum WorkerRole
 {
     Admin,
     Courier,
+    Seller,
 }

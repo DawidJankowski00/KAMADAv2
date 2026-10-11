@@ -107,8 +107,42 @@ h1:focus {
     padding-bottom: env(safe-area-inset-bottom);
 }
 
-.kamada-run-card {
+.kamada-run-card,
+.kamada-order-card {
     cursor: pointer;
+}
+
+/* Bottom navigation of a role with several destinations (seller) */
+.kamada-bottom-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1100;
+    display: flex;
+    background: var(--mud-palette-surface);
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+.kamada-bottom-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 8px 4px 6px;
+    font-size: 0.75rem;
+    color: var(--mud-palette-text-secondary);
+    text-decoration: none;
+}
+
+    .kamada-bottom-nav-item.active {
+        color: var(--mud-palette-primary);
+        font-weight: 600;
+    }
+
+.mud-main-content.kamada-with-bottom-nav {
+    padding-bottom: calc(64px + env(safe-area-inset-bottom));
 }
 
 .kamada-stop-number {

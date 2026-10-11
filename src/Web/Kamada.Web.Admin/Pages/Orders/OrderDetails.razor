@@ -12,7 +12,7 @@
 else
 {
     <MudBreadcrumbs Items="_breadcrumbs" Class="px-0 pt-0" />
-    <PageHeader Title="@($"Zamówienie #{_order.Number}")" Subtitle="@($"Złożone {Labels.DateTime(_order.CreatedAt)}")">
+    <PageHeader Title="@($"Zamówienie #{_order.Number}")" Subtitle="@PlacedSubtitle">
         <Actions>
             <OrderStatusChip Status="_order.Status" />
             @if (CanPay)
@@ -139,6 +139,9 @@ else
     private List<BreadcrumbItem> _breadcrumbs = [];
 
     [Parameter] public Guid Id { get; set; }
+
+    private string PlacedSubtitle =>
+        $"Złożone {Labels.DateTime(_order!.CreatedAt)}{(_order.PlacedBy is { } placedBy ? $" · przyjął(a) {placedBy.Name}" : string.Empty)}";
 
     private bool HasPaymentActions(PaymentDto payment) =>
         payment is { Status: PaymentStatus.Pending, Provider: PaymentProvider.Transfer }

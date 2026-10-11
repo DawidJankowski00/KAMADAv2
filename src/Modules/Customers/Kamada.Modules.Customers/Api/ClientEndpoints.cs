@@ -1,4 +1,5 @@
 using Kamada.Modules.Customers.Application.Clients;
+using Kamada.Shared.Contracts.Auth;
 using Kamada.Shared.Contracts.Common;
 using Kamada.Shared.Contracts.Customers;
 using Kamada.Shared.Infrastructure.Auth;
@@ -14,21 +15,25 @@ internal static class ClientEndpoints
     public static IEndpointRouteBuilder MapClientEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("/api/clients")
-            .WithTags("Clients")
-            .RequireAuthorization(AuthorizationPolicies.AdminOnly);
+            .WithTags("Clients");
 
-        group.MapGet("/", async ([AsParameters] ClientListQuery query, ClientQueries queries, CancellationToken ct) =>
-                TypedResults.Ok(await queries.ListAsync(query, ct)))
+        // Policies of nested groups add up, so the endpoints sellers may call get their own group.
+        var sales = group.MapGroup("/").RequireAuthorization(AuthorizationPolicies.SalesAccess);
+        var admin = group.MapGroup("/").RequireAuthorization(AuthorizationPolicies.AdminOnly);
+
+        sales.MapGet("/", async ([AsParameters] ClientListQuery query, ClientQueries queries, ICurrentUser user, CancellationToken ct) =>
+                TypedResults.Ok(await queries.ListAsync(user.IsInRole(Roles.Admin) ? query : query with { IsActive = true }, ct)))
             .WithValidation<ClientListQuery>()
+            .WithSummary("Search and page clients; sellers see active clients only")
             .Produces<PagedResult<ClientSummaryDto>>();
 
-        group.MapGet("/{id:guid}", async (Guid id, ClientQueries queries, CancellationToken ct) =>
+        sales.MapGet("/{id:guid}", async (Guid id, ClientQueries queries, CancellationToken ct) =>
                 (await queries.GetAsync(id, ct)).ToHttpResult(TypedResults.Ok))
             .WithName("GetClient")
             .Produces<ClientDto>()
             .ProducesProblem(StatusCodes.Status404NotFound);
 
-        group.MapPost("/", async (CreateClientRequest request, ClientCommands commands, CancellationToken ct) =>
+        sales.MapPost("/", async (CreateClientRequest request, ClientCommands commands, CancellationToken ct) =>
                 (await commands.CreateAsync(request, ct))
                     .ToHttpResult(client => TypedResults.CreatedAtRoute(client, "GetClient", new { id = client.Id })))
             .WithValidation<CreateClientRequest>()
@@ -36,24 +41,24 @@ internal static class ClientEndpoints
             .Produces<ClientDto>(StatusCodes.Status201Created)
             .ProducesProblem(StatusCodes.Status409Conflict);
 
-        group.MapPut("/{id:guid}", async (Guid id, UpdateClientRequest request, ClientCommands commands, CancellationToken ct) =>
+        admin.MapPut("/{id:guid}", async (Guid id, UpdateClientRequest request, ClientCommands commands, CancellationToken ct) =>
                 (await commands.UpdateAsync(id, request, ct)).ToHttpResult(TypedResults.Ok))
             .WithValidation<UpdateClientRequest>()
             .Produces<ClientDto>()
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);
 
-        group.MapPost("/{id:guid}/deactivate", async (Guid id, ClientCommands commands, CancellationToken ct) =>
+        admin.MapPost("/{id:guid}/deactivate", async (Guid id, ClientCommands commands, CancellationToken ct) =>
                 (await commands.DeactivateAsync(id, ct)).ToHttpResult(TypedResults.NoContent))
             .ProducesProblem(StatusCodes.Status404NotFound);
 
-        group.MapPost("/{id:guid}/activate", async (Guid id, ClientCommands commands, CancellationToken ct) =>
+        admin.MapPost("/{id:guid}/activate", async (Guid id, ClientCommands commands, CancellationToken ct) =>
                 (await commands.ActivateAsync(id, ct)).ToHttpResult(TypedResults.NoContent))
             .ProducesProblem(StatusCodes.Status404NotFound);
 
-        var addresses = group.MapGroup("/{clientId:guid}/addresses").WithTags("Clients");
+        var addresses = admin.MapGroup("/{clientId:guid}/addresses");
 
-        addresses.MapPost("/", async (Guid clientId, AddressRequest request, ClientCommands commands, CancellationToken ct) =>
+        sales.MapPost("/{clientId:guid}/addresses", async (Guid clientId, AddressRequest request, ClientCommands commands, CancellationToken ct) =>
                 (await commands.AddAddressAsync(clientId, request, ct))
                     .ToHttpResult(address => TypedResults.Created($"/api/clients/{clientId}/addresses/{address.Id}", address)))
             .WithValidation<AddressRequest>()

@@ -11,9 +11,12 @@ internal static class MobileTheme
 
     private static readonly MudTheme Admin = Create(primary: "#5e35b1", appBar: "#4527a0");
 
+    private static readonly MudTheme Seller = Create(primary: "#00796b", appBar: "#00695c");
+
     public static MudTheme For(string? role) => role switch
     {
         Roles.Admin => Admin,
+        Roles.Seller => Seller,
         _ => Default,
     };
 

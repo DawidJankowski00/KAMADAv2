@@ -11,7 +11,7 @@ public sealed class OrderTests
         new(Guid.NewGuid(), "Produkt", "SKU-1", quantity, price);
 
     private static Order PlaceOrder(params OrderLine[] lines) =>
-        Order.Place(Guid.NewGuid(), Address, lines.Length == 0 ? [Line(1, 10m)] : lines, notes: null).Value;
+        Order.Place(Guid.NewGuid(), Address, lines.Length == 0 ? [Line(1, 10m)] : lines, notes: null, placedByWorkerId: Guid.NewGuid()).Value;
 
     private static Order OrderIn(OrderStatus status)
     {
@@ -50,9 +50,19 @@ public sealed class OrderTests
     }
 
     [Fact]
+    public void Place_RecordsWhoPlacedTheOrder()
+    {
+        var seller = Guid.NewGuid();
+
+        var order = Order.Place(Guid.NewGuid(), Address, [Line(1, 10m)], notes: null, placedByWorkerId: seller).Value;
+
+        order.PlacedByWorkerId.ShouldBe(seller);
+    }
+
+    [Fact]
     public void Place_WithoutLines_Fails()
     {
-        Order.Place(Guid.NewGuid(), Address, [], null).Error.ShouldBe(OrderErrors.Empty);
+        Order.Place(Guid.NewGuid(), Address, [], null, Guid.NewGuid()).Error.ShouldBe(OrderErrors.Empty);
     }
 
     [Theory]
@@ -60,13 +70,13 @@ public sealed class OrderTests
     [InlineData(1, 0)]
     public void Place_InvalidLine_Fails(int quantity, decimal price)
     {
-        Order.Place(Guid.NewGuid(), Address, [Line(quantity, price)], null).Error.ShouldBe(OrderErrors.InvalidLine);
+        Order.Place(Guid.NewGuid(), Address, [Line(quantity, price)], null, Guid.NewGuid()).Error.ShouldBe(OrderErrors.InvalidLine);
     }
 
     [Fact]
     public void Place_TotalAboveLimit_Fails()
     {
-        Order.Place(Guid.NewGuid(), Address, [Line(2, 60_000_000m)], null).Error.ShouldBe(OrderErrors.TotalTooLarge);
+        Order.Place(Guid.NewGuid(), Address, [Line(2, 60_000_000m)], null, Guid.NewGuid()).Error.ShouldBe(OrderErrors.TotalTooLarge);
     }
 
     [Fact]

@@ -61,7 +61,10 @@ public sealed class DemoDataSeedingTests(KamadaApiFactory factory)
             szczecinRun.StopCount.ShouldBe(7);
 
             var manager = await host.CreateClient().LoginAsync("kierownik", WorkforceSeeder.ManagerPassword);
-            manager.User.Roles.ShouldBe([Roles.Admin, Roles.Courier], ignoreOrder: true);
+            manager.User.Roles.ShouldBe([Roles.Admin, Roles.Courier, Roles.Seller], ignoreOrder: true);
+
+            var seller = await SignInAsync(host, "sprzedawca1", WorkforceSeeder.SellerPassword);
+            (await CountAsync<OrderSummaryDto>(seller, "/api/orders/mine")).ShouldBe(12);
 
             var locations = await GetAsync<List<RouteLocationDto>>(admin, "/api/route-locations");
             locations.Select(l => l.City).Distinct().ShouldBe(["Gdańsk", "Gdynia", "Szczecin"], ignoreOrder: true);

@@ -39,9 +39,13 @@
             <AdminNavMenu />
         </MudDrawer>
     }
-    <MudMainContent>
-        @* Admin pages hold tables and forms, so on a tablet they may use the width; courier pages stay phone-sized. *@
-        <MudContainer MaxWidth="@(IsAdmin ? MaxWidth.Large : MaxWidth.Small)" Class="py-4 px-3">
+    @if (IsSeller)
+    {
+        <SellerNavigation />
+    }
+    <MudMainContent Class="@(IsSeller ? "kamada-with-bottom-nav" : null)">
+        @* Admin pages hold tables and forms, so on a tablet they may use the width; the order form gets a little less, courier pages stay phone-sized. *@
+        <MudContainer MaxWidth="@ContainerWidth" Class="py-4 px-3">
             <ErrorBoundary @ref="_errorBoundary">
                 <ChildContent>
                     @if (!_rolesLoaded)
@@ -76,6 +80,15 @@
     [CascadingParameter] public RouteData? RouteData { get; set; }
 
     private bool IsAdmin => _rolesLoaded && RoleContext.ActiveRole == Roles.Admin;
+
+    private bool IsSeller => _rolesLoaded && RoleContext.ActiveRole == Roles.Seller;
+
+    private MaxWidth ContainerWidth => !_rolesLoaded ? MaxWidth.Small : RoleContext.ActiveRole switch
+    {
+        Roles.Admin => MaxWidth.Large,
+        Roles.Seller => MaxWidth.Medium,
+        _ => MaxWidth.Small,
+    };
 
     /// <summary>
     /// The role whose area the current page belongs to. A page of a role the user has but is not working in shows a
