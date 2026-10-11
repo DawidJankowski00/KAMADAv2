@@ -5,7 +5,7 @@
 
 <PageTitle>Zamówienia – KAMADA</PageTitle>
 
-<PageHeader Title="Zamówienia" Subtitle="Filtruj po statusie, dacie, kliencie lub numerze">
+<PageHeader Title="Zamówienia" Subtitle="Filtruj po statusie, dacie, kliencie, numerze lub osobie, która przyjęła zamówienie">
     <Actions>
         <MudButton Href="orders/new" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.AddShoppingCart">Nowe zamówienie</MudButton>
     </Actions>
@@ -13,11 +13,11 @@
 
 <MudPaper Class="pa-4 mb-4" Elevation="1">
     <MudGrid Spacing="2">
-        <MudItem xs="12" md="4">
+        <MudItem xs="12" md="3">
             <MudTextField T="string" Value="_search" ValueChanged="OnSearchChanged" Label="Numer (#123) lub odbiorca"
                           Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" DebounceInterval="300" Clearable="true" />
         </MudItem>
-        <MudItem xs="12" sm="6" md="3">
+        <MudItem xs="12" sm="6" md="2">
             <MudSelect T="OrderStatus?" Value="_status" ValueChanged="OnStatusChanged" Label="Status" Clearable="true">
                 @foreach (var status in Enum.GetValues<OrderStatus>())
                 {
@@ -25,9 +25,17 @@
                 }
             </MudSelect>
         </MudItem>
-        <MudItem xs="12" sm="6" md="5">
+        <MudItem xs="12" sm="6" md="4">
             <MudDateRangePicker DateRange="_dateRange" DateRangeChanged="OnDateRangeChanged" Label="Data złożenia" Clearable="true"
                                 Culture="@System.Globalization.CultureInfo.GetCultureInfo("pl-PL")" />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudSelect T="Guid?" Value="_placedBy" ValueChanged="OnPlacedByChanged" Label="Przyjął(a)" Clearable="true">
+                @foreach (var worker in _orderTakers)
+                {
+                    <MudSelectItem T="Guid?" Value="worker.Id">@worker.Name @worker.Surname@(worker.IsActive ? string.Empty : " (nieaktywny)")</MudSelectItem>
+                }
+            </MudSelect>
         </MudItem>
         @if (ClientId is not null)
         {
@@ -46,6 +54,7 @@
         <MudTh>Odbiorca</MudTh>
         <MudTh>Miasto</MudTh>
         <MudTh>Pozycje</MudTh>
+        <MudTh>Przyjął(a)</MudTh>
         <MudTh Style="text-align:right">Wartość</MudTh>
         <MudTh>Status</MudTh>
     </HeaderContent>
@@ -55,6 +64,7 @@
         <MudTd DataLabel="Odbiorca">@context.RecipientName</MudTd>
         <MudTd DataLabel="Miasto">@context.City</MudTd>
         <MudTd DataLabel="Pozycje" HideSmall="true">@context.ItemCount</MudTd>
+        <MudTd DataLabel="Przyjął(a)" HideSmall="true">@(context.PlacedBy?.Name ?? "—")</MudTd>
         <MudTd DataLabel="Wartość" Style="text-align:right">@Labels.Money(context.TotalAmount)</MudTd>
         <MudTd DataLabel="Status"><OrderStatusChip Status="context.Status" /></MudTd>
     </RowTemplate>
@@ -67,13 +77,26 @@
     private string? _search;
     private OrderStatus? _status;
     private DateRange? _dateRange;
+    private Guid? _placedBy;
+    private IReadOnlyList<WorkerDto> _orderTakers = [];
 
     [SupplyParameterFromQuery(Name = "status")] public string? StatusParameter { get; set; }
 
     [SupplyParameterFromQuery] public Guid? ClientId { get; set; }
 
-    protected override void OnInitialized() =>
+    protected override async Task OnInitializedAsync()
+    {
         _status = Enum.TryParse<OrderStatus>(StatusParameter, out var status) ? status : null;
+
+        // Orders are placed by admins and sellers; deactivated workers stay in the filter for their past orders.
+        var workers = await Api.GetAsync<PagedResult<WorkerDto>>($"api/workers{QueryString.Build(("pageSize", Paging.MaxPageSize))}");
+        if (workers.IsSuccess)
+        {
+            _orderTakers = [.. workers.Value.Items
+                .Where(w => w.Roles.Contains(WorkerRole.Admin) || w.Roles.Contains(WorkerRole.Seller))
+                .OrderBy(w => w.Surname).ThenBy(w => w.Name)];
+        }
+    }
 
     private async Task<TableData<OrderSummaryDto>> LoadAsync(TableState state, CancellationToken cancellationToken)
     {
@@ -85,6 +108,7 @@
             ("search", _search),
             ("status", _status),
             ("clientId", ClientId),
+            ("placedBy", _placedBy),
             ("from", from),
             ("to", to),
             ("page", state.Page + 1),
@@ -105,6 +129,12 @@
     private Task OnStatusChanged(OrderStatus? value)
     {
         _status = value;
+        return _table!.ReloadServerData();
+    }
+
+    private Task OnPlacedByChanged(Guid? value)
+    {
+        _placedBy = value;
         return _table!.ReloadServerData();
     }
 
