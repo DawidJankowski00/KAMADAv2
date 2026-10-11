@@ -21,6 +21,12 @@ internal sealed class ClientCommands(ICustomersDbContext db, AddressGeocoder geo
         var uniqueness = await CheckUniqueAsync(null, request.Username, request.Email, cancellationToken);
         if (uniqueness.IsFailure)
         {
+            // An identical retry may have been saved between the check above and this one: then the "taken" username is its own.
+            if (request.RequestId is { } sameRequest && await FindByRequestIdAsync(sameRequest, cancellationToken) is { } savedMeanwhile)
+            {
+                return savedMeanwhile.ToDto();
+            }
+
             return uniqueness.Error;
         }
 
