@@ -8,6 +8,7 @@
 .github/
 tests/
 benchmarks/
+!benchmarks/Kamada.Assistant.Evals/cases.json
 docs/
 **/Dockerfile*
 docker-compose*.yml
