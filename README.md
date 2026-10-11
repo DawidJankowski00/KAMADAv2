@@ -619,6 +619,7 @@ dotnet run -c Release --project benchmarks/Kamada.Assistant.Evals -- --model qwe
 | [0006](docs/adr/0006-geocoding-never-blocks-saving.md) | Geocoding with Nominatim that never blocks saving an address |
 | [0007](docs/adr/0007-demo-data-through-real-use-cases.md) | Demo data seeded through the real use cases |
 | [0008](docs/adr/0008-local-ai-assistant-suggests-only.md) | Local AI order assistant: the model extracts, C# resolves, the admin accepts |
+| [0009](docs/adr/0009-offline-ordering-on-the-phone.md) | Offline ordering on the phone: local copy, outbox, idempotent creates |
 
 Smaller decisions are logged in [CLAUDE.md](CLAUDE.md#minor-decisions-log).
 

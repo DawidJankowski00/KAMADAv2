@@ -3,8 +3,11 @@
 @using Kamada.Shared.Contracts.Common
 @using Kamada.Shared.Contracts.Ordering
 @using Kamada.Web.Admin.Components
+@using Kamada.Web.Shared.Offline
+@implements IDisposable
 @inject ApiClient Api
 @inject NavigationManager Navigation
+@inject OrderOutbox Outbox
 
 <PageTitle>Moje zamówienia – KAMADA</PageTitle>
 
@@ -13,6 +16,8 @@
     <MudSpacer />
     <MudIconButton Icon="@Icons.Material.Filled.Refresh" OnClick="ReloadAsync" Disabled="_loading" aria-label="Odśwież" />
 </div>
+
+<OutboxList />
 
 @if (_error is not null)
 {
@@ -64,7 +69,20 @@ else
 
     public static string OrderUrl(Guid id) => $"seller/orders/{id}";
 
-    protected override Task OnInitializedAsync() => ReloadAsync();
+    protected override Task OnInitializedAsync()
+    {
+        Outbox.OrderSent += OnOrderSent;
+        return ReloadAsync();
+    }
+
+    public void Dispose() => Outbox.OrderSent -= OnOrderSent;
+
+    // A queued order reached the server: it now belongs to the history.
+    private void OnOrderSent(OrderDto order) => InvokeAsync(async () =>
+    {
+        await ReloadAsync();
+        StateHasChanged();
+    });
 
     private Task ReloadAsync()
     {

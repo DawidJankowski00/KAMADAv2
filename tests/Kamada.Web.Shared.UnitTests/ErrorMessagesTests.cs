@@ -10,6 +10,9 @@ public sealed class ErrorMessagesTests
     [InlineData("Delivery.RunNotEditable")]
     [InlineData("Workers.CourierInactive")]
     [InlineData("Workers.CannotRemoveOwnAdminRole")]
+    [InlineData("Products.InsufficientStock")]
+    [InlineData("Products.Inactive")]
+    [InlineData("Requests.IdReused")]
     public void TryTranslate_KnownCodes_HavePolishMessages(string code) =>
         ErrorMessages.TryTranslate(code).ShouldNotBeNullOrWhiteSpace();
 

@@ -37,6 +37,7 @@ internal sealed class AddressRequestValidator : AbstractValidator<AddressRequest
             .Matches("^[0-9]{2}-[0-9]{3}$")
             .When(a => CustomerRules.IsPoland(a.Country))
             .WithMessage("Polish postal code must have the format 00-000.");
+        RuleFor(a => a.RequestId).NotEqual(Guid.Empty);
     }
 }
 
@@ -57,6 +58,7 @@ internal sealed class CreateClientRequestValidator : AbstractValidator<CreateCli
             .Must(a => a is null || a.Count <= CustomerRules.MaxAddressesOnCreate)
             .WithMessage($"At most {CustomerRules.MaxAddressesOnCreate} addresses can be added at once.");
         RuleForEach(r => r.Addresses).SetValidator(new AddressRequestValidator());
+        RuleFor(r => r.RequestId).NotEqual(Guid.Empty);
     }
 }
 

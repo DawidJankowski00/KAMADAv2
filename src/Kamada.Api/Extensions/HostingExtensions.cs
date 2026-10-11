@@ -3,6 +3,7 @@ using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
 using Kamada.Shared.Infrastructure.Auth;
 using Kamada.Shared.Infrastructure.Http;
+using Microsoft.Net.Http.Headers;
 using Serilog;
 
 namespace Kamada.Api.Extensions;
@@ -39,7 +40,9 @@ internal static class HostingExtensions
         return services.AddCors(options => options.AddPolicy(FrontendsCorsPolicy, policy => policy
             .WithOrigins(origins)
             .AllowAnyHeader()
-            .AllowAnyMethod()));
+            .AllowAnyMethod()
+            // The phone app reads the tag of its offline lookup data to send it back in If-None-Match.
+            .WithExposedHeaders(HeaderNames.ETag)));
     }
 
     /// <summary>

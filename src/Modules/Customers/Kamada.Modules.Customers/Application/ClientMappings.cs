@@ -20,6 +20,15 @@ internal static class ClientMappings
         client.CreatedAt,
         [.. client.ActiveAddresses.OrderBy(a => a.Type).ThenBy(a => a.CreatedAt).Select(a => a.ToDto())]);
 
+    public static ClientLookupDto ToLookupDto(this Client client) => new(
+        client.Id,
+        client.Username,
+        client.Email,
+        client.Name,
+        client.Surname,
+        client.PhoneNumber,
+        [.. client.ActiveAddresses.Where(a => a.Type == DomainAddressType.Shipping).OrderBy(a => a.CreatedAt).Select(a => a.ToDto())]);
+
     public static AddressDto ToDto(this Address address) => new(
         address.Id,
         address.Type.ToContract(),

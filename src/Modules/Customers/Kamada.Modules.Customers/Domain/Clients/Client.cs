@@ -34,6 +34,9 @@ internal sealed class Client : Entity, IAuditable
 
     public bool IsActive { get; private set; }
 
+    /// <summary>Id the creating request carried (idempotent retries), if any.</summary>
+    public Guid? RequestId { get; private set; }
+
     public DateTimeOffset CreatedAt { get; private set; }
 
     public DateTimeOffset? UpdatedAt { get; private set; }
@@ -46,8 +49,11 @@ internal sealed class Client : Entity, IAuditable
 
     public static string NormalizeEmail(string email) => email.Trim().ToLowerInvariant();
 
-    public static Client Create(string username, string email, string name, string surname, string phoneNumber) =>
-        new(Guid.CreateVersion7(), NormalizeUsername(username), NormalizeEmail(email), name.Trim(), surname.Trim(), phoneNumber.Trim());
+    public static Client Create(string username, string email, string name, string surname, string phoneNumber, Guid? requestId = null) =>
+        new(Guid.CreateVersion7(), NormalizeUsername(username), NormalizeEmail(email), name.Trim(), surname.Trim(), phoneNumber.Trim())
+        {
+            RequestId = requestId,
+        };
 
     public void UpdateDetails(string email, string name, string surname, string phoneNumber)
     {
@@ -57,9 +63,9 @@ internal sealed class Client : Entity, IAuditable
         PhoneNumber = phoneNumber.Trim();
     }
 
-    public Address AddAddress(AddressDetails details)
+    public Address AddAddress(AddressDetails details, Guid? requestId = null)
     {
-        var address = Address.Create(Id, details);
+        var address = Address.Create(Id, details, requestId);
         _addresses.Add(address);
         return address;
     }

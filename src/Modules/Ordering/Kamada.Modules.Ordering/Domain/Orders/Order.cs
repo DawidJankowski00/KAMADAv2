@@ -45,6 +45,9 @@ internal sealed class Order : Entity, IAuditable
     /// <summary>The worker who placed the order; <c>null</c> for orders placed before this was recorded.</summary>
     public Guid? PlacedByWorkerId { get; private set; }
 
+    /// <summary>Id the placing request carried (idempotent retries from the phone app), if any.</summary>
+    public Guid? RequestId { get; private set; }
+
     public ShippingAddress ShippingAddress { get; private set; }
 
     public OrderStatus Status { get; private set; }
@@ -66,7 +69,8 @@ internal sealed class Order : Entity, IAuditable
         ShippingAddress shippingAddress,
         IReadOnlyCollection<OrderLine> lines,
         string? notes,
-        Guid placedByWorkerId)
+        Guid placedByWorkerId,
+        Guid? requestId = null)
     {
         if (lines.Count == 0)
         {
@@ -82,6 +86,7 @@ internal sealed class Order : Entity, IAuditable
         {
             ClientId = clientId,
             PlacedByWorkerId = placedByWorkerId,
+            RequestId = requestId,
             ShippingAddress = shippingAddress,
             Notes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim(),
             Status = OrderStatus.New,

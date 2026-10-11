@@ -27,6 +27,12 @@ internal static class ClientEndpoints
             .WithSummary("Search and page clients; sellers see active clients only")
             .Produces<PagedResult<ClientSummaryDto>>();
 
+        sales.MapGet("/lookup", async (HttpContext context, ClientQueries queries, CancellationToken ct) =>
+                context.OkWithETag(await queries.LookupAsync(ct)))
+            .WithSummary("All active clients with their shipping addresses (the phone app's offline copy); supports If-None-Match")
+            .Produces<IReadOnlyList<ClientLookupDto>>()
+            .Produces(StatusCodes.Status304NotModified);
+
         sales.MapGet("/{id:guid}", async (Guid id, ClientQueries queries, CancellationToken ct) =>
                 (await queries.GetAsync(id, ct)).ToHttpResult(TypedResults.Ok))
             .WithName("GetClient")

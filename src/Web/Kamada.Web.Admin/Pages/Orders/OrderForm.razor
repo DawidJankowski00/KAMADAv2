@@ -1,13 +1,37 @@
 @using Kamada.Web.Admin.Pages.Clients
+@using Kamada.Web.Shared.Connectivity
+@using Kamada.Web.Shared.Offline
+@using Microsoft.Extensions.DependencyInjection
+@implements IDisposable
 @inject ApiClient Api
 @inject ISnackbar Snackbar
+@inject ConnectionMonitor Monitor
+@inject TimeProvider Clock
+@inject IServiceProvider Services
 
 @* The order form with the assistant, shared by the admin "new order" page and the seller's home in the phone app.
-   It calls only endpoints open to sellers (SalesAccess). *@
+   It calls only endpoints open to sellers (SalesAccess). Where the host allows it (AllowQueue, the phone app's seller) a
+   poor or missing connection switches it to the data kept on the phone, and the order is queued in the outbox. *@
 
 <MudGrid>
     <MudItem xs="12" lg="8">
-        <AssistantPanel OnDraft="ApplyDraftAsync" />
+        @if (UseLocalData)
+        {
+            <MudAlert Severity="Severity.Info" Icon="@Icons.Material.Filled.CloudOff" Class="mb-4">
+                Brak dobrego połączenia: klienci, ceny i stany pochodzą z danych zapisanych w telefonie (stan z @LocalDataTime).
+                Zamówienie zostanie zapisane w telefonie i wysłane, gdy połączenie wróci. Asystent AI wymaga połączenia.
+            </MudAlert>
+        }
+        else
+        {
+            @if (LocalDataMissing)
+            {
+                <MudAlert Severity="Severity.Warning" Class="mb-4">
+                    Słabe połączenie, a w telefonie nie ma jeszcze danych do pracy bez sieci – pobiorą się, gdy połączenie się poprawi.
+                </MudAlert>
+            }
+            <AssistantPanel OnDraft="ApplyDraftAsync" />
+        }
 
         @if (_warnings.Count > 0)
         {
@@ -114,7 +138,15 @@
 
         @* 3. Products *@
         <MudPaper Class="pa-4 mb-4" Elevation="1">
-            <MudText Typo="Typo.h6" Class="mb-2">3. Produkty</MudText>
+            <div class="d-flex flex-wrap align-center gap-2 mb-2">
+                <MudText Typo="Typo.h6">3. Produkty</MudText>
+                @if (UseLocalData)
+                {
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Icon="@Icons.Material.Filled.Inventory2">
+                        ceny i stany z @LocalDataTime
+                    </MudChip>
+                }
+            </div>
             <div class="d-flex flex-wrap align-end gap-3">
                 <div class="flex-grow-1" style="min-width: 260px">
                     <MudAutocomplete T="ProductDto" @bind-Value="_product" SearchFunc="SearchProductsAsync"
@@ -216,9 +248,12 @@
                 </div>
             }
             <MudText Typo="Typo.h5" Class="mt-3">@Labels.Money(EstimatedTotal)</MudText>
-            <MudText Typo="Typo.caption" Class="mud-text-secondary">Kwota orientacyjna – ostateczną sumę liczy serwer według aktualnych cen.</MudText>
+            <MudText Typo="Typo.caption" Class="mud-text-secondary">
+                Kwota orientacyjna – ostateczną sumę liczy serwer według aktualnych cen@(UseLocalData ? " przy wysyłce" : string.Empty).
+            </MudText>
             <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" Size="Size.Large" Class="mt-4"
-                       Disabled="!CanSubmit || _busy" OnClick="SubmitAsync" StartIcon="@Icons.Material.Filled.Check">
+                       Disabled="!CanSubmit || _busy" OnClick="SubmitAsync"
+                       StartIcon="@(UseLocalData ? Icons.Material.Filled.Schedule : Icons.Material.Filled.Check)">
                 @SubmitLabel
             </MudButton>
             @if (!CanSubmit && MissingSteps.Count > 0)
@@ -256,10 +291,38 @@
     private bool _aiAddress;
     private bool _aiNotes;
 
+    // Sent with the creates, so a repeated submit (or the outbox finishing it later) never creates anything twice.
+    private Guid _orderRequestId = Guid.CreateVersion7();
+    private Guid _clientRequestId = Guid.CreateVersion7();
+    private Guid _addressRequestId = Guid.CreateVersion7();
+
+    // Registered by the phone app only.
+    private OfflineLookup? _lookup;
+    private OrderOutbox? _outbox;
+
     [Parameter] public Guid? PreselectedClientId { get; set; }
 
     /// <summary>Called with the placed order; the host page decides where to go next.</summary>
     [Parameter] public EventCallback<OrderDto> OnPlaced { get; set; }
+
+    /// <summary>The host lets the form keep the order on the device when the connection is poor or lost.</summary>
+    [Parameter] public bool AllowQueue { get; set; }
+
+    /// <summary>Called with the order kept on the device instead of being placed.</summary>
+    [Parameter] public EventCallback<OutboxEntry> OnQueued { get; set; }
+
+    /// <summary>A queued order to edit (e.g. refused by the server); submitting replaces it or places it.</summary>
+    [Parameter] public OutboxEntry? Resume { get; set; }
+
+    private bool CanQueue => AllowQueue && _outbox is not null;
+
+    private bool HasLocalData => _lookup?.Products is not null && _lookup.Clients is not null;
+
+    private bool UseLocalData => CanQueue && HasLocalData && Monitor.Quality != ConnectionQuality.Good;
+
+    private bool LocalDataMissing => CanQueue && !HasLocalData && Monitor.Quality != ConnectionQuality.Good;
+
+    private string LocalDataTime => _lookup?.CheckedAt is { } at ? Labels.Time(at) : "—";
 
     private IReadOnlyList<AddressDto> ShippingAddresses =>
         _clientDetails?.Addresses.Where(a => a.Type == AddressType.Shipping).ToList() ?? [];
@@ -295,7 +358,8 @@
     ];
 
     private string SubmitLabel =>
-        _newClientMode ? "Utwórz klienta i złóż zamówienie"
+        UseLocalData ? "Zapisz do wysłania"
+        : _newClientMode ? "Utwórz klienta i złóż zamówienie"
         : UsesNewAddress ? "Dodaj adres i złóż zamówienie"
         : "Złóż zamówienie";
 
@@ -319,11 +383,36 @@
 
     protected override async Task OnInitializedAsync()
     {
-        if (PreselectedClientId is { } clientId)
+        _lookup = Services.GetService<OfflineLookup>();
+        _outbox = Services.GetService<OrderOutbox>();
+        Monitor.QualityChanged += OnQualityChanged;
+        if (_lookup is not null)
+        {
+            _lookup.Changed += OnLookupChanged;
+        }
+
+        if (Resume is { } entry)
+        {
+            ApplyEntry(entry);
+        }
+        else if (PreselectedClientId is { } clientId)
         {
             await LoadClientAsync(clientId);
         }
     }
+
+    public void Dispose()
+    {
+        Monitor.QualityChanged -= OnQualityChanged;
+        if (_lookup is not null)
+        {
+            _lookup.Changed -= OnLookupChanged;
+        }
+    }
+
+    private void OnQualityChanged(ConnectionQuality quality) => InvokeAsync(StateHasChanged);
+
+    private void OnLookupChanged() => InvokeAsync(StateHasChanged);
 
     /// <summary>Re-renders the page (summary, submit button) after a child form changed its model.</summary>
     private static void OnFormChanged()
@@ -332,6 +421,11 @@
 
     private async Task<IEnumerable<ClientSummaryDto>> SearchClientsAsync(string? text, CancellationToken cancellationToken)
     {
+        if (UseLocalData)
+        {
+            return [.. LocalSearch.Clients(_lookup!.Clients!.Items, text).Take(10).Select(ToSummary)];
+        }
+
         var result = await Api.GetAsync<PagedResult<ClientSummaryDto>>(
             $"api/clients{QueryString.Build(("search", text), ("isActive", true), ("pageSize", 10))}", cancellationToken);
         return result.IsSuccess ? result.Value.Items : [];
@@ -339,6 +433,12 @@
 
     private async Task<IEnumerable<ProductDto>> SearchProductsAsync(string? text, CancellationToken cancellationToken)
     {
+        if (UseLocalData)
+        {
+            return [.. LocalSearch.Products(_lookup!.Products!.Items, text).Take(15)
+                .Select(p => new ProductDto(p.Id, p.Name, null, p.Sku, p.Price, p.StockQuantity, true, default, p.Categories))];
+        }
+
         var result = await Api.GetAsync<PagedResult<ProductDto>>(
             $"api/products{QueryString.Build(("search", text), ("isActive", true), ("pageSize", 15))}", cancellationToken);
         return result.IsSuccess ? result.Value.Items : [];
@@ -358,6 +458,21 @@
 
     private async Task LoadClientAsync(Guid clientId)
     {
+        if (UseLocalData)
+        {
+            if (_lookup!.Clients!.Items.FirstOrDefault(c => c.Id == clientId) is { } local)
+            {
+                _client = ToSummary(local);
+                SetClientDetails(ToDetails(local));
+            }
+            else
+            {
+                Snackbar.Add("Tego klienta nie ma w danych zapisanych w telefonie.", Severity.Warning);
+            }
+
+            return;
+        }
+
         var result = await Api.GetAsync<ClientDto>($"api/clients/{clientId}");
         if (Snackbar.Report(result))
         {
@@ -496,18 +611,25 @@
 
     /// <summary>
     /// Accept flow: create the client (with the address) or add the address, then place the order – each step through
-    /// the regular validated endpoints. Created records switch the form to "existing", so a retry after a failed
-    /// order never creates duplicates.
+    /// the regular validated endpoints, each with its request id. Created records switch the form to "existing", and a
+    /// repeated step returns what the first one created, so a retry after a failed order never creates duplicates.
+    /// Without a good connection (or when it breaks on the way) the order goes to the outbox instead, where allowed.
     /// </summary>
     private async Task SubmitAsync()
     {
         _busy = true;
         try
         {
+            if (UseLocalData)
+            {
+                await QueueAsync();
+                return;
+            }
+
             if (_newClientMode)
             {
-                var created = await Api.PostAsync<ClientDto>("api/clients", _newClient.ToRequest(_newAddress.ToRequest()));
-                if (!Snackbar.Report(created))
+                var created = await Api.PostAsync<ClientDto>("api/clients", NewClientRequest());
+                if (await QueueOnConnectionLossAsync(created) || !Snackbar.Report(created))
                 {
                     return;
                 }
@@ -517,8 +639,8 @@
             }
             else if (UsesNewAddress)
             {
-                var added = await Api.PostAsync<AddressDto>($"api/clients/{_client!.Id}/addresses", _newAddress.ToRequest());
-                if (!Snackbar.Report(added, "Dodano adres dostawy."))
+                var added = await Api.PostAsync<AddressDto>($"api/clients/{_client!.Id}/addresses", NewAddressRequest());
+                if (await QueueOnConnectionLossAsync(added) || !Snackbar.Report(added, "Dodano adres dostawy."))
                 {
                     return;
                 }
@@ -531,10 +653,21 @@
                 _client!.Id,
                 _addressId!.Value,
                 [.. _lines.GroupBy(l => l.Product!.Id).Select(g => new OrderLineRequest(g.Key, g.Sum(l => l.Quantity)))],
-                _notes);
+                _notes,
+                _orderRequestId);
             var result = await Api.PostAsync<OrderDto>("api/orders", request);
+            if (await QueueOnConnectionLossAsync(result))
+            {
+                return;
+            }
+
             if (Snackbar.Report(result, $"Zamówienie #{(result.IsSuccess ? result.Value.Number : 0)} zostało złożone."))
             {
+                if (Resume is not null)
+                {
+                    await _outbox!.DiscardAsync(Resume.Id);
+                }
+
                 await OnPlaced.InvokeAsync(result.Value);
             }
         }
@@ -543,6 +676,126 @@
             _busy = false;
         }
     }
+
+    private CreateClientRequest NewClientRequest() => _newClient.ToRequest(_newAddress.ToRequest()) with { RequestId = _clientRequestId };
+
+    private AddressRequest NewAddressRequest() => _newAddress.ToRequest() with { RequestId = _addressRequestId };
+
+    /// <summary>The connection broke during an online submit: the order goes to the outbox with the same request ids.</summary>
+    private async Task<bool> QueueOnConnectionLossAsync(ApiResult result)
+    {
+        if (result.IsSuccess || !CanQueue || !OrderOutbox.IsTransient(result.Problem!))
+        {
+            return false;
+        }
+
+        await QueueAsync();
+        return true;
+    }
+
+    private async Task QueueAsync()
+    {
+        var entry = BuildEntry();
+        if (Resume is not null)
+        {
+            await _outbox!.UpdateAsync(entry);
+        }
+        else
+        {
+            await _outbox!.EnqueueAsync(entry);
+        }
+
+        await OnQueued.InvokeAsync(entry);
+    }
+
+    /// <summary>What the outbox needs to finish the order later: the remaining steps, their request ids and what to show.</summary>
+    private OutboxEntry BuildEntry()
+    {
+        List<OutboxLine> lines =
+        [
+            .. _lines.GroupBy(l => l.Product!.Id).Select(g =>
+            {
+                var product = g.First().Product!;
+                return new OutboxLine(product.Id, product.Sku, product.Name, g.Sum(l => l.Quantity), product.Price);
+            }),
+        ];
+        var createdAt = Resume?.CreatedAt ?? Clock.GetUtcNow();
+
+        if (_newClientMode)
+        {
+            var client = NewClientRequest();
+            return new OutboxEntry(
+                _orderRequestId, createdAt, OutboxStatus.Pending, client, null, null, null,
+                new ClientLookupDto(Guid.Empty, client.Username, client.Email, client.Name, client.Surname, client.PhoneNumber, []),
+                Labels.Format(client.Addresses![0]), lines, _notes);
+        }
+
+        var details = _clientDetails!;
+        var snapshot = new ClientLookupDto(details.Id, details.Username, details.Email, details.Name, details.Surname, details.PhoneNumber, ShippingAddresses);
+        if (UsesNewAddress)
+        {
+            var address = NewAddressRequest();
+            return new OutboxEntry(
+                _orderRequestId, createdAt, OutboxStatus.Pending, null, details.Id, address, null, snapshot, Labels.Format(address), lines, _notes);
+        }
+
+        return new OutboxEntry(
+            _orderRequestId, createdAt, OutboxStatus.Pending, null, details.Id, null, _addressId, snapshot,
+            Labels.Format(ShippingAddresses.Single(a => a.Id == _addressId)), lines, _notes);
+    }
+
+    /// <summary>Fills the form from a queued order; current prices and stock come from the device's copy where it has them.</summary>
+    private void ApplyEntry(OutboxEntry entry)
+    {
+        _orderRequestId = entry.Id;
+        _notes = entry.Notes;
+
+        if (entry.ClientId is { } clientId)
+        {
+            // The entry may know an address the outbox created meanwhile that the device's copy does not have yet.
+            var current = _lookup?.Clients?.Items.FirstOrDefault(c => c.Id == clientId) ?? entry.Client;
+            current = current with { ShippingAddresses = [.. current.ShippingAddresses.UnionBy(entry.Client.ShippingAddresses, a => a.Id)] };
+            _client = ToSummary(current);
+            SetClientDetails(ToDetails(current));
+            if (entry.AddressId is { } addressId)
+            {
+                _addressId = addressId;
+            }
+            else if (entry.NewAddress is { } address)
+            {
+                _addressId = NewAddressOption;
+                _newAddress = AddressModel.From(address);
+                _addressRequestId = address.RequestId ?? _addressRequestId;
+            }
+        }
+        else if (entry.NewClient is { } newClient)
+        {
+            _newClientMode = true;
+            _newClient = NewClientModel.From(newClient);
+            _newAddress = AddressModel.From(newClient.Addresses![0]);
+            _clientRequestId = newClient.RequestId ?? _clientRequestId;
+        }
+
+        _lines.Clear();
+        foreach (var line in entry.Lines)
+        {
+            // A product no longer on the device (deactivated) keeps its old price and shows no stock.
+            var product = _lookup?.Products?.Items.FirstOrDefault(p => p.Id == line.ProductId);
+            _lines.Add(new OrderLine
+            {
+                Product = product is null
+                    ? new LineProduct(line.ProductId, line.Name, line.Sku, line.UnitPrice, 0)
+                    : new LineProduct(product.Id, product.Name, product.Sku, product.Price, product.StockQuantity),
+                Quantity = line.Quantity,
+            });
+        }
+    }
+
+    private static ClientSummaryDto ToSummary(ClientLookupDto c) =>
+        new(c.Id, c.Username, c.Email, c.Name, c.Surname, c.PhoneNumber, true, c.ShippingAddresses.Count, default);
+
+    private static ClientDto ToDetails(ClientLookupDto c) =>
+        new(c.Id, c.Username, c.Email, c.Name, c.Surname, c.PhoneNumber, true, default, c.ShippingAddresses);
 
     private void AdoptCreatedClient(ClientDto client)
     {

@@ -3,6 +3,11 @@
 @inject AuthService Auth
 @inject RoleContext RoleContext
 @inject NavigationManager Navigation
+@inject Kamada.Web.Shared.Connectivity.BrowserNetworkEvents NetworkEvents
+@inject Kamada.Web.Shared.Offline.OfflineLookup OfflineLookup
+@inject Kamada.Web.Shared.Offline.OrderOutbox Outbox
+@inject IDialogService Dialogs
+@inject ISnackbar Snackbar
 
 <MudThemeProvider Theme="MobileTheme.For(RoleContext.ActiveRole)" />
 <MudPopoverProvider />
@@ -44,6 +49,7 @@
         <SellerNavigation />
     }
     <MudMainContent Class="@(IsSeller ? "kamada-with-bottom-nav" : null)">
+        <ConnectionBanner />
         @* Admin pages hold tables and forms, so on a tablet they may use the width; the order form gets a little less, courier pages stay phone-sized. *@
         <MudContainer MaxWidth="@ContainerWidth" Class="py-4 px-3">
             <ErrorBoundary @ref="_errorBoundary">
@@ -100,6 +106,17 @@
     {
         RoleContext.ActiveRoleChanged += OnActiveRoleChanged;
         Navigation.LocationChanged += OnLocationChanged;
+        Outbox.OrderSent += OnOrderSent;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await NetworkEvents.StartAsync();
+            await OfflineLookup.StartAsync();
+            await Outbox.StartAsync();
+        }
     }
 
     protected override async Task OnParametersSetAsync()
@@ -112,6 +129,7 @@
     {
         RoleContext.ActiveRoleChanged -= OnActiveRoleChanged;
         Navigation.LocationChanged -= OnLocationChanged;
+        Outbox.OrderSent -= OnOrderSent;
     }
 
     private void OnActiveRoleChanged() => InvokeAsync(StateHasChanged);
@@ -125,8 +143,22 @@
         }
     }
 
+    private void OnOrderSent(Kamada.Shared.Contracts.Ordering.OrderDto order) =>
+        InvokeAsync(() => Snackbar.Add($"Wysłano zamówienie z telefonu – nadano numer #{order.Number}.", Severity.Success));
+
     private async Task LogoutAsync()
     {
+        if (Outbox.Entries.Count > 0 && !await Dialogs.ConfirmAsync(
+                "Wylogować się?",
+                $"W telefonie czeka na wysłanie zamówień: {Outbox.Entries.Count}. Wylogowanie usunie je z telefonu i nie trafią do systemu.",
+                "Wyloguj i usuń",
+                Color.Error))
+        {
+            return;
+        }
+
+        // The device keeps clients' data only while someone is signed in.
+        await OfflineLookup.ForgetAsync();
         await Auth.LogoutAsync();
         Navigation.NavigateTo("login", replace: true);
     }

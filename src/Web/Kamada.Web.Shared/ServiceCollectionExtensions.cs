@@ -1,5 +1,6 @@
 using Kamada.Web.Shared.Api;
 using Kamada.Web.Shared.Auth;
+using Kamada.Web.Shared.Connectivity;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 using MudBlazor;
@@ -20,6 +21,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<AuthService>();
         services.AddSingleton<RoleContext>();
         services.AddTransient<AuthorizingHandler>();
+        services.AddSingleton<ConnectionMonitor>();
+        services.AddSingleton<BrowserNetworkEvents>();
 
         services.AddHttpClient(AuthService.AnonymousClientName, http => http.BaseAddress = options.ApiBaseUrl);
         services.AddHttpClient<ApiClient>(http =>

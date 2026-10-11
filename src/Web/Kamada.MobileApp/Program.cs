@@ -1,6 +1,7 @@
 using Kamada.MobileApp;
 using Kamada.Shared.Contracts.Auth;
 using Kamada.Web.Shared;
+using Kamada.Web.Shared.Offline;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 
@@ -18,5 +19,6 @@ builder.Services.AddKamadaClient(new KamadaClientOptions
     PreviousStorageKey = "kamada.courier.session",
     SnackbarPosition = MudBlazor.Defaults.Classes.Position.TopCenter,
 });
+builder.Services.AddKamadaOffline();
 
 await builder.Build().RunAsync();

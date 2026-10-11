@@ -18,4 +18,15 @@ internal static class ProductMappings
             .Where(c => categoryNames.ContainsKey(c.CategoryId))
             .Select(c => new CategoryRefDto(c.CategoryId, categoryNames[c.CategoryId]))
             .OrderBy(c => c.Name, StringComparer.CurrentCulture)]);
+
+    public static ProductLookupDto ToLookupDto(this Product product, IReadOnlyDictionary<Guid, string> categoryNames) => new(
+        product.Id,
+        product.Sku,
+        product.Name,
+        product.Price,
+        product.StockQuantity,
+        [.. product.Categories
+            .Where(c => categoryNames.ContainsKey(c.CategoryId))
+            .Select(c => new CategoryRefDto(c.CategoryId, categoryNames[c.CategoryId]))
+            .OrderBy(c => c.Name, StringComparer.CurrentCulture)]);
 }

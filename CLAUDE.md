@@ -390,3 +390,35 @@ Record small decisions here (date — decision — reason).
   `Kamada.Web.Admin` (hosted by the admin `NewOrder` page and the seller home; it calls only `SalesAccess` endpoints), the
   seller's details page is read-only. The seller is the first role with a bottom navigation (`SellerNavigation`, fixed,
   `kamada-with-bottom-nav` keeps content clear of it). Role order in the phone app: Seller → Courier → Admin; seller accent teal.
+- 2026-10-11 — Connection quality (stage 5): `ConnectionMonitor` (Web.Shared, singleton) pings `GET /health/ping` (only checks
+  tagged `ping` = the database, so frequent pings never reach Ollama or OSRM; request logs at Verbose) every 30 s, every 10 s
+  while not good. Slower than 2 s or one failed ping → `Poor`, two failed pings in a row or the browser's `offline` event →
+  `Offline`; the browser's `online` event (and the app becoming visible) is confirmed by a ping. `BrowserNetworkEvents` wires the
+  JS events and is started by the phone app's `MainLayout`, which shows `ConnectionBanner` under the app bar.
+- 2026-10-11 — Idempotent creates: `PlaceOrderRequest`, `CreateClientRequest` and `AddressRequest` take an optional client-generated
+  `RequestId`, stored in `request_id` (unique index per table: orders, clients, addresses). A request whose id was already used
+  answers with the resource created the first time (same status code, no validation of the repeated body); the id used for
+  another client's address or by another worker's order is `409 Requests.IdReused`. A race of identical retries is caught as a
+  unique violation (`DbUpdateExceptionExtensions.IsUniqueViolation`, not by index name: Postgres may report the username index
+  first) and answered with the winner; for orders the loser may instead hit the product's `xmin` (409 `Concurrency.Conflict`)
+  and gets the order on its next retry. Addresses created together with a client ignore their own `RequestId`.
+- 2026-10-11 — Phone lookup data: `GET /api/products/lookup` (active products: SKU, name, price, stock, categories) and
+  `GET /api/clients/lookup` (active clients + current shipping addresses), both `SalesAccess`, unpaged (the phone keeps the whole
+  list). `HttpContext.OkWithETag` serializes the body, tags it with a hash of it and answers `304` to a matching `If-None-Match`
+  (the server still runs the query; the saving is the download). `Cache-Control: private, no-cache`; CORS exposes `ETag`.
+- 2026-10-11 — Phone local store: `ILocalStore` (Web.Shared/Offline) over IndexedDB (`local-store.js`, database named after the
+  app's `StorageKey`, stores `lookup` / `outbox` / `meta`), values serialized in C# with `KamadaJson.Options`; falls back to memory
+  when IndexedDB is missing; asks for `navigator.storage.persist()`. `OfflineLookup` keeps the lookup lists with their ETags,
+  only while the active role is Seller (admins order on the phone online only: less personal data on devices), refreshed after login, a role switch and when the connection becomes `Good`
+  (and at app start). Sign-out wipes the whole database; an expired session wipes the lookup lists but keeps the outbox for the
+  same worker (`meta.owner`); another worker signing in on the device starts from an empty database. Registered by the phone
+  app only (`AddKamadaOffline`).
+- 2026-10-11 — Offline orders (stage 5): `OrderOutbox` (Web.Shared/Offline) keeps orders taken on the phone as `OutboxEntry` in the
+  `outbox` store and sends them oldest first in steps client → address → order, each with its `RequestId`; ids the server returns
+  are stored in the entry, so an interrupted send resumes. Transport failures, 401, 429, 5xx and `Concurrency.Conflict` stop the run
+  (retried when the connection is `Good`, on app start, after queueing, on demand); other refusals (e.g. `Products.InsufficientStock`)
+  mark the entry `NeedsAttention` with the Polish message, and the run goes on. `OrderForm` (`AllowQueue`, seller only) works on
+  `OfflineLookup` data (`LocalSearch`: words, no case/diacritics) while the connection is not `Good`, and also queues the order when
+  an online submit fails with a transient error. The seller's "Moje zamówienia" lists the outbox (edit = `/seller?outbox=<id>`,
+  discard); the bottom navigation badge turns red when something needs attention; logging out with queued orders asks first
+  (they are wiped). The AI assistant needs the server and is hidden while the form works locally.

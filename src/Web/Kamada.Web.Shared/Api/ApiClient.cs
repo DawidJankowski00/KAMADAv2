@@ -11,6 +11,44 @@ public sealed class ApiClient(HttpClient http)
     public Task<ApiResult<T>> GetAsync<T>(string url, CancellationToken cancellationToken = default) =>
         SendAsync<T>(() => http.GetAsync(url, cancellationToken), cancellationToken);
 
+    /// <summary>
+    /// GET with <c>If-None-Match</c>: <see cref="Tagged{T}.NotModified"/> (and no value) when the server still has
+    /// <paramref name="etag"/>, otherwise the new value with its tag.
+    /// </summary>
+    public async Task<ApiResult<Tagged<T>>> GetIfChangedAsync<T>(string url, string? etag, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            if (etag is not null)
+            {
+                request.Headers.TryAddWithoutValidation("If-None-Match", etag);
+            }
+
+            using var response = await http.SendAsync(request, cancellationToken);
+            if (response.StatusCode == System.Net.HttpStatusCode.NotModified)
+            {
+                return ApiResult<Tagged<T>>.Ok(new Tagged<T>(default, etag, NotModified: true));
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return ApiResult<Tagged<T>>.Fail(await ReadProblemAsync(response, cancellationToken));
+            }
+
+            var value = await response.Content.ReadFromJsonAsync<T>(KamadaJson.Options, cancellationToken);
+            return ApiResult<Tagged<T>>.Ok(new Tagged<T>(value, response.Headers.ETag?.ToString(), NotModified: false));
+        }
+        catch (HttpRequestException)
+        {
+            return ApiResult<Tagged<T>>.Fail(ApiProblem.Network);
+        }
+        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return ApiResult<Tagged<T>>.Fail(ApiProblem.Timeout);
+        }
+    }
+
     public Task<ApiResult<T>> PostAsync<T>(string url, object? body = null, CancellationToken cancellationToken = default) =>
         SendAsync<T>(() => http.PostAsJsonAsync(url, body, KamadaJson.Options, cancellationToken), cancellationToken);
 

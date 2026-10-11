@@ -2,10 +2,13 @@
 @attribute [Authorize(Roles = Roles.Seller)]
 @using Kamada.Shared.Contracts.Ordering
 @using Kamada.Web.Admin.Pages.Orders
+@using Kamada.Web.Shared.Offline
+@inject OrderOutbox Outbox
+@inject NavigationManager Navigation
 
 <PageTitle>Nowe zamówienie – KAMADA</PageTitle>
 
-<MudText Typo="Typo.h5" HtmlTag="h1" Class="mb-3">Nowe zamówienie</MudText>
+<MudText Typo="Typo.h5" HtmlTag="h1" Class="mb-3">@(_resume is null ? "Nowe zamówienie" : "Popraw zamówienie")</MudText>
 
 @if (_placed is { } order)
 {
@@ -22,21 +25,65 @@
                    StartIcon="@Icons.Material.Filled.ReceiptLong">Szczegóły zamówienia</MudButton>
     </MudPaper>
 }
+else if (_queued is { } entry)
+{
+    <MudPaper Class="pa-4 mb-4" Elevation="1">
+        <div class="d-flex align-center gap-2 mb-2">
+            <MudIcon Icon="@Icons.Material.Filled.Schedule" Color="Color.Warning" />
+            <MudText Typo="Typo.h6">Zamówienie zapisane w telefonie</MudText>
+        </div>
+        <MudText Typo="Typo.body2">@entry.Client.Name @entry.Client.Surname · @entry.ShippingAddressLabel</MudText>
+        <MudText Typo="Typo.body2">Pozycji: <b>@entry.Lines.Count</b> · około <b>@Labels.Money(entry.EstimatedTotal)</b></MudText>
+        <MudText Typo="Typo.body2" Class="mud-text-secondary mt-2">
+            Zostanie wysłane automatycznie, gdy połączenie wróci. Numer zamówienia nada serwer.
+        </MudText>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" Class="mt-4" StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="StartNew">Przyjmij kolejne zamówienie</MudButton>
+        <MudButton Href="seller/orders" Variant="Variant.Text" Color="Color.Primary" FullWidth="true" Class="mt-2"
+                   StartIcon="@Icons.Material.Filled.Schedule">Oczekujące zamówienia</MudButton>
+    </MudPaper>
+}
 else
 {
+    @if (_resume?.Problem is { } problem)
+    {
+        <MudAlert Severity="Severity.Warning" Class="mb-3">Serwer odrzucił to zamówienie: @problem Popraw je i zapisz ponownie.</MudAlert>
+    }
+
     @* A new key gives a fresh, empty form for the next order. *@
-    <OrderForm @key="_formKey" OnPlaced="OnPlaced" />
+    <OrderForm @key="_formKey" OnPlaced="OnPlaced" AllowQueue="true" OnQueued="OnQueued" Resume="_resume" />
 }
 
 @code {
     private OrderDto? _placed;
+    private OutboxEntry? _queued;
+    private OutboxEntry? _resume;
     private Guid _formKey = Guid.NewGuid();
+
+    /// <summary>A queued order to edit ("Popraw" in the list of waiting orders).</summary>
+    [SupplyParameterFromQuery(Name = "outbox")] public Guid? OutboxId { get; set; }
+
+    public static string EditUrl(Guid entryId) => $"seller?outbox={entryId:N}";
+
+    protected override void OnParametersSet()
+    {
+        var resume = OutboxId is { } id ? Outbox.Find(id) : null;
+        if (resume?.Id != _resume?.Id)
+        {
+            (_resume, _placed, _queued, _formKey) = (resume, null, null, Guid.NewGuid());
+        }
+    }
 
     private void OnPlaced(OrderDto order) => _placed = order;
 
+    private void OnQueued(OutboxEntry entry) => _queued = entry;
+
     private void StartNew()
     {
-        _placed = null;
-        _formKey = Guid.NewGuid();
+        (_placed, _queued, _resume, _formKey) = (null, null, null, Guid.NewGuid());
+        if (OutboxId is not null)
+        {
+            Navigation.NavigateTo("seller");
+        }
     }
 }
