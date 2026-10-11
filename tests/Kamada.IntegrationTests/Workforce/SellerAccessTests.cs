@@ -26,6 +26,8 @@ public sealed class SellerAccessTests(KamadaApiFactory factory)
         { "POST", "/api/clients" },
         { "POST", $"/api/clients/{Id}/addresses" },
         { "POST", "/api/orders" },
+        { "GET", "/api/orders/mine" },
+        { "GET", $"/api/orders/{Id}" },
         { "GET", "/api/assistant/status" },
         { "POST", "/api/assistant/order-drafts" },
         { "POST", "/api/assistant/transcriptions" },

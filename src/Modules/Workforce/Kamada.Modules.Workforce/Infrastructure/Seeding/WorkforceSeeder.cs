@@ -24,7 +24,7 @@ internal sealed class WorkforceSeeder(WorkforceDbContext db, IPasswordHasher<Wor
             return;
         }
 
-        Add("admin", AdminPassword, "Anna", "Nowak", "+48 600 100 200", WorkerRole.Admin);
+        var admin = Add("admin", AdminPassword, "Anna", "Nowak", "+48 600 100 200", WorkerRole.Admin);
         var couriers = new[]
         {
             Add("kurier1", CourierPassword, "Jan", "Kowalski", "+48 601 111 111", WorkerRole.Courier),
@@ -36,6 +36,7 @@ internal sealed class WorkforceSeeder(WorkforceDbContext db, IPasswordHasher<Wor
         Add("kierownik", ManagerPassword, "Marek", "Zieliński", "+48 604 444 444", WorkerRole.Admin, WorkerRole.Courier);
 
         await db.SaveChangesAsync(cancellationToken);
+        seedData.AdminId = admin.Id;
         seedData.CourierIds = [.. couriers.Select(c => c.Id)];
     }
 

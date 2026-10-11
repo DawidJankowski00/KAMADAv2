@@ -19,6 +19,7 @@ internal sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.Property(o => o.TotalAmount).HasPrecision(10, 2);
         builder.Property(o => o.Notes).HasMaxLength(1000);
         builder.HasIndex(o => o.ClientId);
+        builder.HasIndex(o => new { o.PlacedByWorkerId, o.CreatedAt });
         builder.HasIndex(o => new { o.Status, o.CreatedAt });
 
         // Snapshot stored in the orders row: shipping_address_id (diagram column) + shipping_* copies.

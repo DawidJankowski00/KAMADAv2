@@ -42,6 +42,9 @@ internal sealed class Order : Entity, IAuditable
 
     public Guid ClientId { get; private set; }
 
+    /// <summary>The worker who placed the order; <c>null</c> for orders placed before this was recorded.</summary>
+    public Guid? PlacedByWorkerId { get; private set; }
+
     public ShippingAddress ShippingAddress { get; private set; }
 
     public OrderStatus Status { get; private set; }
@@ -58,7 +61,12 @@ internal sealed class Order : Entity, IAuditable
 
     public static bool CanTransition(OrderStatus from, OrderStatus to) => AllowedTransitions[from].Contains(to);
 
-    public static Result<Order> Place(Guid clientId, ShippingAddress shippingAddress, IReadOnlyCollection<OrderLine> lines, string? notes)
+    public static Result<Order> Place(
+        Guid clientId,
+        ShippingAddress shippingAddress,
+        IReadOnlyCollection<OrderLine> lines,
+        string? notes,
+        Guid placedByWorkerId)
     {
         if (lines.Count == 0)
         {
@@ -73,6 +81,7 @@ internal sealed class Order : Entity, IAuditable
         var order = new Order(Guid.CreateVersion7())
         {
             ClientId = clientId,
+            PlacedByWorkerId = placedByWorkerId,
             ShippingAddress = shippingAddress,
             Notes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim(),
             Status = OrderStatus.New,

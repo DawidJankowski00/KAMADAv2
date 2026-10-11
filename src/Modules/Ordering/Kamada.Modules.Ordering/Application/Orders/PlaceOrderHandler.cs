@@ -2,6 +2,7 @@ using Kamada.Modules.Catalog.Contracts;
 using Kamada.Modules.Customers.Contracts;
 using Kamada.Modules.Ordering.Application.Abstractions;
 using Kamada.Modules.Ordering.Domain.Orders;
+using Kamada.Modules.Workforce.Contracts;
 using Kamada.Shared.Contracts.Ordering;
 using Kamada.Shared.Infrastructure.Persistence;
 using Kamada.Shared.Kernel.Results;
@@ -17,10 +18,12 @@ internal sealed partial class PlaceOrderHandler(
     IOrderingDbContext db,
     ICustomerDirectory customers,
     ICatalogInventory inventory,
+    IWorkerDirectory workers,
     IUnitOfWork unitOfWork,
     ILogger<PlaceOrderHandler> logger)
 {
-    public async Task<Result<OrderDto>> HandleAsync(PlaceOrderRequest request, CancellationToken cancellationToken)
+    /// <param name="placedByWorkerId">The signed-in worker (an admin or a seller).</param>
+    public async Task<Result<OrderDto>> HandleAsync(PlaceOrderRequest request, Guid placedByWorkerId, CancellationToken cancellationToken)
     {
         var shipping = await customers.GetShippingDetailsAsync(request.ClientId, request.ShippingAddressId, cancellationToken);
         if (shipping.IsFailure)
@@ -47,7 +50,8 @@ internal sealed partial class PlaceOrderHandler(
                     request.ClientId,
                     ToSnapshot(shipping.Value),
                     [.. reserved.Value.Select(p => new OrderLine(p.ProductId, p.Name, p.Sku, p.Quantity, p.UnitPrice))],
-                    request.Notes);
+                    request.Notes,
+                    placedByWorkerId);
                 if (placed.IsFailure)
                 {
                     return placed;
@@ -65,7 +69,7 @@ internal sealed partial class PlaceOrderHandler(
         }
 
         LogOrderPlaced(result.Value.Number, result.Value.TotalAmount, result.Value.Items.Count);
-        return result.Value.ToDto();
+        return result.Value.ToDto(await workers.GetNamesAsync([placedByWorkerId], cancellationToken));
     }
 
     private static ShippingAddress ToSnapshot(ShippingDetails details) => new(

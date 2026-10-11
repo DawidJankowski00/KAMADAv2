@@ -50,6 +50,10 @@ namespace Kamada.Modules.Ordering.Infrastructure.Persistence.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Number"));
 
+                    b.Property<Guid?>("PlacedByWorkerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("placed_by_worker_id");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
@@ -144,6 +148,9 @@ namespace Kamada.Modules.Ordering.Infrastructure.Persistence.Migrations
                     b.HasIndex("Number")
                         .IsUnique()
                         .HasDatabaseName("ix_orders_number");
+
+                    b.HasIndex("PlacedByWorkerId", "CreatedAt")
+                        .HasDatabaseName("ix_orders_placed_by_worker_id_created_at");
 
                     b.HasIndex("Status", "CreatedAt")
                         .HasDatabaseName("ix_orders_status_created_at");

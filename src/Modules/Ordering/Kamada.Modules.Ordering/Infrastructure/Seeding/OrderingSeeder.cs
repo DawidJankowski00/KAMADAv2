@@ -33,7 +33,7 @@ internal sealed class OrderingSeeder(OrderingDbContext db, PlaceOrderHandler pla
 
     public async Task SeedAsync(CancellationToken cancellationToken)
     {
-        if (seedData.ProductIds.Count == 0 || seedData.ShippingAddresses.Count == 0 || await db.Orders.AnyAsync(cancellationToken))
+        if (seedData.AdminId == Guid.Empty || seedData.ProductIds.Count == 0 || seedData.ShippingAddresses.Count == 0 || await db.Orders.AnyAsync(cancellationToken))
         {
             return;
         }
@@ -60,7 +60,7 @@ internal sealed class OrderingSeeder(OrderingDbContext db, PlaceOrderHandler pla
                 .ToList();
             var notes = random.Next(100) < 25 ? Notes[random.Next(Notes.Length)] : null;
 
-            var placed = await placeOrder.HandleAsync(new PlaceOrderRequest(address.ClientId, address.AddressId, items, notes), cancellationToken);
+            var placed = await placeOrder.HandleAsync(new PlaceOrderRequest(address.ClientId, address.AddressId, items, notes), seedData.AdminId, cancellationToken);
             if (placed.IsFailure)
             {
                 throw new InvalidOperationException($"Demo order could not be placed: {placed.Error.Code} – {placed.Error.Description}");

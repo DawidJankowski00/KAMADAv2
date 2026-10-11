@@ -7,10 +7,12 @@ namespace Kamada.Modules.Ordering.Application;
 
 internal static class OrderMappings
 {
-    public static OrderDto ToDto(this Order order) => new(
+    /// <param name="workerNames">Names from <c>IWorkerDirectory</c>; a worker missing there is shown by id only.</param>
+    public static OrderDto ToDto(this Order order, IReadOnlyDictionary<Guid, string> workerNames) => new(
         order.Id,
         order.Number,
         order.ClientId,
+        PlacedBy(order.PlacedByWorkerId, workerNames),
         order.Status.ToContract(),
         order.TotalAmount,
         order.Notes,
@@ -18,6 +20,9 @@ internal static class OrderMappings
         [.. order.Items.Select(i => new OrderItemDto(i.ProductId, i.ProductName, i.Sku, i.Quantity, i.UnitPrice, i.LineTotal))],
         order.CreatedAt,
         order.UpdatedAt);
+
+    public static PlacedByDto? PlacedBy(Guid? workerId, IReadOnlyDictionary<Guid, string> workerNames) =>
+        workerId is { } id ? new PlacedByDto(id, workerNames.GetValueOrDefault(id, string.Empty)) : null;
 
     public static ShippingAddressDto ToDto(this ShippingAddress address) => new(
         address.AddressId,

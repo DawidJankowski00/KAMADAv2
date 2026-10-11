@@ -29,12 +29,17 @@ public sealed record ShippingAddressDto(
     double? Latitude,
     double? Longitude);
 
+/// <summary>The worker who placed an order.</summary>
+public sealed record PlacedByDto(Guid WorkerId, string Name);
+
 public sealed record OrderItemDto(Guid ProductId, string ProductName, string Sku, int Quantity, decimal UnitPrice, decimal LineTotal);
 
+/// <param name="PlacedBy">Who placed the order; <c>null</c> for orders placed before this was recorded.</param>
 public sealed record OrderDto(
     Guid Id,
     long Number,
     Guid ClientId,
+    PlacedByDto? PlacedBy,
     OrderStatus Status,
     decimal TotalAmount,
     string? Notes,
@@ -47,6 +52,7 @@ public sealed record OrderSummaryDto(
     Guid Id,
     long Number,
     Guid ClientId,
+    PlacedByDto? PlacedBy,
     string RecipientName,
     string City,
     OrderStatus Status,
@@ -57,9 +63,11 @@ public sealed record OrderSummaryDto(
 /// <param name="Search">Order number or recipient name.</param>
 /// <param name="From">Created at or after (inclusive).</param>
 /// <param name="To">Created before (exclusive).</param>
+/// <param name="PlacedBy">Only orders placed by this worker.</param>
 public sealed record OrderListQuery(
     OrderStatus? Status = null,
     Guid? ClientId = null,
+    Guid? PlacedBy = null,
     DateTimeOffset? From = null,
     DateTimeOffset? To = null,
     string? Search = null,
