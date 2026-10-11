@@ -17,7 +17,7 @@ public sealed class WorkerManagementTests(KamadaApiFactory factory)
         "Adam",
         "Zieliński",
         "+48 700 800 900",
-        WorkerRole.Courier);
+        [WorkerRole.Courier]);
 
     [Fact]
     public async Task Workers_WithoutToken_Returns401()
@@ -48,7 +48,7 @@ public sealed class WorkerManagementTests(KamadaApiFactory factory)
         response.StatusCode.ShouldBe(HttpStatusCode.Created);
         response.Headers.Location.ShouldNotBeNull();
         var created = await response.ReadAsAsync<WorkerDto>();
-        created.Role.ShouldBe(WorkerRole.Courier);
+        created.Roles.ShouldBe([WorkerRole.Courier]);
         created.IsActive.ShouldBeTrue();
 
         var tokens = await factory.CreateClient().LoginAsync(request.Username, request.Password);
@@ -91,6 +91,78 @@ public sealed class WorkerManagementTests(KamadaApiFactory factory)
         var page = await response.ReadAsAsync<PagedResult<WorkerDto>>();
         page.TotalCount.ShouldBe(1);
         page.Items.Single().Username.ShouldBe(request.Username);
+    }
+
+    [Fact]
+    public async Task Create_WithSeveralRoles_ReturnsAllRoles()
+    {
+        var (admin, _) = await factory.CreateSignedInClientAsync(DomainRole.Admin);
+
+        var response = await admin.PostJsonAsync("/api/workers", NewCourierRequest() with { Roles = [WorkerRole.Courier, WorkerRole.Admin] });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Created);
+        (await response.ReadAsAsync<WorkerDto>()).Roles.ShouldBe([WorkerRole.Admin, WorkerRole.Courier]);
+    }
+
+    [Fact]
+    public async Task Create_WithoutRoles_Returns400()
+    {
+        var (admin, _) = await factory.CreateSignedInClientAsync(DomainRole.Admin);
+
+        var response = await admin.PostJsonAsync("/api/workers", NewCourierRequest() with { Roles = [] });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Update_Roles_ReplacesRoles()
+    {
+        var (admin, _) = await factory.CreateSignedInClientAsync(DomainRole.Admin);
+        var courier = await factory.CreateWorkerAsync(DomainRole.Courier);
+
+        var response = await admin.PutJsonAsync(
+            $"/api/workers/{courier.Id}",
+            new UpdateWorkerRequest("Test", "Courier", "+48 600 000 000", [WorkerRole.Admin, WorkerRole.Courier]));
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await response.ReadAsAsync<WorkerDto>()).Roles.ShouldBe([WorkerRole.Admin, WorkerRole.Courier]);
+    }
+
+    [Fact]
+    public async Task Update_RemovingOwnAdminRole_Returns409()
+    {
+        var (admin, self) = await factory.CreateSignedInClientAsync(DomainRole.Admin);
+
+        var response = await admin.PutJsonAsync($"/api/workers/{self.Id}", new UpdateWorkerRequest("Test", "Admin", "+48 600 000 000", [WorkerRole.Courier]));
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+        (await response.ReadProblemCodeAsync()).ShouldBe("Workers.CannotRemoveOwnAdminRole");
+    }
+
+    [Fact]
+    public async Task Update_AddingRoleToOwnAccount_Succeeds()
+    {
+        var (admin, self) = await factory.CreateSignedInClientAsync(DomainRole.Admin);
+
+        var response = await admin.PutJsonAsync(
+            $"/api/workers/{self.Id}",
+            new UpdateWorkerRequest("Test", "Admin", "+48 600 000 000", [WorkerRole.Admin, WorkerRole.Courier]));
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await response.ReadAsAsync<WorkerDto>()).Roles.ShouldBe([WorkerRole.Admin, WorkerRole.Courier]);
+    }
+
+    [Theory]
+    [InlineData(nameof(WorkerRole.Admin))]
+    [InlineData(nameof(WorkerRole.Courier))]
+    public async Task List_FilterByRole_IncludesWorkersWithSeveralRoles(string role)
+    {
+        var (admin, _) = await factory.CreateSignedInClientAsync(DomainRole.Admin);
+        var worker = await factory.CreateWorkerAsync([DomainRole.Admin, DomainRole.Courier]);
+
+        var page = await (await admin.GetAsync($"/api/workers?search={worker.Username}&role={role}", Ct)).ReadAsAsync<PagedResult<WorkerDto>>();
+
+        page.Items.ShouldHaveSingleItem().Id.ShouldBe(worker.Id);
     }
 
     [Fact]

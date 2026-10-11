@@ -1,4 +1,5 @@
 using FluentValidation;
+using Kamada.Shared.Contracts.Workforce;
 
 namespace Kamada.Modules.Workforce.Application;
 
@@ -29,6 +30,12 @@ internal static class WorkerRules
 
     public static IRuleBuilderOptions<T, string> PersonName<T>(this IRuleBuilder<T, string> rule) =>
         rule.NotEmpty().MaximumLength(NameMaxLength);
+
+    public static IRuleBuilderOptions<T, IReadOnlyList<WorkerRole>> WorkerRoles<T>(this IRuleBuilderInitial<T, IReadOnlyList<WorkerRole>> rule) =>
+        rule.Cascade(CascadeMode.Stop)
+            .NotEmpty().WithMessage("Select at least one role.")
+            .Must(roles => roles.All(role => Enum.IsDefined(role))).WithMessage("Unknown role.")
+            .Must(roles => roles.Distinct().Count() == roles.Count).WithMessage("Each role may be given only once.");
 
     public static IRuleBuilderOptions<T, string> PhoneNumber<T>(this IRuleBuilder<T, string> rule) =>
         rule.NotEmpty()

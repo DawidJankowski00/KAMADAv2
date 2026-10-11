@@ -14,7 +14,7 @@ internal static class WorkerMappings
         worker.Name,
         worker.Surname,
         worker.PhoneNumber,
-        worker.Roles[0].ToContract(),
+        [.. worker.Roles.Select(r => r.ToContract())],
         worker.IsActive,
         worker.CreatedAt);
 

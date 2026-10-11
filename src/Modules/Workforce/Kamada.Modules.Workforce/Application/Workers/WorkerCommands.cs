@@ -31,7 +31,7 @@ internal sealed class WorkerCommands(
             request.Name,
             request.Surname,
             request.PhoneNumber,
-            [request.Role.ToDomain()]);
+            [.. request.Roles.Select(r => r.ToDomain())]);
         if (created.IsFailure)
         {
             return created.Error;
@@ -53,7 +53,7 @@ internal sealed class WorkerCommands(
             return WorkerErrors.NotFound;
         }
 
-        var roleChange = worker.SetRoles([request.Role.ToDomain()], currentUser.Id);
+        var roleChange = worker.SetRoles([.. request.Roles.Select(r => r.ToDomain())], currentUser.Id);
         if (roleChange.IsFailure)
         {
             return roleChange.Error;

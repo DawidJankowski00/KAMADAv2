@@ -46,7 +46,10 @@
         <MudTd DataLabel="Pracownik">@context.Name @context.Surname</MudTd>
         <MudTd DataLabel="Login"><code>@context.Username</code></MudTd>
         <MudTd DataLabel="Rola">
-            <MudChip T="string" Size="Size.Small" Color="@(context.Role == WorkerRole.Admin ? Color.Secondary : Color.Primary)">@Labels.Of(context.Role)</MudChip>
+            @foreach (var role in context.Roles)
+            {
+                <MudChip T="string" Size="Size.Small" Color="@(role == WorkerRole.Admin ? Color.Secondary : Color.Primary)">@Labels.Of(role)</MudChip>
+            }
         </MudTd>
         <MudTd DataLabel="Telefon">@context.PhoneNumber</MudTd>
         <MudTd DataLabel="Status">

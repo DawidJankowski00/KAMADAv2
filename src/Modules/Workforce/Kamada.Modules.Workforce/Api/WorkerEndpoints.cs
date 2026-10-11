@@ -33,7 +33,7 @@ internal static class WorkerEndpoints
                 (await commands.CreateAsync(request, ct))
                     .ToHttpResult(worker => TypedResults.CreatedAtRoute(worker, "GetWorker", new { id = worker.Id })))
             .WithValidation<CreateWorkerRequest>()
-            .WithSummary("Create an administrator or courier account")
+            .WithSummary("Create a worker account with one or more roles")
             .Produces<WorkerDto>(StatusCodes.Status201Created)
             .ProducesProblem(StatusCodes.Status409Conflict);
 

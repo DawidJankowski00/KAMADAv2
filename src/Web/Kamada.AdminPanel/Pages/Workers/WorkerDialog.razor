@@ -61,7 +61,7 @@
             _name = Worker.Name;
             _surname = Worker.Surname;
             _phone = Worker.PhoneNumber;
-            _role = Worker.Role;
+            _role = Worker.Roles[0];
         }
     }
 
@@ -75,8 +75,8 @@
 
         _busy = true;
         var result = Worker is null
-            ? await Api.PostAsync<WorkerDto>("api/workers", new CreateWorkerRequest(_username, _password, _name, _surname, _phone, _role))
-            : await Api.PutAsync<WorkerDto>($"api/workers/{Worker.Id}", new UpdateWorkerRequest(_name, _surname, _phone, _role));
+            ? await Api.PostAsync<WorkerDto>("api/workers", new CreateWorkerRequest(_username, _password, _name, _surname, _phone, [_role]))
+            : await Api.PutAsync<WorkerDto>($"api/workers/{Worker.Id}", new UpdateWorkerRequest(_name, _surname, _phone, [_role]));
         _busy = false;
 
         if (Snackbar.Report(result, Worker is null ? "Konto zostało utworzone." : "Zmiany zapisane."))

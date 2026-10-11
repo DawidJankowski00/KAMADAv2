@@ -6,7 +6,7 @@ namespace Kamada.Modules.Workforce.UnitTests;
 public sealed class ValidatorTests
 {
     private static CreateWorkerRequest ValidRequest() =>
-        new("kurier9", "Secret123", "Jan", "Kowalski", "+48 600 000 000", WorkerRole.Courier);
+        new("kurier9", "Secret123", "Jan", "Kowalski", "+48 600 000 000", [WorkerRole.Courier]);
 
     [Fact]
     public void CreateWorker_ValidRequest_Passes()
@@ -45,5 +45,39 @@ public sealed class ValidatorTests
         var result = new CreateWorkerRequestValidator().Validate(ValidRequest() with { PhoneNumber = phone });
 
         result.Errors.ShouldContain(e => e.PropertyName == nameof(CreateWorkerRequest.PhoneNumber));
+    }
+
+    [Fact]
+    public void CreateWorker_SeveralRoles_Passes()
+    {
+        var result = new CreateWorkerRequestValidator().Validate(ValidRequest() with { Roles = [WorkerRole.Admin, WorkerRole.Courier] });
+
+        result.IsValid.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void CreateWorker_NoRoles_Fails()
+    {
+        var result = new CreateWorkerRequestValidator().Validate(ValidRequest() with { Roles = [] });
+
+        result.Errors.ShouldContain(e => e.PropertyName == nameof(CreateWorkerRequest.Roles));
+    }
+
+    [Fact]
+    public void CreateWorker_DuplicateRoles_Fails()
+    {
+        var result = new CreateWorkerRequestValidator().Validate(ValidRequest() with { Roles = [WorkerRole.Courier, WorkerRole.Courier] });
+
+        result.Errors.ShouldContain(e => e.PropertyName == nameof(CreateWorkerRequest.Roles));
+    }
+
+    [Fact]
+    public void UpdateWorker_UnknownRole_Fails()
+    {
+        var request = new UpdateWorkerRequest("Jan", "Kowalski", "+48 600 000 000", [(WorkerRole)42]);
+
+        var result = new UpdateWorkerRequestValidator().Validate(request);
+
+        result.Errors.ShouldContain(e => e.PropertyName == nameof(UpdateWorkerRequest.Roles));
     }
 }

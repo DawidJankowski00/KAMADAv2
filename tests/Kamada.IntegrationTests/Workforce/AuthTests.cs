@@ -118,7 +118,7 @@ public sealed class AuthTests(KamadaApiFactory factory)
         var worker = await factory.CreateWorkerAsync(WorkerRole.Courier);
         var tokens = await _client.LoginAsync(worker.Username, worker.Password);
 
-        (await admin.PutJsonAsync($"/api/workers/{worker.Id}", new UpdateWorkerRequest("Test", "Courier", "+48 600 000 000", ContractRole.Admin)))
+        (await admin.PutJsonAsync($"/api/workers/{worker.Id}", new UpdateWorkerRequest("Test", "Courier", "+48 600 000 000", [ContractRole.Admin])))
             .EnsureSuccessStatusCode();
 
         // The access token issued before the change keeps the old roles until it is refreshed.

@@ -6,13 +6,14 @@ public enum WorkerRole
     Courier,
 }
 
+/// <param name="Roles">One or more roles, in enum order.</param>
 public sealed record WorkerDto(
     Guid Id,
     string Username,
     string Name,
     string Surname,
     string PhoneNumber,
-    WorkerRole Role,
+    IReadOnlyList<WorkerRole> Roles,
     bool IsActive,
     DateTimeOffset CreatedAt);
 
@@ -22,12 +23,14 @@ public sealed record CreateWorkerRequest(
     string Name,
     string Surname,
     string PhoneNumber,
-    WorkerRole Role);
+    IReadOnlyList<WorkerRole> Roles);
 
-public sealed record UpdateWorkerRequest(string Name, string Surname, string PhoneNumber, WorkerRole Role);
+/// <param name="Roles">Replaces all roles; a worker cannot remove the Admin role from their own account.</param>
+public sealed record UpdateWorkerRequest(string Name, string Surname, string PhoneNumber, IReadOnlyList<WorkerRole> Roles);
 
 public sealed record ResetPasswordRequest(string NewPassword);
 
+/// <param name="Role">Only workers who have this role (among others).</param>
 public sealed record WorkerListQuery(
     string? Search = null,
     WorkerRole? Role = null,
