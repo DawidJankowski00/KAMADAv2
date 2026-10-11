@@ -49,3 +49,12 @@ in the payload); `RequireRole` policies match any of them, so `AdminOnly` / `Cou
 change made by an administrator reaches the worker with the next refresh (≤ 15 min), like other changes to the
 access token. Each frontend lists the roles it accepts and signs the user out when a refresh no longer carries any
 of them.
+
+## Update 2026-10-11: seller role
+
+A third role, `Seller`, takes orders. The policy `SalesAccess` (`RequireRole(Admin, Seller)`, i.e. either role) guards
+only what taking an order needs: the category tree, product and client search (sellers see active records only),
+client details, creating a client, adding an address, placing an order, the assistant and the order history.
+Everything else stays `AdminOnly`. Within a module the two policies live in sibling route groups, because policies
+of nested groups add up. Ownership is checked in the use case, not by a policy: a seller asking for an order placed
+by someone else gets 404.
