@@ -42,6 +42,8 @@ a Blazor WebAssembly admin panel and a Blazor PWA for workers (couriers, sellers
 
 - **New order** with the same form and AI assistant as the admin panel: find or create the client, pick or add
   the shipping address, add products, place the order.
+- **Assistant on the phone.** With a poor connection the order can be dictated or typed to a model running in the phone itself
+  (opt-in download, nothing leaves the device); see [On-device assistant](#on-device-assistant).
 - **"Moje zamówienia"**: the orders the seller took, newest first, with read-only details. Payments, packing,
   cancelling and delivery planning stay with the admin; the API answers 403 for those endpoints and 404 for other
   workers' orders.
@@ -327,6 +329,7 @@ src/
     Kamada.Shared.Kernel/           # Result/Error, Entity, GeoPoint
     Kamada.Shared.Infrastructure/   # unit of work, EF interceptors, geocoding, HTTP helpers, seeding
     Kamada.Shared.Contracts/        # HTTP DTOs shared by the API and both frontends
+    Kamada.Shared.Matching/         # pure order matching: text similarity, matchers, prompt, draft resolver (server + phone)
   Web/
     Kamada.Web.Shared/              # shared Blazor library: API client, auth, map, labels
     Kamada.Web.Admin/               # admin pages and menu, shared by the admin SPA and the phone app
@@ -335,7 +338,7 @@ src/
 tests/                              # unit tests per module, integration tests, architecture tests
 benchmarks/Kamada.Benchmarks/       # solver speed and heuristic quality
 benchmarks/Kamada.Assistant.Evals/  # order assistant accuracy and latency against a real model
-deploy/                             # nginx config for the SPAs, OSRM data scripts
+deploy/                             # nginx config for the SPAs, OSRM data scripts, on-device assistant downloads
 docs/adr/                           # architecture decision records
 ```
 
@@ -607,6 +610,30 @@ docker compose --profile ai exec ollama ollama pull qwen3:4b   # any model to co
 dotnet run -c Release --project benchmarks/Kamada.Assistant.Evals -- --model qwen3:4b --out results.md
 ```
 
+## On-device assistant
+
+The server assistant above needs a connection. In the phone app a seller can also download a model into the phone
+([ADR 0010](docs/adr/0010-on-device-assistant-as-a-fallback.md)) and keep dictating orders with a poor connection or none:
+
+- **Same pipeline.** Prompt, JSON schema, answer cleaning and the whole matching half live in `Kamada.Shared.Matching`,
+  so the phone produces the same draft from the same note as the server, matched against its local copy of clients and
+  products. Accepting it queues the order in the outbox.
+- **Models run in the browser:** a language model through WebLLM (WebGPU) and Whisper through transformers.js. Weights
+  are served by the phone app's nginx under `/models`, never by a third-party CDN, and kept in the browser's Cache Storage.
+- **Opt-in.** *Asystent w telefonie* (the sparkle icon in the app bar) shows what the phone can run, the models with their
+  sizes, download progress, storage used and deletion. Phones without WebGPU keep using the server.
+- **Fallback policy.** Server while the connection is good; the phone when it is poor, lost, or the server cannot answer. A
+  chip over the assistant shows which one works and lets the worker choose.
+
+```bash
+# libraries: fetched during the image build; for local development once:
+sh deploy/assistant/fetch-runtime.sh
+# models: into the volume the phone app serves (default set ~1.7 GB, see ASSISTANT_DEVICE_MODELS in .env.example)
+docker compose --profile assistant up assistant-models
+```
+
+Measurements per model and phone, and how to take them, are in [docs/on-device-assistant.md](docs/on-device-assistant.md).
+
 ## Design decisions
 
 | ADR | Decision |
@@ -620,6 +647,7 @@ dotnet run -c Release --project benchmarks/Kamada.Assistant.Evals -- --model qwe
 | [0007](docs/adr/0007-demo-data-through-real-use-cases.md) | Demo data seeded through the real use cases |
 | [0008](docs/adr/0008-local-ai-assistant-suggests-only.md) | Local AI order assistant: the model extracts, C# resolves, the admin accepts |
 | [0009](docs/adr/0009-offline-ordering-on-the-phone.md) | Offline ordering on the phone: local copy, outbox, idempotent creates |
+| [0010](docs/adr/0010-on-device-assistant-as-a-fallback.md) | On-device assistant as a fallback: server by default, the phone model when the connection is poor |
 
 Smaller decisions are logged in [CLAUDE.md](CLAUDE.md#minor-decisions-log).
 
