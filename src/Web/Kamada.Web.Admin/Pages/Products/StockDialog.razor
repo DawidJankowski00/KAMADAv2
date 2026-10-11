@@ -1,7 +1,7 @@
 @inject ApiClient Api
 @inject ISnackbar Snackbar
 
-<MudDialog>
+<MudDialog Class="kamada-dialog-phone-fullscreen">
     <DialogContent>
         <MudText Typo="Typo.body2" Class="mb-2">@Product.Name</MudText>
         <MudNumericField @bind-Value="_quantity" Label="Stan magazynowy" Min="0" Max="1000000" Adornment="Adornment.End" AdornmentText="szt."

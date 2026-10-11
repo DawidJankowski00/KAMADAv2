@@ -36,7 +36,7 @@
     </MudGrid>
 </MudPaper>
 
-<MudTable T="ProductDto" @ref="_table" ServerData="LoadAsync" Hover="true" Elevation="1" Dense="true" RowsPerPage="20" LoadingProgressColor="Color.Primary">
+<MudTable T="ProductDto" @ref="_table" ServerData="LoadAsync" Hover="true" Elevation="1" Dense="true" RowsPerPage="20" LoadingProgressColor="Color.Primary" SortLabel="Sortuj według">
     <HeaderContent>
         <MudTh><MudTableSortLabel T="ProductDto" SortLabel="@nameof(ProductSortBy.Sku)">SKU</MudTableSortLabel></MudTh>
         <MudTh><MudTableSortLabel T="ProductDto" SortLabel="@nameof(ProductSortBy.Name)" InitialDirection="SortDirection.Ascending">Nazwa</MudTableSortLabel></MudTh>
@@ -49,7 +49,7 @@
     <RowTemplate>
         <MudTd DataLabel="SKU"><code>@context.Sku</code></MudTd>
         <MudTd DataLabel="Nazwa">@context.Name</MudTd>
-        <MudTd DataLabel="Kategorie">
+        <MudTd DataLabel="Kategorie" HideSmall="true">
             @foreach (var category in context.Categories)
             {
                 <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@category.Name</MudChip>

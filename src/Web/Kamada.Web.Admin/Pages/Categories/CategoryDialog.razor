@@ -2,7 +2,7 @@
 @inject ApiClient Api
 @inject ISnackbar Snackbar
 
-<MudDialog>
+<MudDialog Class="kamada-dialog-phone-fullscreen">
     <DialogContent>
         <MudTextField @bind-Value="_name" Label="Nazwa" Required="true" MaxLength="100" AutoFocus="true" />
         @if (Category is not null)

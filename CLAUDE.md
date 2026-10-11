@@ -375,3 +375,5 @@ Record small decisions here (date — decision — reason).
   (CSS in `kamada-admin.css`, so it follows rotation without a breakpoint service); `MudTable` lists use their built-in card mode
   with `HideSmall` on secondary columns; `MudSimpleTable`s hide secondary columns (`d-none d-sm-table-cell`) and repeat the
   essentials under the main cell (`d-sm-none`). Desktop width is unchanged.
+- 2026-10-11 — Sortable `MudTable`s set `SortLabel="Sortuj według"`: in the phone card mode the header (with the sort labels) is
+  hidden and MudBlazor shows a sort select instead, so sorting stays available on phones.
