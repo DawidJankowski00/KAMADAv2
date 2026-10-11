@@ -4,13 +4,13 @@ namespace Kamada.Modules.Workforce.UnitTests;
 
 public sealed class WorkerTests
 {
-    private static Worker CreateCourier() =>
-        Worker.Create("  Kurier1 ", "hash", " Jan ", " Kowalski ", " +48 600 000 000 ", WorkerRole.Courier);
+    private static Worker CreateWorker(params WorkerRole[] roles) =>
+        Worker.Create("  Kurier1 ", "hash", " Jan ", " Kowalski ", " +48 600 000 000 ", roles).Value;
 
     [Fact]
     public void Create_NormalizesUsernameAndTrimsFields()
     {
-        var worker = CreateCourier();
+        var worker = CreateWorker(WorkerRole.Courier);
 
         worker.Username.ShouldBe("kurier1");
         worker.Name.ShouldBe("Jan");
@@ -21,9 +21,35 @@ public sealed class WorkerTests
     }
 
     [Fact]
+    public void Create_SeveralRoles_StoresThemInEnumOrder()
+    {
+        var worker = CreateWorker(WorkerRole.Courier, WorkerRole.Admin);
+
+        worker.Roles.ShouldBe([WorkerRole.Admin, WorkerRole.Courier]);
+        worker.HasRole(WorkerRole.Admin).ShouldBeTrue();
+        worker.HasRole(WorkerRole.Courier).ShouldBeTrue();
+    }
+
+    [Fact]
+    public void Create_WithoutRoles_Fails()
+    {
+        var result = Worker.Create("kurier1", "hash", "Jan", "Kowalski", "+48 600 000 000", []);
+
+        result.Error.ShouldBe(WorkerErrors.RolesRequired);
+    }
+
+    [Fact]
+    public void Create_WithDuplicateRoles_Fails()
+    {
+        var result = Worker.Create("kurier1", "hash", "Jan", "Kowalski", "+48 600 000 000", [WorkerRole.Courier, WorkerRole.Courier]);
+
+        result.Error.ShouldBe(WorkerErrors.DuplicateRoles);
+    }
+
+    [Fact]
     public void Deactivate_ByAnotherWorker_DeactivatesAccount()
     {
-        var worker = CreateCourier();
+        var worker = CreateWorker(WorkerRole.Courier);
 
         var result = worker.Deactivate(deactivatedBy: Guid.NewGuid());
 
@@ -34,7 +60,7 @@ public sealed class WorkerTests
     [Fact]
     public void Deactivate_OwnAccount_FailsAndKeepsAccountActive()
     {
-        var worker = CreateCourier();
+        var worker = CreateWorker(WorkerRole.Courier);
 
         var result = worker.Deactivate(deactivatedBy: worker.Id);
 
@@ -43,31 +69,64 @@ public sealed class WorkerTests
     }
 
     [Fact]
-    public void ChangeRole_OwnRole_Fails()
+    public void SetRoles_ByAnotherWorker_ReplacesRoles()
     {
-        var worker = CreateCourier();
+        var worker = CreateWorker(WorkerRole.Courier);
 
-        var result = worker.ChangeRole(WorkerRole.Admin, changedBy: worker.Id);
+        worker.SetRoles([WorkerRole.Admin, WorkerRole.Courier], changedBy: Guid.NewGuid()).IsSuccess.ShouldBeTrue();
 
-        result.Error.ShouldBe(WorkerErrors.CannotChangeOwnRole);
-        worker.Role.ShouldBe(WorkerRole.Courier);
+        worker.Roles.ShouldBe([WorkerRole.Admin, WorkerRole.Courier]);
     }
 
     [Fact]
-    public void ChangeRole_SameRoleByOwner_IsNoOp()
+    public void SetRoles_Empty_FailsAndKeepsRoles()
     {
-        var worker = CreateCourier();
+        var worker = CreateWorker(WorkerRole.Courier);
 
-        worker.ChangeRole(WorkerRole.Courier, changedBy: worker.Id).IsSuccess.ShouldBeTrue();
+        var result = worker.SetRoles([], changedBy: Guid.NewGuid());
+
+        result.Error.ShouldBe(WorkerErrors.RolesRequired);
+        worker.Roles.ShouldBe([WorkerRole.Courier]);
     }
 
     [Fact]
-    public void ChangeRole_ByAnotherWorker_ChangesRole()
+    public void SetRoles_WithDuplicates_Fails()
     {
-        var worker = CreateCourier();
+        var worker = CreateWorker(WorkerRole.Courier);
 
-        worker.ChangeRole(WorkerRole.Admin, changedBy: Guid.NewGuid()).IsSuccess.ShouldBeTrue();
+        var result = worker.SetRoles([WorkerRole.Admin, WorkerRole.Admin], changedBy: Guid.NewGuid());
 
-        worker.Role.ShouldBe(WorkerRole.Admin);
+        result.Error.ShouldBe(WorkerErrors.DuplicateRoles);
+    }
+
+    [Fact]
+    public void SetRoles_RemovingOwnAdminRole_FailsAndKeepsRoles()
+    {
+        var worker = CreateWorker(WorkerRole.Admin, WorkerRole.Courier);
+
+        var result = worker.SetRoles([WorkerRole.Courier], changedBy: worker.Id);
+
+        result.Error.ShouldBe(WorkerErrors.CannotRemoveOwnAdminRole);
+        worker.Roles.ShouldBe([WorkerRole.Admin, WorkerRole.Courier]);
+    }
+
+    [Fact]
+    public void SetRoles_OwnAccountKeepingAdmin_AddsRole()
+    {
+        var worker = CreateWorker(WorkerRole.Admin);
+
+        worker.SetRoles([WorkerRole.Admin, WorkerRole.Courier], changedBy: worker.Id).IsSuccess.ShouldBeTrue();
+
+        worker.Roles.ShouldBe([WorkerRole.Admin, WorkerRole.Courier]);
+    }
+
+    [Fact]
+    public void SetRoles_OwnerRemovingAdminFromAnotherWorker_Succeeds()
+    {
+        var worker = CreateWorker(WorkerRole.Admin, WorkerRole.Courier);
+
+        worker.SetRoles([WorkerRole.Courier], changedBy: Guid.NewGuid()).IsSuccess.ShouldBeTrue();
+
+        worker.Roles.ShouldBe([WorkerRole.Courier]);
     }
 }

@@ -26,7 +26,7 @@ internal sealed class WorkerQueries(IWorkforceDbContext db)
         if (query.Role is { } role)
         {
             var domainRole = role.ToDomain();
-            workers = workers.Where(w => w.Role == domainRole);
+            workers = workers.Where(w => w.Roles.Contains(domainRole));
         }
 
         if (query.IsActive is { } isActive)

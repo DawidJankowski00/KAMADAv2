@@ -25,13 +25,19 @@ internal sealed class WorkerCommands(
             return WorkerErrors.UsernameTaken;
         }
 
-        var worker = Worker.Create(
+        var created = Worker.Create(
             username,
             passwordHash: string.Empty,
             request.Name,
             request.Surname,
             request.PhoneNumber,
-            request.Role.ToDomain());
+            [request.Role.ToDomain()]);
+        if (created.IsFailure)
+        {
+            return created.Error;
+        }
+
+        var worker = created.Value;
         worker.ChangePasswordHash(passwordHasher.HashPassword(worker, request.Password));
 
         db.Workers.Add(worker);
@@ -47,7 +53,7 @@ internal sealed class WorkerCommands(
             return WorkerErrors.NotFound;
         }
 
-        var roleChange = worker.ChangeRole(request.Role.ToDomain(), currentUser.Id);
+        var roleChange = worker.SetRoles([request.Role.ToDomain()], currentUser.Id);
         if (roleChange.IsFailure)
         {
             return roleChange.Error;

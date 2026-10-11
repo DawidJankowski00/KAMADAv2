@@ -25,7 +25,7 @@ public sealed class JwtTokenServiceTests
     [Fact]
     public void CreateAccessToken_ContainsIdentityAndRoleClaims()
     {
-        var worker = Worker.Create("admin", "hash", "Anna", "Nowak", "+48 600 000 000", WorkerRole.Admin);
+        var worker = Worker.Create("admin", "hash", "Anna", "Nowak", "+48 600 000 000", [WorkerRole.Admin]).Value;
 
         var accessToken = CreateService().CreateAccessToken(worker);
 
