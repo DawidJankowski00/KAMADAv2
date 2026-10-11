@@ -1,8 +1,13 @@
-@* Order assistant: dictation or typing → editable text → draft (nothing is saved). Hidden when the assistant is disabled. *@
+@* Order assistant: dictation or typing → editable text → draft (nothing is saved). Hidden when no assistant is available.
+   In the phone app it is the server's assistant or, with a poor connection, the model on the phone (chip + choice). *@
 @using Kamada.Web.Shared.Assistant
 @using Kamada.Web.Shared.Audio
+@using Kamada.Web.Shared.Connectivity
+@using Microsoft.Extensions.DependencyInjection
 @implements IDisposable
 @inject IOrderAssistant Assistant
+@inject IServiceProvider Services
+@inject ConnectionMonitor Monitor
 @inject ISnackbar Snackbar
 
 @if (_status?.Enabled == true)
@@ -11,8 +16,25 @@
         <div class="d-flex flex-wrap align-center gap-2 mb-1">
             <MudIcon Icon="@Icons.Material.Filled.AutoAwesome" Color="Color.Info" />
             <MudText Typo="Typo.h6">Asystent</MudText>
+            @if (_routing is not null && _settings is not null)
+            {
+                <MudMenu>
+                    <ActivatorContent>
+                        <MudChip T="string" Size="Size.Small" Color="@(OnDevice ? Color.Success : Color.Default)" Variant="Variant.Outlined"
+                                 Icon="@(OnDevice ? Icons.Material.Filled.PhoneAndroid : Icons.Material.Filled.Cloud)"
+                                 OnClick="@context.ToggleAsync" Class="ma-0">
+                            @(OnDevice ? "Asystent w telefonie" : "Asystent na serwerze")
+                        </MudChip>
+                    </ActivatorContent>
+                    <ChildContent>
+                        <MudMenuItem OnClick="() => SetModeAsync(AssistantMode.Auto)">Automatycznie (serwer, a w telefonie przy słabym połączeniu)</MudMenuItem>
+                        <MudMenuItem OnClick="() => SetModeAsync(AssistantMode.Server)">Zawsze serwer</MudMenuItem>
+                        <MudMenuItem OnClick="() => SetModeAsync(AssistantMode.Device)" Disabled="!_routing.DeviceReady">Zawsze telefon (dane nie opuszczają urządzenia)</MudMenuItem>
+                    </ChildContent>
+                </MudMenu>
+            }
             <MudSpacer />
-            <MudText Typo="Typo.caption" Class="mud-text-secondary">Lokalny model: @_status.Model</MudText>
+            <MudText Typo="Typo.caption" Class="mud-text-secondary">@(OnDevice ? "Model w telefonie" : "Lokalny model"): @_status.Model</MudText>
         </div>
         <MudText Typo="Typo.body2" Class="mud-text-secondary mb-2">
             Podyktuj albo wpisz zamówienie własnymi słowami (po polsku lub angielsku). Asystent wypełni formularz – nic nie
@@ -48,6 +70,8 @@
 
     private readonly CancellationTokenSource _disposed = new();
     private AssistantStatusDto? _status;
+    private RoutingOrderAssistant? _routing;
+    private LocalAssistantSettings? _settings;
     private string _text = string.Empty;
     private string _language = "auto";
     private string? _transcriptHint;
@@ -57,8 +81,19 @@
     /// <summary>Raised with the draft the form should be filled with.</summary>
     [Parameter] public EventCallback<OrderDraftDto> OnDraft { get; set; }
 
+    private bool OnDevice => _routing?.Location == AssistantLocation.Device;
+
     protected override async Task OnInitializedAsync()
     {
+        // Only the phone app has the routing assistant (server or device); the web panel always uses the server.
+        _routing = Services.GetService<RoutingOrderAssistant>();
+        _settings = Services.GetService<LocalAssistantSettings>();
+        Monitor.QualityChanged += OnQualityChanged;
+        if (_routing is not null)
+        {
+            _routing.LocationChanged += OnLocationChanged;
+        }
+
         await LoadStatusAsync();
         _ = RefreshUntilSpeechIsReadyAsync(_disposed.Token);
     }
@@ -67,6 +102,21 @@
     {
         _status = await Assistant.GetStatusAsync();
     }
+
+    private async Task SetModeAsync(AssistantMode mode)
+    {
+        await _settings!.SetModeAsync(mode);
+        await LoadStatusAsync();
+    }
+
+    private void OnQualityChanged(ConnectionQuality quality) => InvokeAsync(async () =>
+    {
+        // A different connection can mean a different assistant (and the other one's speech model state).
+        await LoadStatusAsync();
+        StateHasChanged();
+    });
+
+    private void OnLocationChanged() => InvokeAsync(StateHasChanged);
 
     /// <summary>The speech model is downloaded on the server's first start: enable dictation as soon as it is ready.</summary>
     private async Task RefreshUntilSpeechIsReadyAsync(CancellationToken cancellationToken)
@@ -100,7 +150,9 @@
 
     private async Task FillAsync()
     {
-        await RunAsync("Model działa lokalnie – bez karty graficznej może to potrwać kilkanaście sekund.", async () =>
+        await RunAsync(OnDevice
+            ? "Model działa w telefonie – pierwsze uruchomienie (ładowanie modelu) trwa dłużej, potem kilkanaście sekund."
+            : "Model działa lokalnie – bez karty graficznej może to potrwać kilkanaście sekund.", async () =>
         {
             var result = await Assistant.CreateDraftAsync(_text.Trim(), _language);
             if (Snackbar.Report(result))
@@ -125,6 +177,12 @@
 
     public void Dispose()
     {
+        Monitor.QualityChanged -= OnQualityChanged;
+        if (_routing is not null)
+        {
+            _routing.LocationChanged -= OnLocationChanged;
+        }
+
         _disposed.Cancel();
         _disposed.Dispose();
     }

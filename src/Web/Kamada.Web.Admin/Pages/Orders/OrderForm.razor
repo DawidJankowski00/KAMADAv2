@@ -19,19 +19,18 @@
         {
             <MudAlert Severity="Severity.Info" Icon="@Icons.Material.Filled.CloudOff" Class="mb-4">
                 Brak dobrego połączenia: klienci, ceny i stany pochodzą z danych zapisanych w telefonie (stan z @LocalDataTime).
-                Zamówienie zostanie zapisane w telefonie i wysłane, gdy połączenie wróci. Asystent AI wymaga połączenia.
+                Zamówienie zostanie zapisane w telefonie i wysłane, gdy połączenie wróci. Asystent działa tylko wtedy, gdy
+                pobrano jego model do telefonu (ustawienia asystenta).
             </MudAlert>
         }
-        else
+        else if (LocalDataMissing)
         {
-            @if (LocalDataMissing)
-            {
-                <MudAlert Severity="Severity.Warning" Class="mb-4">
-                    Słabe połączenie, a w telefonie nie ma jeszcze danych do pracy bez sieci – pobiorą się, gdy połączenie się poprawi.
-                </MudAlert>
-            }
-            <AssistantPanel OnDraft="ApplyDraftAsync" />
+            <MudAlert Severity="Severity.Warning" Class="mb-4">
+                Słabe połączenie, a w telefonie nie ma jeszcze danych do pracy bez sieci – pobiorą się, gdy połączenie się poprawi.
+            </MudAlert>
         }
+
+        <AssistantPanel OnDraft="ApplyDraftAsync" />
 
         @if (_warnings.Count > 0)
         {

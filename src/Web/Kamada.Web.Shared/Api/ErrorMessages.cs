@@ -65,6 +65,8 @@ public static class ErrorMessages
         ["Assistant.SpeechToTextDisabled"] = "Dyktowanie jest wyłączone. Wpisz zamówienie ręcznie.",
         ["Assistant.SpeechToTextNotReady"] = "Model rozpoznawania mowy jest jeszcze pobierany. Spróbuj za chwilę albo wpisz tekst.",
         ["Assistant.AudioMissing"] = "Nie przesłano nagrania.",
+        ["Assistant.DeviceNotReady"] = "Asystent w telefonie nie jest gotowy – pobierz model w ustawieniach asystenta.",
+        ["Assistant.DeviceModelFailed"] = "Model w telefonie nie zadziałał (może zabrakło pamięci). Spróbuj ponownie albo użyj lżejszego modelu.",
         ["Assistant.InvalidAudio"] = "Nieobsługiwany format nagrania.",
         ["Assistant.AudioTooLarge"] = "Nagranie jest za duże.",
         ["Assistant.AudioTooLong"] = "Nagranie może trwać najwyżej 60 sekund.",
