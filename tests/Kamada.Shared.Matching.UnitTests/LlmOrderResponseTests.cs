@@ -39,6 +39,28 @@ public sealed class LlmOrderResponseTests
     }
 
     [Theory]
+    [InlineData("Wojska Polskiego 70", null, null, "Wojska Polskiego", "70", null)]
+    [InlineData("10 Lutego 20", null, null, "10 Lutego", "20", null)]
+    [InlineData("Aleja 3 Maja 5a", "", null, "Aleja 3 Maja", "5A", null)]
+    [InlineData("Ku Słońcu 50/59", null, null, "Ku Słońcu", "50", "59")]
+    [InlineData("Grunwaldzka", "50/59", null, "Grunwaldzka", "50", "59")]
+    [InlineData("Grunwaldzka", "50/59", "4", "Grunwaldzka", "50/59", "4")]
+    [InlineData("Grunwaldzka 15", "15", "4", "Grunwaldzka 15", "15", "4")]
+    [InlineData("10 Lutego", null, null, "10 Lutego", null, null)]
+    [InlineData("Długa", "7", null, "Długa", "7", null)]
+    public void ToDomain_NumbersInTheWrongAddressField_AreMovedWhereTheyBelong(
+        string street, string? building, string? apartment, string expectedStreet, string? expectedBuilding, string? expectedApartment)
+    {
+        var json = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            address = new { street, buildingNumber = building, apartmentNumber = apartment, city = "Gdańsk", postalCode = (string?)null },
+        });
+
+        LlmOrderResponse.Parse(json)!.ToDomain().Address
+            .ShouldBe(new ExtractedAddress(expectedStreet, expectedBuilding, expectedApartment, "Gdańsk", null));
+    }
+
+    [Theory]
     [InlineData("600 100", null)]
     [InlineData("nie podano", null)]
     public void ToDomain_TooShortPhone_IsDropped(string phone, string? expected) =>

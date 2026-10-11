@@ -51,14 +51,7 @@ internal sealed partial record LlmOrderResponse(
         var client = Client is null
             ? ExtractedClient.None
             : new ExtractedClient(PersonName(Client.Name), PersonName(Client.Surname), Phone(Client.Phone), Email(Client.Email));
-        var address = Address is null
-            ? ExtractedAddress.None
-            : new ExtractedAddress(
-                Clean(Address.Street),
-                Clean(Address.BuildingNumber)?.Replace(" ", string.Empty, StringComparison.Ordinal).ToUpperInvariant(),
-                Clean(Address.ApartmentNumber)?.Replace(" ", string.Empty, StringComparison.Ordinal).ToUpperInvariant(),
-                Clean(Address.City),
-                PostalCode(Address.PostalCode));
+        var address = Address is null ? ExtractedAddress.None : CleanAddress(Address);
         var lines = (Items ?? [])
             .Where(i => Clean(i.Product) is not null)
             .Select(i => new ExtractedLine(Clean(i.Product)!, Math.Max(1, i.Quantity ?? 1)))
@@ -66,6 +59,34 @@ internal sealed partial record LlmOrderResponse(
 
         return new ExtractedOrder(client, address, lines, Clean(Notes));
     }
+
+    /// <summary>
+    /// Small models often write the house number into the street ("Wojska Polskiego 70") or the apartment into the number
+    /// ("50/59"). When the field they belong to is empty, they are moved there, so matching still gets street, building
+    /// and apartment apart.
+    /// </summary>
+    private static ExtractedAddress CleanAddress(LlmAddress address)
+    {
+        var street = Clean(address.Street);
+        var building = Compact(address.BuildingNumber);
+        var apartment = Compact(address.ApartmentNumber);
+
+        if (building is null && street is not null && StreetEndingWithNumber().Match(street) is { Success: true } trailing)
+        {
+            street = street[..trailing.Index].TrimEnd();
+            building = trailing.Groups[1].Value.ToUpperInvariant();
+        }
+
+        if (apartment is null && building is not null && BuildingWithApartment().Match(building) is { Success: true } slash)
+        {
+            (building, apartment) = (slash.Groups[1].Value, slash.Groups[2].Value);
+        }
+
+        return new ExtractedAddress(street, building, apartment, Clean(address.City), PostalCode(address.PostalCode));
+    }
+
+    private static string? Compact(string? value) =>
+        Clean(value)?.Replace(" ", string.Empty, StringComparison.Ordinal).ToUpperInvariant();
 
     private static string? Clean(string? value)
     {
@@ -137,6 +158,12 @@ internal sealed partial record LlmOrderResponse(
         var end = trimmed.LastIndexOf("```", StringComparison.Ordinal);
         return start >= 0 && end > start ? trimmed[(start + 1)..end] : trimmed;
     }
+
+    [GeneratedRegex(@"\s+(\d+[A-Za-z]?(?:/\d+[A-Za-z]?)?)$")]
+    private static partial Regex StreetEndingWithNumber();
+
+    [GeneratedRegex(@"^(\d+[A-Z]?)/(\d+[A-Z]?)$")]
+    private static partial Regex BuildingWithApartment();
 
     [GeneratedRegex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$")]
     private static partial Regex EmailPattern();
