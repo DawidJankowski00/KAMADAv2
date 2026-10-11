@@ -18,7 +18,7 @@ else
     <MudGrid>
         @foreach (var count in _counts)
         {
-            <MudItem xs="12" sm="6" md="3">
+            <MudItem xs="6" md="3">
                 <MudCard Elevation="1">
                     <MudCardContent>
                         <MudText Typo="Typo.body2" Class="mud-text-secondary">@Labels.Of(count.Status)</MudText>
@@ -32,10 +32,10 @@ else
         }
     </MudGrid>
 
-    <div class="d-flex align-center mt-6 mb-2">
+    <div class="d-flex flex-wrap align-center gap-2 mt-6 mb-2">
         <MudText Typo="Typo.h6" Class="flex-grow-1">Trasy na dziś</MudText>
         <MudButton Href="@($"delivery-runs?date={Today:yyyy-MM-dd}")" Size="Size.Small" Color="Color.Primary">Wszystkie trasy z dziś</MudButton>
-        <MudButton Href="delivery-runs/new" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.AddRoad" Class="ml-2">Nowa trasa</MudButton>
+        <MudButton Href="delivery-runs/new" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.AddRoad">Nowa trasa</MudButton>
     </div>
     @if (_todayRuns.Count == 0)
     {
