@@ -1,0 +1,169 @@
+@page "/route-locations"
+@inject ApiClient Api
+@inject IDialogService Dialogs
+@inject ISnackbar Snackbar
+
+<PageTitle>Lokalizacje – KAMADA</PageTitle>
+
+<PageHeader Title="Lokalizacje" Subtitle="Magazyny i bazy kurierów – punkty startu i końca tras">
+    <Actions>
+        <MudSwitch T="bool" Value="_includeInactive" ValueChanged="OnIncludeInactiveChanged" Color="Color.Primary" Label="Pokaż nieaktywne" />
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.AddLocationAlt" OnClick="CreateAsync">Dodaj lokalizację</MudButton>
+    </Actions>
+</PageHeader>
+
+@if (_locations is null)
+{
+    <MudProgressLinear Indeterminate="true" />
+}
+else
+{
+    <MudGrid>
+        <MudItem xs="12" lg="7">
+            <MudTable T="RouteLocationDto" Items="_locations" Hover="true" Elevation="1" Dense="true"
+                      OnRowClick="@(args => _selected = args.Item)" RowClass="kamada-clickable-row">
+                <HeaderContent>
+                    <MudTh>Nazwa</MudTh>
+                    <MudTh>Adres</MudTh>
+                    <MudTh>Współrzędne</MudTh>
+                    <MudTh>Status</MudTh>
+                    <MudTh Style="text-align:right">Akcje</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Nazwa"><b>@context.Name</b></MudTd>
+                    <MudTd DataLabel="Adres">@Labels.Format(context)</MudTd>
+                    <MudTd DataLabel="Współrzędne">
+                        @if (context.HasCoordinates)
+                        {
+                            <MudText Typo="Typo.caption">@Labels.Coordinates(context.Latitude!.Value, context.Longitude!.Value)</MudText>
+                        }
+                        else
+                        {
+                            <MudChip T="string" Size="Size.Small" Color="Color.Warning" Icon="@Icons.Material.Filled.WrongLocation">Brak – wskaż na mapie</MudChip>
+                        }
+                    </MudTd>
+                    <MudTd DataLabel="Status">
+                        @if (context.IsActive)
+                        {
+                            <MudChip T="string" Size="Size.Small" Color="Color.Success">Aktywna</MudChip>
+                        }
+                        else
+                        {
+                            <MudChip T="string" Size="Size.Small">Nieaktywna</MudChip>
+                        }
+                    </MudTd>
+                    <MudTd Style="text-align:right; white-space:nowrap">
+                        <MudTooltip Text="Edytuj"><MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="() => EditAsync(context)" /></MudTooltip>
+                        <MudTooltip Text="Wskaż na mapie"><MudIconButton Icon="@Icons.Material.Filled.PinDrop" Size="Size.Small" OnClick="() => PinAsync(context)" /></MudTooltip>
+                        @if (context.IsActive)
+                        {
+                            <MudTooltip Text="Dezaktywuj"><MudIconButton Icon="@Icons.Material.Filled.LocationOff" Size="Size.Small" OnClick="() => SetActiveAsync(context, false)" /></MudTooltip>
+                        }
+                        else
+                        {
+                            <MudTooltip Text="Aktywuj"><MudIconButton Icon="@Icons.Material.Filled.LocationOn" Size="Size.Small" OnClick="() => SetActiveAsync(context, true)" /></MudTooltip>
+                        }
+                    </MudTd>
+                </RowTemplate>
+                <NoRecordsContent><MudText Class="pa-4">Brak lokalizacji. Dodaj magazyn lub bazę, z której kurierzy wyruszają.</MudText></NoRecordsContent>
+            </MudTable>
+        </MudItem>
+        <MudItem xs="12" lg="5">
+            <MudPaper Class="pa-2" Elevation="1">
+                <LeafletMap Markers="Markers" Height="var(--kamada-phone-map-height, 460px)" />
+            </MudPaper>
+            <MudText Typo="Typo.caption" Class="mud-text-secondary mt-1 d-block">
+                Kliknij wiersz, aby wyróżnić lokalizację na mapie.
+            </MudText>
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+    private List<RouteLocationDto>? _locations;
+    private RouteLocationDto? _selected;
+    private bool _includeInactive;
+
+    private IReadOnlyList<MapMarker> Markers =>
+        (_locations ?? [])
+            .Where(l => l.HasCoordinates)
+            .Select(l => new MapMarker(
+                l.Latitude!.Value,
+                l.Longitude!.Value,
+                l.Name,
+                l.Id == _selected?.Id ? MapMarkerKind.Pin : MapMarkerKind.Start))
+            .ToList();
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        var result = await Api.GetAsync<List<RouteLocationDto>>($"api/route-locations{QueryString.Build(("includeInactive", _includeInactive))}");
+        _locations = Snackbar.Report(result) ? result.Value : [];
+        _selected = _locations.FirstOrDefault(l => l.Id == _selected?.Id);
+    }
+
+    private Task OnIncludeInactiveChanged(bool value)
+    {
+        _includeInactive = value;
+        return LoadAsync();
+    }
+
+    private async Task CreateAsync()
+    {
+        var created = await Dialogs.ShowForResultAsync<RouteLocationDialog, RouteLocationDto>("Nowa lokalizacja");
+        await AfterSaveAsync(created);
+    }
+
+    private async Task EditAsync(RouteLocationDto location)
+    {
+        var parameters = new DialogParameters<RouteLocationDialog> { { d => d.Location, location } };
+        var updated = await Dialogs.ShowForResultAsync<RouteLocationDialog, RouteLocationDto>($"Edycja: {location.Name}", parameters);
+        await AfterSaveAsync(updated);
+    }
+
+    private async Task AfterSaveAsync(RouteLocationDto? saved)
+    {
+        if (saved is null)
+        {
+            return;
+        }
+
+        _selected = saved;
+        await LoadAsync();
+        if (!saved.HasCoordinates)
+        {
+            Snackbar.Add("Nie udało się ustalić współrzędnych adresu. Wskaż lokalizację na mapie.", Severity.Warning);
+            await PinAsync(saved);
+        }
+    }
+
+    private async Task PinAsync(RouteLocationDto location)
+    {
+        var parameters = new DialogParameters<RouteLocationPinDialog> { { d => d.Location, location } };
+        var pinned = await Dialogs.ShowForResultAsync<RouteLocationPinDialog, RouteLocationDto>($"Lokalizacja na mapie: {location.Name}", parameters, MaxWidth.Medium);
+        if (pinned is not null)
+        {
+            _selected = pinned;
+            await LoadAsync();
+        }
+    }
+
+    private async Task SetActiveAsync(RouteLocationDto location, bool active)
+    {
+        if (!active && !await Dialogs.ConfirmAsync(
+                "Dezaktywacja lokalizacji",
+                $"Dezaktywować „{location.Name}”? Nie będzie można jej wybrać w nowych trasach; istniejące trasy pozostaną bez zmian.",
+                "Dezaktywuj",
+                Color.Warning))
+        {
+            return;
+        }
+
+        var result = await Api.PostAsync($"api/route-locations/{location.Id}/{(active ? "activate" : "deactivate")}");
+        if (Snackbar.Report(result, active ? "Lokalizacja aktywowana." : "Lokalizacja dezaktywowana."))
+        {
+            await LoadAsync();
+        }
+    }
+}

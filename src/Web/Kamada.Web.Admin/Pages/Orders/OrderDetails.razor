@@ -1,0 +1,221 @@
+@page "/orders/{Id:guid}"
+@inject ApiClient Api
+@inject IDialogService Dialogs
+@inject ISnackbar Snackbar
+
+<PageTitle>Zamówienie – KAMADA</PageTitle>
+
+@if (_order is null)
+{
+    <MudProgressLinear Indeterminate="true" />
+}
+else
+{
+    <MudBreadcrumbs Items="_breadcrumbs" Class="px-0 pt-0" />
+    <PageHeader Title="@($"Zamówienie #{_order.Number}")" Subtitle="@($"Złożone {Labels.DateTime(_order.CreatedAt)}")">
+        <Actions>
+            <OrderStatusChip Status="_order.Status" />
+            @if (CanPay)
+            {
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Payments" OnClick="PayAsync">Zarejestruj płatność</MudButton>
+            }
+            @if (_order.Status == OrderStatus.Paid)
+            {
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Inventory" OnClick="MarkReadyAsync">Gotowe do wysyłki</MudButton>
+            }
+            @if (_order.Status is OrderStatus.New or OrderStatus.Paid or OrderStatus.ReadyForDelivery)
+            {
+                <MudButton Variant="Variant.Outlined" Color="Color.Error" StartIcon="@Icons.Material.Filled.Cancel" OnClick="CancelAsync">Anuluj zamówienie</MudButton>
+            }
+        </Actions>
+    </PageHeader>
+
+    <MudGrid>
+        <MudItem xs="12" lg="8">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudText Typo="Typo.h6" Class="mb-2">Pozycje</MudText>
+                <MudSimpleTable Dense="true">
+                    <thead>
+                        <tr><th>Produkt</th><th class="d-none d-sm-table-cell">SKU</th><th class="d-none d-sm-table-cell" style="text-align:right">Cena</th><th style="text-align:right">Ilość</th><th style="text-align:right">Wartość</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in _order.Items)
+                        {
+                            <tr>
+                                <td>
+                                    @item.ProductName
+                                    <MudText Typo="Typo.caption" Class="d-block d-sm-none mud-text-secondary"><code>@item.Sku</code> · @Labels.Money(item.UnitPrice)</MudText>
+                                </td>
+                                <td class="d-none d-sm-table-cell"><code>@item.Sku</code></td>
+                                <td class="d-none d-sm-table-cell" style="text-align:right">@Labels.Money(item.UnitPrice)</td>
+                                <td style="text-align:right">@item.Quantity</td>
+                                <td style="text-align:right; white-space:nowrap">@Labels.Money(item.LineTotal)</td>
+                            </tr>
+                        }
+                        <tr>
+                            <td colspan="4" class="d-none d-sm-table-cell" style="text-align:right"><b>Razem</b></td>
+                            <td colspan="2" class="d-sm-none" style="text-align:right"><b>Razem</b></td>
+                            <td style="text-align:right"><b>@Labels.Money(_order.TotalAmount)</b></td>
+                        </tr>
+                    </tbody>
+                </MudSimpleTable>
+                @if (_order.Notes is not null)
+                {
+                    <MudAlert Severity="Severity.Normal" Dense="true" Class="mt-3">Uwagi: @_order.Notes</MudAlert>
+                }
+            </MudPaper>
+
+            <MudPaper Class="pa-4 mt-4" Elevation="1">
+                <MudText Typo="Typo.h6" Class="mb-2">Płatności</MudText>
+                @if (_payments.Count == 0)
+                {
+                    <MudText Class="mud-text-secondary">Brak płatności.</MudText>
+                }
+                else
+                {
+                    <MudSimpleTable Dense="true">
+                        <thead>
+                            <tr><th>Metoda</th><th class="d-none d-sm-table-cell">Transakcja</th><th style="text-align:right">Kwota</th><th>Status</th><th class="d-none d-sm-table-cell">Data</th><th class="d-none d-sm-table-cell"></th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var payment in _payments)
+                            {
+                                <tr>
+                                    <td>
+                                        @Labels.Of(payment.Provider)
+                                        <MudText Typo="Typo.caption" Class="d-block d-sm-none mud-text-secondary">@Labels.DateTime(payment.PaidAt ?? payment.CreatedAt)</MudText>
+                                    </td>
+                                    <td class="d-none d-sm-table-cell"><code>@payment.TransactionId</code></td>
+                                    <td style="text-align:right; white-space:nowrap">@Labels.Money(payment.Amount)</td>
+                                    <td>
+                                        <MudChip T="string" Size="Size.Small" Color="Labels.ColorOf(payment.Status)">@Labels.Of(payment.Status)</MudChip>
+                                        @if (payment.FailureReason is not null)
+                                        {
+                                            <MudText Typo="Typo.caption" Class="mud-text-secondary">@payment.FailureReason</MudText>
+                                        }
+                                    </td>
+                                    <td class="d-none d-sm-table-cell">@Labels.DateTime(payment.PaidAt ?? payment.CreatedAt)</td>
+                                    <td class="d-none d-sm-table-cell" style="white-space:nowrap">@PaymentActions(payment)</td>
+                                </tr>
+                                @* On a phone the actions get their own row instead of a sixth column. *@
+                                @if (HasPaymentActions(payment))
+                                {
+                                    <tr class="d-sm-none">
+                                        <td colspan="3" style="text-align:right">@PaymentActions(payment)</td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </MudSimpleTable>
+                }
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" lg="4">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudText Typo="Typo.h6" Class="mb-2">Dostawa</MudText>
+                <MudText><b>@_order.ShippingAddress.RecipientName</b></MudText>
+                <MudText Typo="Typo.body2">@Labels.Format(_order.ShippingAddress)</MudText>
+                <MudText Typo="Typo.body2" Class="mb-3">
+                    <MudLink Href="@($"tel:{_order.ShippingAddress.PhoneNumber.Replace(" ", string.Empty)}")">@_order.ShippingAddress.PhoneNumber</MudLink>
+                </MudText>
+                @if (_order.ShippingAddress.Latitude is { } lat && _order.ShippingAddress.Longitude is { } lng)
+                {
+                    <LeafletMap Markers="@([new MapMarker(lat, lng, _order.ShippingAddress.RecipientName)])" Height="260px" Zoom="15" />
+                }
+                else
+                {
+                    <MudAlert Severity="Severity.Warning" Dense="true">Adres w chwili złożenia zamówienia nie miał współrzędnych.</MudAlert>
+                }
+                <MudButton Href="@($"clients/{_order.ClientId}")" Size="Size.Small" Class="mt-3" StartIcon="@Icons.Material.Filled.Person">Karta klienta</MudButton>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+    private OrderDto? _order;
+    private IReadOnlyList<PaymentDto> _payments = [];
+    private List<BreadcrumbItem> _breadcrumbs = [];
+
+    [Parameter] public Guid Id { get; set; }
+
+    private bool HasPaymentActions(PaymentDto payment) =>
+        payment is { Status: PaymentStatus.Pending, Provider: PaymentProvider.Transfer }
+        || (payment.Status == PaymentStatus.Completed && _order?.Status == OrderStatus.Cancelled);
+
+    private RenderFragment PaymentActions(PaymentDto payment) =>
+        @<text>
+            @if (payment is { Status: PaymentStatus.Pending, Provider: PaymentProvider.Transfer })
+            {
+                <MudButton Size="Size.Small" Color="Color.Success" OnClick="@(() => PaymentActionAsync(payment, "confirm", "Przelew potwierdzony."))">Potwierdź wpływ</MudButton>
+                <MudButton Size="Size.Small" Color="Color.Error" OnClick="@(() => PaymentActionAsync(payment, "reject", "Przelew odrzucony."))">Odrzuć</MudButton>
+            }
+            @if (payment.Status == PaymentStatus.Completed && _order?.Status == OrderStatus.Cancelled)
+            {
+                <MudButton Size="Size.Small" Color="Color.Warning" OnClick="@(() => PaymentActionAsync(payment, "refund", "Płatność zwrócona."))">Zwróć</MudButton>
+            }
+        </text>;
+
+    private bool CanPay =>
+        _order?.Status == OrderStatus.New
+        && !_payments.Any(p => p.Status is PaymentStatus.Pending or PaymentStatus.Completed);
+
+    protected override Task OnParametersSetAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        var order = await Api.GetAsync<OrderDto>($"api/orders/{Id}");
+        if (!Snackbar.Report(order))
+        {
+            return;
+        }
+
+        _order = order.Value;
+        _breadcrumbs = [new("Zamówienia", "orders"), new($"#{_order.Number}", null, disabled: true)];
+        var payments = await Api.GetAsync<List<PaymentDto>>($"api/orders/{Id}/payments");
+        _payments = payments.IsSuccess ? payments.Value : [];
+    }
+
+    private async Task PayAsync()
+    {
+        var parameters = new DialogParameters<PaymentDialog> { { d => d.Order, _order } };
+        if (await Dialogs.ShowForResultAsync<PaymentDialog, PaymentDto>("Rejestracja płatności", parameters, MaxWidth.ExtraSmall) is not null)
+        {
+            await LoadAsync();
+        }
+    }
+
+    private async Task MarkReadyAsync()
+    {
+        if (Snackbar.Report(await Api.PostAsync($"api/orders/{Id}/ready-for-delivery"), "Zamówienie gotowe do wysyłki – można je dodać do trasy."))
+        {
+            await LoadAsync();
+        }
+    }
+
+    private async Task CancelAsync()
+    {
+        var paid = _payments.Any(p => p.Status == PaymentStatus.Completed);
+        var message = paid
+            ? "Anulować zamówienie? Towar wróci na stan. Zamówienie jest opłacone – po anulowaniu wykonaj zwrot płatności."
+            : "Anulować zamówienie? Towar wróci na stan magazynowy.";
+        if (!await Dialogs.ConfirmAsync("Anulowanie zamówienia", message, "Anuluj zamówienie", Color.Error))
+        {
+            return;
+        }
+
+        if (Snackbar.Report(await Api.PostAsync($"api/orders/{Id}/cancel"), "Zamówienie anulowane."))
+        {
+            await LoadAsync();
+        }
+    }
+
+    private async Task PaymentActionAsync(PaymentDto payment, string action, string successMessage)
+    {
+        if (Snackbar.Report(await Api.PostAsync<PaymentDto>($"api/payments/{payment.Id}/{action}"), successMessage))
+        {
+            await LoadAsync();
+        }
+    }
+}

@@ -8,9 +8,9 @@
       "port": 5081
     },
     {
-      "name": "courier-app",
+      "name": "mobile-app",
       "runtimeExecutable": "dotnet",
-      "runtimeArgs": ["run", "--project", "src/Web/Kamada.CourierApp", "--launch-profile", "http"],
+      "runtimeArgs": ["run", "--project", "src/Web/Kamada.MobileApp", "--launch-profile", "http"],
       "port": 5082
     }
   ]

@@ -45,3 +45,20 @@ The project is a .NET portfolio, so the frontends should show C# end to end and 
   themselves are verified manually in the browser.
 - Offline support is limited to starting the courier app; actions need a connection (an outbox with retry is a
   possible improvement).
+
+## Update (2026-10-11): one phone app for every role
+
+The courier PWA became the KAMADA phone app (`Kamada.MobileApp`), because workers now hold several roles and
+switch between them on one phone (see `docs/plans/mobile-app-roles.md`). The split above still holds along a
+different line: **desktop vs. phone**, not courier vs. admin. The web admin panel stays a separate app; the phone
+app has one area per role (`/courier/...`, `/admin`), and the active role is a client-side choice of views
+(`RoleContext`) while the API keeps checking roles per endpoint. Admin pages will be shared through a Razor class
+library rather than copied, so the phone app ships them alongside the courier views (the larger download is accepted
+for one app per worker).
+
+Done in stage 3: the admin pages, dialogs and menu live in `Kamada.Web.Admin` (references only
+`Kamada.Shared.Contracts` and `Kamada.Web.Shared`, enforced by the architecture tests). The web panel keeps only its
+host (Program, App, layouts, login); both apps add the library to the router, so the pages are identical by
+construction. Small screens are handled inside the shared pages with CSS (MudBlazor breakpoint classes, a full-screen
+dialog class, map height variables, `pointer: coarse` for drag and drop), so the desktop layout does not change.
+The admin home moved to `/dashboard`, because `/` in the phone app is the active role's home.

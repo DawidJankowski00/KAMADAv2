@@ -1,0 +1,120 @@
+@inherits LayoutComponentBase
+@implements IDisposable
+@inject AuthService Auth
+@inject RoleContext RoleContext
+@inject NavigationManager Navigation
+
+<MudThemeProvider Theme="MobileTheme.For(RoleContext.ActiveRole)" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="1" Dense="true">
+        @if (IsAdmin)
+        {
+            <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="() => _drawerOpen = !_drawerOpen" aria-label="Menu" />
+        }
+        <MudLink Href="" Color="Color.Inherit" Underline="Underline.None" Class="d-flex align-center">
+            <MudIcon Icon="@Icons.Material.Filled.LocalShipping" Class="mr-2" />
+            @* Next to the menu button and the role switcher the name does not fit a phone; the icon stays. *@
+            <MudText Typo="Typo.h6" Class="@(IsAdmin && RoleContext.AvailableRoles.Count > 1 ? "d-none d-sm-flex" : null)">KAMADA</MudText>
+        </MudLink>
+        <MudSpacer />
+        <RoleSwitcher ActiveRole="@RoleContext.ActiveRole" AvailableRoles="RoleContext.AvailableRoles" />
+        <AuthorizeView>
+            <Authorized>
+                @* On a phone the role switcher takes the place of the name. *@
+                <MudText Typo="Typo.body2" Class="@(RoleContext.AvailableRoles.Count > 1 ? "ml-2 mr-1 d-none d-sm-flex" : "mr-1")">
+                    @context.User.FindFirst("given_name")?.Value @context.User.FindFirst("family_name")?.Value
+                </MudText>
+                <MudIconButton Icon="@Icons.Material.Filled.Logout" Color="Color.Inherit" OnClick="LogoutAsync" aria-label="Wyloguj" />
+            </Authorized>
+        </AuthorizeView>
+    </MudAppBar>
+    @if (IsAdmin)
+    {
+        @* The same menu as the web panel (AdminNavigation); it slides over the page and closes after navigating. *@
+        <MudDrawer @bind-Open="_drawerOpen" Variant="DrawerVariant.Temporary" Elevation="2">
+            <AdminNavMenu />
+        </MudDrawer>
+    }
+    <MudMainContent>
+        @* Admin pages hold tables and forms, so on a tablet they may use the width; courier pages stay phone-sized. *@
+        <MudContainer MaxWidth="@(IsAdmin ? MaxWidth.Large : MaxWidth.Small)" Class="py-4 px-3">
+            <ErrorBoundary @ref="_errorBoundary">
+                <ChildContent>
+                    @if (!_rolesLoaded)
+                    {
+                        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+                    }
+                    else if (PageRole is { } role && role != RoleContext.ActiveRole && RoleContext.AvailableRoles.Contains(role))
+                    {
+                        <SwitchRolePrompt Role="@role" />
+                    }
+                    else
+                    {
+                        @Body
+                    }
+                </ChildContent>
+                <ErrorContent>
+                    <MudAlert Severity="Severity.Error" Class="mb-4">
+                        Wystąpił nieoczekiwany błąd.
+                        <MudButton Size="Size.Small" OnClick="() => _errorBoundary?.Recover()">Spróbuj ponownie</MudButton>
+                    </MudAlert>
+                </ErrorContent>
+            </ErrorBoundary>
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    private ErrorBoundary? _errorBoundary;
+    private bool _rolesLoaded;
+    private bool _drawerOpen;
+
+    [CascadingParameter] public RouteData? RouteData { get; set; }
+
+    private bool IsAdmin => _rolesLoaded && RoleContext.ActiveRole == Roles.Admin;
+
+    /// <summary>
+    /// The role whose area the current page belongs to. A page of a role the user has but is not working in shows a
+    /// prompt to switch instead of the page; a role the user does not have is handled by <c>[Authorize]</c>.
+    /// </summary>
+    private string? PageRole => RouteData is null ? null : RoleAreas.RoleOf(RouteData.PageType);
+
+    protected override void OnInitialized()
+    {
+        RoleContext.ActiveRoleChanged += OnActiveRoleChanged;
+        Navigation.LocationChanged += OnLocationChanged;
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await RoleContext.LoadAsync();
+        _rolesLoaded = true;
+    }
+
+    public void Dispose()
+    {
+        RoleContext.ActiveRoleChanged -= OnActiveRoleChanged;
+        Navigation.LocationChanged -= OnLocationChanged;
+    }
+
+    private void OnActiveRoleChanged() => InvokeAsync(StateHasChanged);
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        if (_drawerOpen)
+        {
+            _drawerOpen = false;
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task LogoutAsync()
+    {
+        await Auth.LogoutAsync();
+        Navigation.NavigateTo("login", replace: true);
+    }
+}

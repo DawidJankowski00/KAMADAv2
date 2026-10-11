@@ -1,0 +1,13 @@
+@* The admin menu rendered from AdminNavigation (web panel drawer and phone app drawer). *@
+<MudNavMenu Class="pt-2">
+    <MudNavLink Href="@AdminNavigation.Dashboard.Href" Match="AdminNavigation.Dashboard.Match" Icon="@AdminNavigation.Dashboard.Icon">@AdminNavigation.Dashboard.Title</MudNavLink>
+    @foreach (var section in AdminNavigation.Sections)
+    {
+        <MudNavGroup Title="@section.Title" Icon="@section.Icon" Expanded="true">
+            @foreach (var link in section.Links)
+            {
+                <MudNavLink Href="@link.Href" Match="link.Match" Icon="@link.Icon">@link.Title</MudNavLink>
+            }
+        </MudNavGroup>
+    }
+</MudNavMenu>

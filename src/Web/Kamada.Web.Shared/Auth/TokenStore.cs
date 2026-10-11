@@ -24,6 +24,11 @@ public sealed class TokenStore(IJSRuntime js, KamadaClientOptions options)
         try
         {
             var json = await js.InvokeAsync<string?>("localStorage.getItem", options.StorageKey);
+            if (string.IsNullOrEmpty(json) && options.PreviousStorageKey is { } previousKey)
+            {
+                json = await MoveFromPreviousKeyAsync(previousKey);
+            }
+
             _session = string.IsNullOrEmpty(json) ? null : JsonSerializer.Deserialize<TokenResponse>(json, KamadaJson.Options);
 
             // Sessions saved before workers had several roles carry a single "role"; such a user signs in again.
@@ -67,5 +72,18 @@ public sealed class TokenStore(IJSRuntime js, KamadaClientOptions options)
         {
             // Nothing persisted.
         }
+    }
+
+    /// <summary>Keeps users signed in when an app changes its storage key (e.g. the courier app became the phone app).</summary>
+    private async ValueTask<string?> MoveFromPreviousKeyAsync(string previousKey)
+    {
+        var json = await js.InvokeAsync<string?>("localStorage.getItem", previousKey);
+        if (!string.IsNullOrEmpty(json))
+        {
+            await js.InvokeVoidAsync("localStorage.setItem", options.StorageKey, json);
+            await js.InvokeVoidAsync("localStorage.removeItem", previousKey);
+        }
+
+        return json;
     }
 }

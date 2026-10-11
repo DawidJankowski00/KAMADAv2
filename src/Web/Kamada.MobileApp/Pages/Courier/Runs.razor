@@ -1,0 +1,129 @@
+@page "/courier"
+@attribute [Authorize(Roles = Roles.Courier)]
+@inject ApiClient Api
+@inject NavigationManager Navigation
+
+<PageTitle>Moje trasy – KAMADA</PageTitle>
+
+<div class="d-flex align-center mb-2">
+    <MudText Typo="Typo.h5" HtmlTag="h1">Moje trasy</MudText>
+    <MudSpacer />
+    <MudIconButton Icon="@Icons.Material.Filled.Refresh" OnClick="LoadAsync" Disabled="_runs is null" aria-label="Odśwież" />
+</div>
+
+<MudTabs ActivePanelIndex="(int)CurrentScope" ActivePanelIndexChanged="OnTabChanged" Rounded="true" ApplyEffectsToContainer="true"
+         Elevation="1" Class="mb-3" MinimumTabWidth="0px">
+    <MudTabPanel Text="Bieżące" />
+    <MudTabPanel Text="Nadchodzące" />
+    <MudTabPanel Text="Zakończone" />
+</MudTabs>
+
+@if (_error is not null)
+{
+    <MudAlert Severity="Severity.Error" Class="mb-3">
+        @_error
+        <MudButton Size="Size.Small" OnClick="LoadAsync">Spróbuj ponownie</MudButton>
+    </MudAlert>
+}
+else if (_runs is null)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+else if (_runs.Count == 0)
+{
+    <div class="d-flex flex-column align-center pa-8 gap-2">
+        <MudIcon Icon="@Icons.Material.Filled.EventAvailable" Size="Size.Large" Class="mud-text-secondary" />
+        <MudText Align="Align.Center" Class="mud-text-secondary">@EmptyMessage</MudText>
+    </div>
+}
+else
+{
+    @foreach (var run in _runs)
+    {
+        var done = run.DeliveredCount + run.FailedCount;
+        <MudPaper Elevation="1" Class="pa-3 mb-3 kamada-run-card" @onclick="() => Navigation.NavigateTo(RunUrl(run.Id))">
+            <div class="d-flex align-center gap-2">
+                <MudText Typo="Typo.subtitle1" Style="font-weight:600" Class="flex-grow-1">@run.Name</MudText>
+                <RunStatusChip Status="run.Status" />
+            </div>
+            <MudText Typo="Typo.body2">@DayLabel(run.PlannedDate) · @run.VehiclePlate</MudText>
+            <MudText Typo="Typo.body2" Class="mud-text-secondary">
+                @(run.StartLocationName == run.EndLocationName ? run.StartLocationName : $"{run.StartLocationName} → {run.EndLocationName}")
+            </MudText>
+            <div class="d-flex align-center gap-2 mt-2">
+                <MudText Typo="Typo.body2" Class="flex-grow-1">
+                    @if (run.Status is DeliveryRunStatus.Planned)
+                    {
+                        @Labels.StopCount(run.StopCount)
+                    }
+                    else
+                    {
+                        @($"{run.DeliveredCount}/{run.StopCount} dostarczone")
+                        @if (run.FailedCount > 0)
+                        {
+                            <span class="mud-error-text">@($" · {run.FailedCount} nieudane")</span>
+                        }
+                    }
+                </MudText>
+                @if (run.PlannedDurationSeconds is { } duration)
+                {
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary">
+                        @Labels.Duration(duration)@(run.PlannedDistanceMeters is { } distance ? $" · {Labels.Distance(distance)}" : string.Empty)
+                    </MudText>
+                }
+            </div>
+            @if (run.Status is DeliveryRunStatus.InProgress && run.StopCount > 0)
+            {
+                <MudProgressLinear Value="100.0 * done / run.StopCount" Color="Color.Success" Rounded="true" Size="Size.Medium" Class="mt-2" />
+            }
+        </MudPaper>
+    }
+}
+
+@code {
+    private List<DeliveryRunSummaryDto>? _runs;
+    private string? _error;
+
+    [SupplyParameterFromQuery] public string? Scope { get; set; }
+
+    private CourierRunScope CurrentScope => Enum.TryParse<CourierRunScope>(Scope, ignoreCase: true, out var scope) ? scope : CourierRunScope.Current;
+
+    private string EmptyMessage => CurrentScope switch
+    {
+        CourierRunScope.Upcoming => "Nie masz zaplanowanych tras na kolejne dni.",
+        CourierRunScope.Completed => "Nie masz jeszcze zakończonych tras.",
+        _ => "Nie masz tras na dziś. Trasa pojawi się tutaj, gdy administrator ją zatwierdzi.",
+    };
+
+    protected override Task OnParametersSetAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _runs = null;
+        _error = null;
+        var result = await Api.GetAsync<List<DeliveryRunSummaryDto>>($"api/courier/delivery-runs{QueryString.Build(("scope", CurrentScope))}");
+        if (result.IsSuccess)
+        {
+            _runs = result.Value;
+        }
+        else
+        {
+            _error = result.Problem!.Message;
+        }
+    }
+
+    /// <summary>The tab lives in the URL, so "back" from a run returns to the same list.</summary>
+    private void OnTabChanged(int index)
+    {
+        var scope = (CourierRunScope)index;
+        Navigation.NavigateTo(scope == CourierRunScope.Current ? "courier" : $"courier?scope={scope}");
+    }
+
+    private static string DayLabel(DateOnly date)
+    {
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        return date == today ? "Dziś" : date == today.AddDays(1) ? "Jutro" : Labels.Date(date);
+    }
+
+    private static string RunUrl(Guid id) => $"courier/runs/{id}";
+}

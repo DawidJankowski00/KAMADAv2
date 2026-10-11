@@ -148,7 +148,7 @@ benign, EF probes the history table before creating it.
 |---|---|
 | API (+ `/scalar`, `/health`) | http://localhost:5080 |
 | Admin panel | http://localhost:5081 |
-| Courier app | http://localhost:5082 |
+| Phone app | http://localhost:5082 |
 | PostgreSQL | localhost:5432 |
 | OSRM (optional profile) | http://localhost:5000 |
 | Ollama (optional profile `ai`) | http://localhost:11434 |
@@ -221,7 +221,7 @@ Record small decisions here (date — decision — reason).
   Coordinates are always shown with invariant decimals (`Labels.Coordinates`).
 - 2026-09-28 — Frontends in Docker: nginx (`deploy/nginx/spa.conf`, SPA fallback, `gzip_static`), API address injected
   at container start by `deploy/nginx/40-kamada-config.sh` from `API_BASE_URL` (compose: `PUBLIC_API_URL`).
-- 2026-09-28 — Local UI testing: `.claude/launch.json` has `admin-panel` (5081) and `courier-app` (5082) dev servers;
+- 2026-09-28 — Local UI testing: `.claude/launch.json` has `admin-panel` (5081) and `mobile-app` (5082) dev servers;
   API runs from `docker compose up -d` (5080). Stop the dockerized `admin` service before starting the dev server on 5081.
 - 2026-09-28 — RouteOptimization is stateless (no schema/DbContext). Contracts: `IRoutePlanner` (`OptimizeAsync` with an
   optional current order evaluated on the *same* matrix, `EvaluateAsync` for manual orders; stop indexes refer to
@@ -344,3 +344,39 @@ Record small decisions here (date — decision — reason).
   refresh (≤ 15 min). Frontends declare `KamadaClientOptions.AllowedRoles` (admin panel `[Admin]`, courier app `[Courier]`);
   a refresh without any allowed role signs out, a refresh with changed roles raises `SessionChanged`. Sessions stored in the
   old single-role format are dropped by `TokenStore` (the user signs in again).
+- 2026-10-11 — The courier PWA became the KAMADA phone app: `src/Web/Kamada.MobileApp` (compose service `mobile`, launch config
+  `mobile-app`, port 5082 unchanged). Session key `kamada.mobile.session`; `KamadaClientOptions.PreviousStorageKey` moves a session
+  stored under the old `kamada.courier.session` once, so signed-in couriers stay signed in.
+- 2026-10-11 — `RoleContext` (Web.Shared, singleton) holds the phone app's active role: available roles = the user's roles in
+  `KamadaClientOptions.AllowedRoles` order (that order is the app's preference); the choice is remembered per user in
+  localStorage (`<StorageKey>.role.<userId>`, kept after logout – it is only a role name). Default: the only role, otherwise the
+  remembered one, otherwise the first available. It re-resolves on `AuthService.SessionChanged` and raises `ActiveRoleChanged`.
+- 2026-10-11 — Phone app areas: each role has its own URL prefix (`/courier/...`); a page belongs to the role in its
+  `[Authorize(Roles = ...)]` (`RoleAreas.RoleOf`). `/` is `RoleHome`, which redirects to the active role's home. `MainLayout` gets
+  the `RouteData` as a cascading value: a page of a role the user has but is not working in shows "Przełącz na …" instead of the
+  page; a role the user does not have shows "Brak dostępu" (signed-out users still go to the login page).
+- 2026-10-11 — Phone app role switcher: app-bar menu with the active role (shown only with 2+ roles in the app); switching keeps the
+  session and opens the new role's home. Each role has its own accent colour (`MobileTheme.For(role)`: courier blue as before,
+  admin purple). Per-role bottom navigation waits for a role with several destinations (seller, stage 4): the courier has one
+  start page and the bottom of the run screen holds the stop buttons.
+- 2026-10-11 — Phone app roles: `AllowedRoles = [Courier, Admin]` (Seller joins first in stage 4). Admins can sign in; until the
+  shared admin pages arrive (stage 3) `/admin` is a placeholder pointing to the web panel. MudBlazor 9 `MudMenu` with
+  `ActivatorContent` needs `OnClick="@context.ToggleAsync"` on the activator (it is not wired automatically).
+- 2026-10-11 — Admin pages, dialogs and their helpers live in the Razor class library `src/Web/Kamada.Web.Admin`, used by the web
+  panel and the phone app (`Router.AdditionalAssemblies`), so both show the same pages. Its `_Imports.razor` puts
+  `[Authorize(Roles = Admin)]` on every page (in the phone app the role also selects the area). The dashboard is `/dashboard`;
+  the web panel redirects `/` to it. Page styles ship as `_content/Kamada.Web.Admin/kamada-admin.css`, linked by both hosts.
+- 2026-10-11 — The admin menu is data (`AdminNavigation` in `Kamada.Web.Admin`), rendered by `AdminNavMenu` in the web panel's
+  drawer and in the phone app's admin drawer, so the two cannot offer different pages.
+- 2026-10-11 — Phone admin area: the phone app routes the `Kamada.Web.Admin` pages too (same URLs as the web panel, the admin home
+  is `/dashboard`; the `/admin` placeholder is gone). With the Admin role active the layout adds a menu button and a temporary
+  drawer with `AdminNavMenu` (closed after each navigation) and widens the container to `MaxWidth.Large` for tablets.
+- 2026-10-11 — Admin pages on a phone (below MudBlazor's `sm`, 600 px): form dialogs get `<MudDialog Class="kamada-dialog-phone-fullscreen">`
+  (CSS in `kamada-admin.css`, so it follows rotation without a breakpoint service); `MudTable` lists use their built-in card mode
+  with `HideSmall` on secondary columns; `MudSimpleTable`s hide secondary columns (`d-none d-sm-table-cell`) and repeat the
+  essentials under the main cell (`d-sm-none`). Desktop width is unchanged.
+- 2026-10-11 — Sortable `MudTable`s set `SortLabel="Sortuj według"`: in the phone card mode the header (with the sort labels) is
+  hidden and MudBlazor shows a sort select instead, so sorting stays available on phones.
+- 2026-10-11 — Run stops on touch screens: drag and drop needs a mouse, so `(pointer: coarse)` hides the drag handle and the drag
+  hint (`kamada-fine-pointer-only` / `kamada-touch-only`) and the existing up/down buttons reorder the stops. Full-screen
+  dialogs wrap their actions (a status text gets its own line) and size scrolling lists with `--kamada-phone-dialog-list-height`.

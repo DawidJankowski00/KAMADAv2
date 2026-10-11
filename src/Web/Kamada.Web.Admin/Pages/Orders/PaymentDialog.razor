@@ -1,0 +1,53 @@
+@inject ApiClient Api
+@inject ISnackbar Snackbar
+
+<MudDialog Class="kamada-dialog-phone-fullscreen">
+    <DialogContent>
+        <MudText Typo="Typo.body1" Class="mb-3">Kwota do zapłaty: <b>@Labels.Money(Order.TotalAmount)</b></MudText>
+        <MudRadioGroup T="PaymentProvider" @bind-Value="_provider">
+            <MudRadio T="PaymentProvider" Value="PaymentProvider.Cash" Color="Color.Primary">Gotówka – zaksięgowana od razu</MudRadio>
+            <MudRadio T="PaymentProvider" Value="PaymentProvider.Card" Color="Color.Primary">Karta – terminal (symulacja)</MudRadio>
+            <MudRadio T="PaymentProvider" Value="PaymentProvider.Transfer" Color="Color.Primary">Przelew – oczekuje na potwierdzenie wpływu</MudRadio>
+        </MudRadioGroup>
+        @if (_provider == PaymentProvider.Card)
+        {
+            <MudCheckBox @bind-Value="_simulateDecline" Label="Symuluj odrzucenie karty (demo)" Color="Color.Warning" Class="mt-2" />
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="() => Dialog.Cancel()">Anuluj</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="PayAsync" Disabled="_busy">Zarejestruj</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private PaymentProvider _provider = PaymentProvider.Card;
+    private bool _simulateDecline;
+    private bool _busy;
+
+    [CascadingParameter] private IMudDialogInstance Dialog { get; set; } = default!;
+
+    [Parameter, EditorRequired] public OrderDto Order { get; set; } = default!;
+
+    private async Task PayAsync()
+    {
+        _busy = true;
+        var result = await Api.PostAsync<PaymentDto>(
+            $"api/orders/{Order.Id}/payments",
+            new RegisterPaymentRequest(_provider, _provider == PaymentProvider.Card && _simulateDecline));
+        _busy = false;
+        if (!Snackbar.Report(result))
+        {
+            return;
+        }
+
+        var (message, severity) = result.Value.Status switch
+        {
+            PaymentStatus.Completed => ("Płatność zakończona – zamówienie opłacone.", Severity.Success),
+            PaymentStatus.Pending => ("Przelew zarejestrowany – potwierdź wpływ, gdy środki dotrą.", Severity.Info),
+            _ => ($"Płatność odrzucona: {result.Value.FailureReason}", Severity.Error),
+        };
+        Snackbar.Add(message, severity);
+        Dialog.Close(DialogResult.Ok(result.Value));
+    }
+}

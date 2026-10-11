@@ -1,0 +1,23 @@
+<Router AppAssembly="@typeof(App).Assembly" AdditionalAssemblies="[typeof(Kamada.Web.Admin.Pages.Dashboard).Assembly]" NotFoundPage="typeof(Pages.NotFound)">
+    <Found Context="routeData">
+        @* The layout reads the route to show a page only in the active role (see RoleAreas). *@
+        <CascadingValue Value="routeData">
+            <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
+                <NotAuthorized>
+                    @if (context.User.Identity?.IsAuthenticated == true)
+                    {
+                        <AccessDenied />
+                    }
+                    else
+                    {
+                        <RedirectToLogin />
+                    }
+                </NotAuthorized>
+                <Authorizing>
+                    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+                </Authorizing>
+            </AuthorizeRouteView>
+        </CascadingValue>
+        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+    </Found>
+</Router>

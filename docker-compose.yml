@@ -55,10 +55,10 @@ services:
     depends_on:
       - api
 
-  courier:
+  mobile:
     build:
       context: .
-      dockerfile: src/Web/Kamada.CourierApp/Dockerfile
+      dockerfile: src/Web/Kamada.MobileApp/Dockerfile
     environment:
       API_BASE_URL: ${PUBLIC_API_URL:-http://localhost:5080/}
     ports:

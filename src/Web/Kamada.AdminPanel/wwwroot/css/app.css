@@ -97,34 +97,7 @@ code {
     padding: 16px;
 }
 
-.kamada-clickable-row {
-    cursor: pointer;
-}
-
 /* FocusOnNavigate moves focus to the page heading for screen readers; no visible outline needed. */
 h1:focus {
     outline: none;
-}
-
-/* Delivery run stops: drag & drop reordering */
-.kamada-stop-zone {
-    min-height: 48px;
-}
-
-.kamada-stop {
-    cursor: grab;
-}
-
-.kamada-stop:active {
-    cursor: grabbing;
-}
-
-/* Order assistant */
-.kamada-assistant {
-    border-left: 4px solid var(--mud-palette-info);
-}
-
-.kamada-warning-list {
-    margin: 4px 0 0 1.25rem;
-    padding: 0;
 }

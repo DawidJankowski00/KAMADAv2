@@ -1,0 +1,90 @@
+@inject ApiClient Api
+@inject ISnackbar Snackbar
+
+<MudDialog Class="kamada-dialog-phone-fullscreen">
+    <DialogContent>
+        <MudForm @ref="_form" @bind-IsValid="_valid">
+            <MudGrid Spacing="2">
+                @if (Worker is null)
+                {
+                    <MudItem xs="12" sm="6">
+                        <MudTextField @bind-Value="_username" Label="Login" Required="true" MaxLength="50" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField @bind-Value="_password" Label="Hasło" Required="true" InputType="InputType.Password" MaxLength="128"
+                                      HelperText="Min. 8 znaków, mała i wielka litera, cyfra" Validation="@(new Func<string, string?>(PasswordRules.Validate))" />
+                    </MudItem>
+                }
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="_name" Label="Imię" Required="true" MaxLength="100" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="_surname" Label="Nazwisko" Required="true" MaxLength="100" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="_phone" Label="Telefon" Required="true" MaxLength="20" Placeholder="+48 600 000 000" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="WorkerRole" Label="Role" MultiSelection="true" @bind-SelectedValues="_roles"
+                               ToStringFunc="@(role => Labels.Of(role))" Delimiter=", "
+                               Error="@(_roles.Count == 0)" ErrorText="Wybierz co najmniej jedną rolę."
+                               HelperText="Pracownik może mieć kilka ról">
+                        <MudSelectItem Value="WorkerRole.Courier">@Labels.Of(WorkerRole.Courier)</MudSelectItem>
+                        <MudSelectItem Value="WorkerRole.Admin">@Labels.Of(WorkerRole.Admin)</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="() => Dialog.Cancel()">Anuluj</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="SaveAsync" Disabled="_busy">Zapisz</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private MudForm? _form;
+    private bool _valid;
+    private bool _busy;
+    private string _username = string.Empty;
+    private string _password = string.Empty;
+    private string _name = string.Empty;
+    private string _surname = string.Empty;
+    private string _phone = string.Empty;
+    private IReadOnlyCollection<WorkerRole> _roles = [WorkerRole.Courier];
+
+    [CascadingParameter] private IMudDialogInstance Dialog { get; set; } = default!;
+
+    [Parameter] public WorkerDto? Worker { get; set; }
+
+    protected override void OnInitialized()
+    {
+        if (Worker is not null)
+        {
+            _name = Worker.Name;
+            _surname = Worker.Surname;
+            _phone = Worker.PhoneNumber;
+            _roles = Worker.Roles;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        await _form!.ValidateAsync();
+        if (!_valid || _roles.Count == 0)
+        {
+            return;
+        }
+
+        _busy = true;
+        var result = Worker is null
+            ? await Api.PostAsync<WorkerDto>("api/workers", new CreateWorkerRequest(_username, _password, _name, _surname, _phone, [.. _roles.Order()]))
+            : await Api.PutAsync<WorkerDto>($"api/workers/{Worker.Id}", new UpdateWorkerRequest(_name, _surname, _phone, [.. _roles.Order()]));
+        _busy = false;
+
+        if (Snackbar.Report(result, Worker is null ? "Konto zostało utworzone." : "Zmiany zapisane."))
+        {
+            Dialog.Close(DialogResult.Ok(result.Value));
+        }
+    }
+}

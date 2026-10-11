@@ -28,7 +28,16 @@ a Blazor WebAssembly admin panel and a Blazor PWA for couriers.
   - see it on a Leaflet map with Google Maps navigation links.
 - **Dashboard.** Order counts per status and today's runs.
 
-**Courier app** (phone, installable PWA):
+**Phone app** (installable PWA for workers):
+
+- **Role-based views.** A worker signs in once and lands in the view of their role. A worker with several roles
+  (demo account `kierownik`) switches between them from the app bar without signing in again; each role has its own
+  accent colour. Opening a page of the other role offers a one-tap switch.
+- **Admin view.** Everything the web admin panel does, on the phone: both apps show the same pages from the shared
+  `Kamada.Web.Admin` library, laid out for small screens (cards instead of wide tables, full-screen dialogs, stops
+  reordered with arrows on touch screens). See the [parity checklist](docs/admin-parity.md).
+
+**Courier view** (in the phone app):
 
 - Own runs only: today, upcoming, completed.
 - Stops in the optimized order. Each stop shows the recipient, a `tel:` link, items, notes and the estimated
@@ -63,6 +72,10 @@ a Blazor WebAssembly admin panel and a Blazor PWA for couriers.
 |---|---|
 | ![My runs](docs/images/courier-runs.png) | ![Run details](docs/images/courier-run.png) |
 
+| Phone, admin: dashboard | Phone, admin: order | Phone, admin: run |
+|---|---|---|
+| ![Phone dashboard](docs/images/phone-admin-dashboard.png) | ![Phone order](docs/images/phone-admin-order.png) | ![Phone run](docs/images/phone-admin-run.png) |
+
 ## Quick start
 
 Requirements: Docker.
@@ -74,7 +87,7 @@ docker compose up --build
 | Service | URL |
 |---|---|
 | Admin panel | http://localhost:5081 |
-| Courier app (PWA; use a phone or a narrow window) | http://localhost:5082 |
+| Phone app (PWA; use a phone or a narrow window) | http://localhost:5082 |
 | API docs (Scalar) | http://localhost:5080/scalar |
 | API health | http://localhost:5080/health |
 | Ollama (profile `ai` only) | http://localhost:11434 |
@@ -85,6 +98,7 @@ Demo accounts (seeded in the Development environment):
 |---|---|---|
 | Administrator | `admin` | `Admin123!` |
 | Courier | `kurier1`, `kurier2`, `kurier3` | `Kurier123!` |
+| Administrator + courier (switches roles in the phone app) | `kierownik` | `Kierownik123!` |
 
 ### Demo data
 
@@ -188,7 +202,7 @@ Requirements: .NET SDK 10.0.401+ and Docker (for PostgreSQL and the integration 
 docker compose up -d postgres
 dotnet run --project src/Kamada.Api               # http://localhost:5080
 dotnet run --project src/Web/Kamada.AdminPanel    # http://localhost:5081
-dotnet run --project src/Web/Kamada.CourierApp    # http://localhost:5082
+dotnet run --project src/Web/Kamada.MobileApp     # http://localhost:5082
 ```
 
 The API applies migrations and seeds demo data on startup (`Database:*` in `appsettings.Development.json`).
@@ -256,7 +270,7 @@ contracts: plain interfaces called in-process, sharing one database transaction 
 flowchart LR
     subgraph Browser
         Admin["Admin panel<br/>Blazor WASM + MudBlazor"]
-        CourierApp["Courier PWA<br/>Blazor WASM + MudBlazor"]
+        MobileApp["Phone PWA<br/>Blazor WASM + MudBlazor"]
     end
 
     subgraph Host["Kamada.Api (ASP.NET Core Minimal APIs)"]
@@ -271,7 +285,7 @@ flowchart LR
     end
 
     Admin -- "HTTP/JSON + JWT" --> Host
-    CourierApp -- "HTTP/JSON + JWT" --> Host
+    MobileApp -- "HTTP/JSON + JWT" --> Host
 
     Ordering -- ICatalogInventory --> Catalog
     Ordering -- ICustomerDirectory --> Customers
@@ -303,8 +317,9 @@ src/
     Kamada.Shared.Contracts/        # HTTP DTOs shared by the API and both frontends
   Web/
     Kamada.Web.Shared/              # shared Blazor library: API client, auth, map, labels
-    Kamada.AdminPanel/              # admin SPA
-    Kamada.CourierApp/              # courier PWA
+    Kamada.Web.Admin/               # admin pages and menu, shared by the admin SPA and the phone app
+    Kamada.AdminPanel/              # admin SPA (host: login, layout)
+    Kamada.MobileApp/               # phone PWA for workers (courier and admin views)
 tests/                              # unit tests per module, integration tests, architecture tests
 benchmarks/Kamada.Benchmarks/       # solver speed and heuristic quality
 benchmarks/Kamada.Assistant.Evals/  # order assistant accuracy and latency against a real model

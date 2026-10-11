@@ -5,6 +5,7 @@ WORKDIR /repo
 COPY global.json Directory.Build.props Directory.Packages.props ./
 COPY src/Shared/Kamada.Shared.Contracts/ src/Shared/Kamada.Shared.Contracts/
 COPY src/Web/Kamada.Web.Shared/ src/Web/Kamada.Web.Shared/
+COPY src/Web/Kamada.Web.Admin/ src/Web/Kamada.Web.Admin/
 COPY src/Web/Kamada.AdminPanel/ src/Web/Kamada.AdminPanel/
 RUN dotnet publish src/Web/Kamada.AdminPanel/Kamada.AdminPanel.csproj -c Release -o /app/publish
 

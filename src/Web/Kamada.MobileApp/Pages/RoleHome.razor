@@ -1,0 +1,32 @@
+@page "/"
+@inject RoleContext RoleContext
+@inject NavigationManager Navigation
+
+<PageTitle>KAMADA</PageTitle>
+
+@if (_noView)
+{
+    <MudAlert Severity="Severity.Info">Twoja rola nie ma jeszcze widoku w aplikacji na telefon.</MudAlert>
+}
+else
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+
+@code {
+    private bool _noView;
+
+    /// <summary>The start page is the home of the active role; the role switcher sends the user back here.</summary>
+    protected override async Task OnInitializedAsync()
+    {
+        var role = await RoleContext.LoadAsync();
+        if (role is not null && RoleAreas.HomeOf(role) is { } home)
+        {
+            Navigation.NavigateTo(home, replace: true);
+        }
+        else
+        {
+            _noView = true;
+        }
+    }
+}

@@ -45,6 +45,14 @@ public sealed class LabelsTests
     public void Algorithm_Unknown_IsShownAsIs() =>
         Labels.Algorithm("Quantum").ShouldBe("Quantum");
 
+    [Theory]
+    [InlineData("Admin", "Administrator")]
+    [InlineData("Courier", "Kurier")]
+    [InlineData("Accountant", "Accountant")]
+    [InlineData("1", "1")]
+    public void Role_RoleClaimValue_IsTranslatedWhenKnown(string role, string expected) =>
+        Labels.Role(role).ShouldBe(expected);
+
     [Fact]
     public void Date_DateOnly_UsesPolishFormat() =>
         Labels.Date(new DateOnly(2026, 9, 3)).ShouldBe("03.09.2026");
