@@ -1,0 +1,40 @@
+@page "/seller"
+@attribute [Authorize(Roles = Roles.Seller)]
+@using Kamada.Shared.Contracts.Ordering
+@using Kamada.Web.Admin.Pages.Orders
+
+<PageTitle>Nowe zamówienie – KAMADA</PageTitle>
+
+<MudText Typo="Typo.h5" HtmlTag="h1" Class="mb-3">Nowe zamówienie</MudText>
+
+@if (_placed is { } order)
+{
+    <MudPaper Class="pa-4 mb-4" Elevation="1">
+        <div class="d-flex align-center gap-2 mb-2">
+            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" />
+            <MudText Typo="Typo.h6">Zamówienie #@order.Number złożone</MudText>
+        </div>
+        <MudText Typo="Typo.body2">@order.ShippingAddress.RecipientName · @Labels.Format(order.ShippingAddress)</MudText>
+        <MudText Typo="Typo.body2">Pozycji: <b>@order.Items.Count</b> · razem <b>@Labels.Money(order.TotalAmount)</b></MudText>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" Class="mt-4" StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="StartNew">Przyjmij kolejne zamówienie</MudButton>
+    </MudPaper>
+}
+else
+{
+    @* A new key gives a fresh, empty form for the next order. *@
+    <OrderForm @key="_formKey" OnPlaced="OnPlaced" />
+}
+
+@code {
+    private OrderDto? _placed;
+    private Guid _formKey = Guid.NewGuid();
+
+    private void OnPlaced(OrderDto order) => _placed = order;
+
+    private void StartNew()
+    {
+        _placed = null;
+        _formKey = Guid.NewGuid();
+    }
+}

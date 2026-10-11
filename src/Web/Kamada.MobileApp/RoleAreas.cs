@@ -15,6 +15,7 @@ internal static class RoleAreas
     {
         Roles.Courier => "courier",
         Roles.Admin => "dashboard",
+        Roles.Seller => "seller",
         _ => null,
     };
 
@@ -22,6 +23,7 @@ internal static class RoleAreas
     {
         Roles.Courier => Icons.Material.Filled.LocalShipping,
         Roles.Admin => Icons.Material.Filled.AdminPanelSettings,
+        Roles.Seller => Icons.Material.Filled.PointOfSale,
         _ => Icons.Material.Filled.Badge,
     };
 
