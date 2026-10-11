@@ -3,6 +3,7 @@
 @inject AuthService Auth
 @inject RoleContext RoleContext
 @inject NavigationManager Navigation
+@inject Kamada.Web.Shared.Connectivity.BrowserNetworkEvents NetworkEvents
 
 <MudThemeProvider Theme="MobileTheme.For(RoleContext.ActiveRole)" />
 <MudPopoverProvider />
@@ -44,6 +45,7 @@
         <SellerNavigation />
     }
     <MudMainContent Class="@(IsSeller ? "kamada-with-bottom-nav" : null)">
+        <ConnectionBanner />
         @* Admin pages hold tables and forms, so on a tablet they may use the width; the order form gets a little less, courier pages stay phone-sized. *@
         <MudContainer MaxWidth="@ContainerWidth" Class="py-4 px-3">
             <ErrorBoundary @ref="_errorBoundary">
@@ -100,6 +102,14 @@
     {
         RoleContext.ActiveRoleChanged += OnActiveRoleChanged;
         Navigation.LocationChanged += OnLocationChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await NetworkEvents.StartAsync();
+        }
     }
 
     protected override async Task OnParametersSetAsync()

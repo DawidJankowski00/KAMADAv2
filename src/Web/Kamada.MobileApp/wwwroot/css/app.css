@@ -165,3 +165,25 @@ h1:focus {
     border-color: rgba(255, 255, 255, 0.6);
     white-space: nowrap;
 }
+
+/* Connection banner (ConnectionMonitor): sticks under the app bar while the server is slow or unreachable */
+.kamada-connection-banner {
+    position: sticky;
+    top: 48px; /* the dense app bar */
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 4px 0 12px;
+    font-size: 0.875rem;
+}
+
+    .kamada-connection-banner.poor {
+        background: var(--mud-palette-warning);
+        color: var(--mud-palette-warning-text);
+    }
+
+    .kamada-connection-banner.offline {
+        background: var(--mud-palette-dark);
+        color: var(--mud-palette-dark-text);
+    }

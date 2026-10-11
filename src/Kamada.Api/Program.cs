@@ -10,7 +10,9 @@ using Kamada.Modules.Workforce;
 using Kamada.Shared.Infrastructure.Auth;
 using Kamada.Shared.Infrastructure.Geocoding;
 using Kamada.Shared.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Serilog;
+using Serilog.Events;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,12 +38,16 @@ builder.Services
     .AddAssistantModule(builder.Configuration);
 
 builder.Services.AddHealthChecks()
-    .AddNpgSql(name: "postgres");
+    .AddNpgSql(name: "postgres", tags: [HealthTags.Ping]);
 
 var app = builder.Build();
 
 // Request logging wraps the exception handler, so it records the final status code (not 500 for handled errors).
-app.UseSerilogRequestLogging();
+// Phone pings of /health/ping are not worth an information line each.
+app.UseSerilogRequestLogging(options => options.GetLevel = (context, _, exception) =>
+    exception is not null || context.Response.StatusCode >= 500 ? LogEventLevel.Error
+    : context.Request.Path.StartsWithSegments("/health/ping") ? LogEventLevel.Verbose
+    : LogEventLevel.Information);
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseCors(HostingExtensions.FrontendsCorsPolicy);
@@ -55,6 +61,10 @@ if (!app.Environment.IsProduction())
 }
 
 app.MapHealthChecks("/health").AllowAnonymous();
+
+// Polled by the phone app to judge the connection: only the database, so frequent pings never wake the AI model or OSRM.
+app.MapHealthChecks("/health/ping", new HealthCheckOptions { Predicate = check => check.Tags.Contains(HealthTags.Ping) })
+    .AllowAnonymous();
 
 app.MapWorkforceEndpoints()
     .MapCatalogEndpoints()

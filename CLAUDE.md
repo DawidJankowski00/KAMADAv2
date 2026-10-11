@@ -390,3 +390,8 @@ Record small decisions here (date — decision — reason).
   `Kamada.Web.Admin` (hosted by the admin `NewOrder` page and the seller home; it calls only `SalesAccess` endpoints), the
   seller's details page is read-only. The seller is the first role with a bottom navigation (`SellerNavigation`, fixed,
   `kamada-with-bottom-nav` keeps content clear of it). Role order in the phone app: Seller → Courier → Admin; seller accent teal.
+- 2026-10-11 — Connection quality (stage 5): `ConnectionMonitor` (Web.Shared, singleton) pings `GET /health/ping` (only checks
+  tagged `ping` = the database, so frequent pings never reach Ollama or OSRM; request logs at Verbose) every 30 s, every 10 s
+  while not good. Slower than 2 s or one failed ping → `Poor`, two failed pings in a row or the browser's `offline` event →
+  `Offline`; the browser's `online` event (and the app becoming visible) is confirmed by a ping. `BrowserNetworkEvents` wires the
+  JS events and is started by the phone app's `MainLayout`, which shows `ConnectionBanner` under the app bar.
