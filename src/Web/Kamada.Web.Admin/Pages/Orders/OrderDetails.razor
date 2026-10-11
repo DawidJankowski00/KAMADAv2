@@ -36,21 +36,25 @@ else
                 <MudText Typo="Typo.h6" Class="mb-2">Pozycje</MudText>
                 <MudSimpleTable Dense="true">
                     <thead>
-                        <tr><th>Produkt</th><th>SKU</th><th style="text-align:right">Cena</th><th style="text-align:right">Ilość</th><th style="text-align:right">Wartość</th></tr>
+                        <tr><th>Produkt</th><th class="d-none d-sm-table-cell">SKU</th><th class="d-none d-sm-table-cell" style="text-align:right">Cena</th><th style="text-align:right">Ilość</th><th style="text-align:right">Wartość</th></tr>
                     </thead>
                     <tbody>
                         @foreach (var item in _order.Items)
                         {
                             <tr>
-                                <td>@item.ProductName</td>
-                                <td><code>@item.Sku</code></td>
-                                <td style="text-align:right">@Labels.Money(item.UnitPrice)</td>
+                                <td>
+                                    @item.ProductName
+                                    <MudText Typo="Typo.caption" Class="d-block d-sm-none mud-text-secondary"><code>@item.Sku</code> · @Labels.Money(item.UnitPrice)</MudText>
+                                </td>
+                                <td class="d-none d-sm-table-cell"><code>@item.Sku</code></td>
+                                <td class="d-none d-sm-table-cell" style="text-align:right">@Labels.Money(item.UnitPrice)</td>
                                 <td style="text-align:right">@item.Quantity</td>
-                                <td style="text-align:right">@Labels.Money(item.LineTotal)</td>
+                                <td style="text-align:right; white-space:nowrap">@Labels.Money(item.LineTotal)</td>
                             </tr>
                         }
                         <tr>
-                            <td colspan="4" style="text-align:right"><b>Razem</b></td>
+                            <td colspan="4" class="d-none d-sm-table-cell" style="text-align:right"><b>Razem</b></td>
+                            <td colspan="2" class="d-sm-none" style="text-align:right"><b>Razem</b></td>
                             <td style="text-align:right"><b>@Labels.Money(_order.TotalAmount)</b></td>
                         </tr>
                     </tbody>
@@ -71,15 +75,18 @@ else
                 {
                     <MudSimpleTable Dense="true">
                         <thead>
-                            <tr><th>Metoda</th><th>Transakcja</th><th style="text-align:right">Kwota</th><th>Status</th><th>Data</th><th></th></tr>
+                            <tr><th>Metoda</th><th class="d-none d-sm-table-cell">Transakcja</th><th style="text-align:right">Kwota</th><th>Status</th><th class="d-none d-sm-table-cell">Data</th><th class="d-none d-sm-table-cell"></th></tr>
                         </thead>
                         <tbody>
                             @foreach (var payment in _payments)
                             {
                                 <tr>
-                                    <td>@Labels.Of(payment.Provider)</td>
-                                    <td><code>@payment.TransactionId</code></td>
-                                    <td style="text-align:right">@Labels.Money(payment.Amount)</td>
+                                    <td>
+                                        @Labels.Of(payment.Provider)
+                                        <MudText Typo="Typo.caption" Class="d-block d-sm-none mud-text-secondary">@Labels.DateTime(payment.PaidAt ?? payment.CreatedAt)</MudText>
+                                    </td>
+                                    <td class="d-none d-sm-table-cell"><code>@payment.TransactionId</code></td>
+                                    <td style="text-align:right; white-space:nowrap">@Labels.Money(payment.Amount)</td>
                                     <td>
                                         <MudChip T="string" Size="Size.Small" Color="Labels.ColorOf(payment.Status)">@Labels.Of(payment.Status)</MudChip>
                                         @if (payment.FailureReason is not null)
@@ -87,19 +94,16 @@ else
                                             <MudText Typo="Typo.caption" Class="mud-text-secondary">@payment.FailureReason</MudText>
                                         }
                                     </td>
-                                    <td>@Labels.DateTime(payment.PaidAt ?? payment.CreatedAt)</td>
-                                    <td style="white-space:nowrap">
-                                        @if (payment is { Status: PaymentStatus.Pending, Provider: PaymentProvider.Transfer })
-                                        {
-                                            <MudButton Size="Size.Small" Color="Color.Success" OnClick="@(() => PaymentActionAsync(payment, "confirm", "Przelew potwierdzony."))">Potwierdź wpływ</MudButton>
-                                            <MudButton Size="Size.Small" Color="Color.Error" OnClick="@(() => PaymentActionAsync(payment, "reject", "Przelew odrzucony."))">Odrzuć</MudButton>
-                                        }
-                                        @if (payment.Status == PaymentStatus.Completed && _order.Status == OrderStatus.Cancelled)
-                                        {
-                                            <MudButton Size="Size.Small" Color="Color.Warning" OnClick="@(() => PaymentActionAsync(payment, "refund", "Płatność zwrócona."))">Zwróć</MudButton>
-                                        }
-                                    </td>
+                                    <td class="d-none d-sm-table-cell">@Labels.DateTime(payment.PaidAt ?? payment.CreatedAt)</td>
+                                    <td class="d-none d-sm-table-cell" style="white-space:nowrap">@PaymentActions(payment)</td>
                                 </tr>
+                                @* On a phone the actions get their own row instead of a sixth column. *@
+                                @if (HasPaymentActions(payment))
+                                {
+                                    <tr class="d-sm-none">
+                                        <td colspan="3" style="text-align:right">@PaymentActions(payment)</td>
+                                    </tr>
+                                }
                             }
                         </tbody>
                     </MudSimpleTable>
@@ -135,6 +139,23 @@ else
     private List<BreadcrumbItem> _breadcrumbs = [];
 
     [Parameter] public Guid Id { get; set; }
+
+    private bool HasPaymentActions(PaymentDto payment) =>
+        payment is { Status: PaymentStatus.Pending, Provider: PaymentProvider.Transfer }
+        || (payment.Status == PaymentStatus.Completed && _order?.Status == OrderStatus.Cancelled);
+
+    private RenderFragment PaymentActions(PaymentDto payment) =>
+        @<text>
+            @if (payment is { Status: PaymentStatus.Pending, Provider: PaymentProvider.Transfer })
+            {
+                <MudButton Size="Size.Small" Color="Color.Success" OnClick="@(() => PaymentActionAsync(payment, "confirm", "Przelew potwierdzony."))">Potwierdź wpływ</MudButton>
+                <MudButton Size="Size.Small" Color="Color.Error" OnClick="@(() => PaymentActionAsync(payment, "reject", "Przelew odrzucony."))">Odrzuć</MudButton>
+            }
+            @if (payment.Status == PaymentStatus.Completed && _order?.Status == OrderStatus.Cancelled)
+            {
+                <MudButton Size="Size.Small" Color="Color.Warning" OnClick="@(() => PaymentActionAsync(payment, "refund", "Płatność zwrócona."))">Zwróć</MudButton>
+            }
+        </text>;
 
     private bool CanPay =>
         _order?.Status == OrderStatus.New

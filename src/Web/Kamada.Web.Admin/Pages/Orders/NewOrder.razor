@@ -139,7 +139,7 @@
             {
                 <MudSimpleTable Dense="true" Class="mt-4">
                     <thead>
-                        <tr><th>Produkt</th><th style="text-align:right">Cena</th><th style="width:130px">Ilość</th><th style="text-align:right">Wartość</th><th></th></tr>
+                        <tr><th>Produkt</th><th class="d-none d-sm-table-cell" style="text-align:right">Cena</th><th style="width:130px">Ilość</th><th class="d-none d-sm-table-cell" style="text-align:right">Wartość</th><th></th></tr>
                     </thead>
                     <tbody>
                         @foreach (var line in _lines)
@@ -172,13 +172,19 @@
                                                          Label="@($"Nie znaleziono „{line.SpokenText}” – wyszukaj produkt")" ErrorText="Wybierz produkt"
                                                          DebounceInterval="300" MinCharacters="1" Dense="true" />
                                     }
+                                    @if (line.Product is not null)
+                                    {
+                                        <MudText Typo="Typo.caption" Class="d-block d-sm-none mud-text-secondary">
+                                            @Labels.Money(line.Product.Price) · razem <b>@Labels.Money(line.Product.Price * line.Quantity)</b>
+                                        </MudText>
+                                    }
                                 </td>
-                                <td style="text-align:right">@(line.Product is null ? "—" : Labels.Money(line.Product.Price))</td>
+                                <td class="d-none d-sm-table-cell" style="text-align:right">@(line.Product is null ? "—" : Labels.Money(line.Product.Price))</td>
                                 <td>
                                     <MudNumericField @bind-Value="line.Quantity" Min="1" Max="10000" Variant="Variant.Text" Margin="Margin.Dense"
                                                      Error="@(line.Product is not null && line.Quantity > line.Product.Stock)" ErrorText="@($"Dostępne: {line.Product?.Stock}")" />
                                 </td>
-                                <td style="text-align:right">@(line.Product is null ? "—" : Labels.Money(line.Product.Price * line.Quantity))</td>
+                                <td class="d-none d-sm-table-cell" style="text-align:right">@(line.Product is null ? "—" : Labels.Money(line.Product.Price * line.Quantity))</td>
                                 <td><MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" OnClick="() => _lines.Remove(line)" /></td>
                             </tr>
                         }

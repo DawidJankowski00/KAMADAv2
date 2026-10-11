@@ -54,7 +54,7 @@
         <MudTd DataLabel="Data">@Labels.DateTime(context.CreatedAt)</MudTd>
         <MudTd DataLabel="Odbiorca">@context.RecipientName</MudTd>
         <MudTd DataLabel="Miasto">@context.City</MudTd>
-        <MudTd DataLabel="Pozycje">@context.ItemCount</MudTd>
+        <MudTd DataLabel="Pozycje" HideSmall="true">@context.ItemCount</MudTd>
         <MudTd DataLabel="Wartość" Style="text-align:right">@Labels.Money(context.TotalAmount)</MudTd>
         <MudTd DataLabel="Status"><OrderStatusChip Status="context.Status" /></MudTd>
     </RowTemplate>

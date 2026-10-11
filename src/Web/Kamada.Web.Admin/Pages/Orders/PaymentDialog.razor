@@ -1,7 +1,7 @@
 @inject ApiClient Api
 @inject ISnackbar Snackbar
 
-<MudDialog>
+<MudDialog Class="kamada-dialog-phone-fullscreen">
     <DialogContent>
         <MudText Typo="Typo.body1" Class="mb-3">Kwota do zapłaty: <b>@Labels.Money(Order.TotalAmount)</b></MudText>
         <MudRadioGroup T="PaymentProvider" @bind-Value="_provider">

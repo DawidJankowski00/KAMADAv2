@@ -371,3 +371,7 @@ Record small decisions here (date — decision — reason).
 - 2026-10-11 — Phone admin area: the phone app routes the `Kamada.Web.Admin` pages too (same URLs as the web panel, the admin home
   is `/dashboard`; the `/admin` placeholder is gone). With the Admin role active the layout adds a menu button and a temporary
   drawer with `AdminNavMenu` (closed after each navigation) and widens the container to `MaxWidth.Large` for tablets.
+- 2026-10-11 — Admin pages on a phone (below MudBlazor's `sm`, 600 px): form dialogs get `<MudDialog Class="kamada-dialog-phone-fullscreen">`
+  (CSS in `kamada-admin.css`, so it follows rotation without a breakpoint service); `MudTable` lists use their built-in card mode
+  with `HideSmall` on secondary columns; `MudSimpleTable`s hide secondary columns (`d-none d-sm-table-cell`) and repeat the
+  essentials under the main cell (`d-sm-none`). Desktop width is unchanged.
