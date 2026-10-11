@@ -9,14 +9,12 @@ public static class LocalModels
 {
     public static readonly IReadOnlyList<LocalModel> Language =
     [
+        new("Qwen3-1.7B-q4f16_1-MLC", LocalModelKind.Language, "Qwen 3 1,7B",
+            "Najdokładniejszy z dostępnych, wymaga ok. 2 GB pamięci karty graficznej.", 945),
+        new("Qwen3-0.6B-q4f16_1-MLC", LocalModelKind.Language, "Qwen 3 0,6B (lekki)",
+            "Mały i szybki dla słabszych telefonów, ale dokładność jest niższa.", 340),
         new("Qwen2.5-1.5B-Instruct-q4f16_1-MLC", LocalModelKind.Language, "Qwen 2.5 1,5B",
-            "Dokładniejszy, wymaga ok. 2 GB pamięci karty graficznej.", 850),
-        new("Qwen2.5-0.5B-Instruct-q4f16_1-MLC", LocalModelKind.Language, "Qwen 2.5 0,5B (lekki)",
-            "Najmniejszy: szybki i oszczędny, ale częściej się myli.", 285),
-        new("Llama-3.2-1B-Instruct-q4f16_1-MLC", LocalModelKind.Language, "Llama 3.2 1B",
-            "Średni rozmiar, słabszy w języku polskim.", 680),
-        new("gemma3-1b-it-q4f16_1-MLC", LocalModelKind.Language, "Gemma 3 1B",
-            "Średni rozmiar, dobry w języku polskim.", 585),
+            "Starszy model o podobnym rozmiarze.", 850),
     ];
 
     public static readonly IReadOnlyList<LocalModel> Speech =

@@ -13,6 +13,8 @@ const state = {
     asr: null,
     sttId: null,
     sttDevice: null,
+    lastAnswer: null,
+    lastFinish: null,
 };
 
 /** @param {{ vendorUrl: string, modelsUrl: string }} config base URLs ending with "/"; relative ones are resolved against the page */
@@ -141,8 +143,12 @@ export async function extract(messages, schema) {
             temperature: 0,
             max_tokens: 800,
             response_format: { type: "json_object", schema },
+            // Qwen 3 reasons before answering unless told not to: hundreds of tokens we do not need.
+            ...(state.llmId?.startsWith("Qwen3") ? { extra_body: { enable_thinking: false } } : {}),
         });
-        return reply.choices[0]?.message?.content ?? "";
+        state.lastAnswer = reply.choices[0]?.message?.content ?? "";
+        state.lastFinish = reply.choices[0]?.finish_reason ?? null;
+        return state.lastAnswer;
     } catch (error) {
         // A lost GPU device (memory pressure, driver reset) leaves the engine unusable: drop it so the next call reloads it.
         state.engine = null;
@@ -269,4 +275,9 @@ export async function transcribe(wav, language) {
 export async function unloadAll() {
     await unloadLlm();
     await unloadStt();
+}
+
+/** The raw answer of the last extraction and why generation stopped – for the accuracy page and debugging. */
+export function lastExtraction() {
+    return { answer: state.lastAnswer, finish: state.lastFinish };
 }

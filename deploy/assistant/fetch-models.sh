@@ -51,10 +51,9 @@ stt() { # repo revision
 
 for model in $MODELS; do
     case "$model" in
-        Qwen2.5-0.5B-Instruct-q4f16_1-MLC) llm "$model" Qwen2-0.5B-Instruct-q4f16_1_cs1k-webgpu.wasm 32ff081fe7e4dfe4ffb167b94c66fdf11e02b8ad ;;
         Qwen2.5-1.5B-Instruct-q4f16_1-MLC) llm "$model" Qwen2-1.5B-Instruct-q4f16_1_cs1k-webgpu.wasm 9bd564b064631febf14deadcac492efb761d60c3 ;;
-        Llama-3.2-1B-Instruct-q4f16_1-MLC) llm "$model" Llama-3.2-1B-Instruct-q4f16_1_cs1k-webgpu.wasm 2a37b0a5ecb622d51ddc2fac74de0b95872affd7 ;;
-        gemma3-1b-it-q4f16_1-MLC) llm "$model" gemma3-1b-it-q4f16_1_cs1k-webgpu.wasm 0f6103ed635931ff91a95db543365f0a77cbfb7d ;;
+        Qwen3-1.7B-q4f16_1-MLC) llm "$model" Qwen3-1.7B-q4f16_1_cs1k-webgpu.wasm 80b3abcec6c3b3f5355dc0cc99cc4fb578f192bc ;;
+        Qwen3-0.6B-q4f16_1-MLC) llm "$model" Qwen3-0.6B-q4f16_1_cs1k-webgpu.wasm 8c14ce481d4c692769976ad52afea453a102df19 ;;
         onnx-community/whisper-tiny) stt "$model" ff4177021cc41f7db950912b73ea4fdf7d01d8e7 ;;
         onnx-community/whisper-base) stt "$model" 1846881b6b3a3024392c1eea3ad983695bc23925 ;;
         onnx-community/whisper-small) stt "$model" 36050c46d777d46dc4b5f43f6d90574fc38f8732 ;;
