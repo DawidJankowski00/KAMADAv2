@@ -443,3 +443,9 @@ Record small decisions here (date — decision — reason).
 - 2026-10-11 — Accuracy page `/settings/assistant/eval` runs the server evals' `cases.json` (embedded resource) through
   `LocalOrderAssistant` with the same scoring rules (`AssistantEvalScorer`, duplicated from the evals project on purpose: that one
   reads `ClientDto`, this one `ClientLookupDto`) and copies a Markdown result.
+- 2026-10-11 — On-device models (measured on a desktop GPU, `docs/on-device-assistant.md`): default Qwen 3 1.7B (thinking off through
+  `extra_body.enable_thinking`, 50% of the 40 notes fully right) + Whisper base, lite Qwen 3 0.6B + Whisper tiny; Qwen 2.5 0.5B, Llama 3.2
+  1B and Gemma 3 1B (garbage output with WebLLM 0.2.86) are not offered. Phone numbers are still to be taken. `LlmOrderResponse` also moves
+  numbers the model put in the wrong address field (street "X 70", building "50/59") and ignores a leading `<think>` block – small
+  models need both, the server benefits too. A failed extraction drops the WebLLM engine (lost GPU device) and the assistant reloads
+  once; `AssistantPanel` re-reads the status when `OfflineLookup` changes, because the local assistant depends on it.
