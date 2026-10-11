@@ -52,7 +52,7 @@ public sealed class WorkerManagementTests(KamadaApiFactory factory)
         created.IsActive.ShouldBeTrue();
 
         var tokens = await factory.CreateClient().LoginAsync(request.Username, request.Password);
-        tokens.User.Role.ShouldBe(Roles.Courier);
+        tokens.User.Roles.ShouldBe([Roles.Courier]);
     }
 
     [Fact]

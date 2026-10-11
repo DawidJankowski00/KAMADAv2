@@ -36,7 +36,7 @@ internal sealed class JwtTokenService(IOptions<JwtOptions> options, TimeProvider
                 new Claim(KamadaClaimTypes.Name, worker.Username),
                 new Claim(KamadaClaimTypes.GivenName, worker.Name),
                 new Claim(KamadaClaimTypes.FamilyName, worker.Surname),
-                new Claim(KamadaClaimTypes.Role, worker.Roles[0].ToRoleName()),
+                .. worker.Roles.Select(role => new Claim(KamadaClaimTypes.Role, role.ToRoleName())),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             ]),
             SigningCredentials = new SigningCredentials(

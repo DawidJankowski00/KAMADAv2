@@ -19,7 +19,7 @@ internal static class WorkerMappings
         worker.CreatedAt);
 
     public static AuthenticatedUserDto ToAuthenticatedUser(this Worker worker) =>
-        new(worker.Id, worker.Username, worker.Name, worker.Surname, worker.Roles[0].ToRoleName());
+        new(worker.Id, worker.Username, worker.Name, worker.Surname, [.. worker.Roles.Select(r => r.ToRoleName())]);
 
     public static ContractRole ToContract(this DomainRole role) => role switch
     {

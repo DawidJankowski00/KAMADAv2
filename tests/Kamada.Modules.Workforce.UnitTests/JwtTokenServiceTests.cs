@@ -39,6 +39,17 @@ public sealed class JwtTokenServiceTests
     }
 
     [Fact]
+    public void CreateAccessToken_SeveralRoles_ContainsOneRoleClaimPerRole()
+    {
+        var worker = Worker.Create("anna", "hash", "Anna", "Nowak", "+48 600 000 000", [WorkerRole.Courier, WorkerRole.Admin]).Value;
+
+        var accessToken = CreateService().CreateAccessToken(worker);
+
+        var jwt = new JsonWebToken(accessToken.Token);
+        jwt.Claims.Where(c => c.Type == KamadaClaimTypes.Role).Select(c => c.Value).ShouldBe(["Admin", "Courier"]);
+    }
+
+    [Fact]
     public void GenerateRefreshToken_ReturnsUniqueTokenWithMatchingHash()
     {
         var service = CreateService();

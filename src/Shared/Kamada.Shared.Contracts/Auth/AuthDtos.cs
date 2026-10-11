@@ -6,7 +6,8 @@ public sealed record RefreshTokenRequest(string RefreshToken);
 
 public sealed record LogoutRequest(string RefreshToken);
 
-public sealed record AuthenticatedUserDto(Guid Id, string Username, string Name, string Surname, string Role);
+/// <param name="Roles">Every role of the worker (role names from <see cref="Kamada.Shared.Contracts.Auth.Roles"/>).</param>
+public sealed record AuthenticatedUserDto(Guid Id, string Username, string Name, string Surname, IReadOnlyList<string> Roles);
 
 public sealed record TokenResponse(
     string AccessToken,

@@ -25,6 +25,12 @@ public sealed class TokenStore(IJSRuntime js, KamadaClientOptions options)
         {
             var json = await js.InvokeAsync<string?>("localStorage.getItem", options.StorageKey);
             _session = string.IsNullOrEmpty(json) ? null : JsonSerializer.Deserialize<TokenResponse>(json, KamadaJson.Options);
+
+            // Sessions saved before workers had several roles carry a single "role"; such a user signs in again.
+            if (_session?.User.Roles is null)
+            {
+                _session = null;
+            }
         }
         catch (Exception ex) when (ex is JSException or JsonException)
         {

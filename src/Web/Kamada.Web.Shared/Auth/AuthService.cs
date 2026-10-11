@@ -46,7 +46,7 @@ public sealed class AuthService(IHttpClientFactory httpClientFactory, TokenStore
             return ApiResult<AuthenticatedUserDto>.Fail(ApiProblem.Network);
         }
 
-        if (tokens.User.Role != options.RequiredRole)
+        if (!tokens.User.Roles.Contains(options.RequiredRole))
         {
             await RevokeAsync(tokens, cancellationToken);
             return ApiResult<AuthenticatedUserDto>.Fail(new ApiProblem(403, "To konto nie ma dostępu do tej aplikacji."));
