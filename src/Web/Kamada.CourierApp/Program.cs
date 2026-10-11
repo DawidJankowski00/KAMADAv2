@@ -12,7 +12,7 @@ var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? builder.HostEnvironment.
 builder.Services.AddKamadaClient(new KamadaClientOptions
 {
     ApiBaseUrl = new Uri(apiBaseUrl.EndsWith('/') ? apiBaseUrl : apiBaseUrl + "/"),
-    RequiredRole = Roles.Courier,
+    AllowedRoles = [Roles.Courier],
     StorageKey = "kamada.courier.session",
     SnackbarPosition = MudBlazor.Defaults.Classes.Position.TopCenter,
 });

@@ -46,7 +46,7 @@ public sealed class AuthService(IHttpClientFactory httpClientFactory, TokenStore
             return ApiResult<AuthenticatedUserDto>.Fail(ApiProblem.Network);
         }
 
-        if (!tokens.User.Roles.Contains(options.RequiredRole))
+        if (!HasAccess(tokens.User))
         {
             await RevokeAsync(tokens, cancellationToken);
             return ApiResult<AuthenticatedUserDto>.Fail(new ApiProblem(403, "To konto nie ma dostępu do tej aplikacji."));
@@ -110,7 +110,21 @@ public sealed class AuthService(IHttpClientFactory httpClientFactory, TokenStore
                 if (response.IsSuccessStatusCode)
                 {
                     var tokens = (await response.Content.ReadFromJsonAsync<TokenResponse>(KamadaJson.Options, cancellationToken))!;
+                    if (!HasAccess(tokens.User))
+                    {
+                        // An administrator took away every role this app accepts.
+                        await RevokeAsync(tokens, cancellationToken);
+                        await store.ClearAsync();
+                        SessionChanged?.Invoke();
+                        return null;
+                    }
+
                     await store.SetAsync(tokens);
+                    if (!tokens.User.Roles.SequenceEqual(session.User.Roles))
+                    {
+                        SessionChanged?.Invoke();
+                    }
+
                     return tokens.AccessToken;
                 }
             }
@@ -131,6 +145,8 @@ public sealed class AuthService(IHttpClientFactory httpClientFactory, TokenStore
     }
 
     public void Dispose() => _refreshLock.Dispose();
+
+    private bool HasAccess(AuthenticatedUserDto user) => user.Roles.Any(options.AllowedRoles.Contains);
 
     private async Task RevokeAsync(TokenResponse session, CancellationToken cancellationToken)
     {
