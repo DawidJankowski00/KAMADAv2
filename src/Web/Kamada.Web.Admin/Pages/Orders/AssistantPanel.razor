@@ -3,6 +3,7 @@
 @using Kamada.Web.Shared.Assistant
 @using Kamada.Web.Shared.Audio
 @using Kamada.Web.Shared.Connectivity
+@using Kamada.Web.Shared.Offline
 @using Microsoft.Extensions.DependencyInjection
 @implements IDisposable
 @inject IOrderAssistant Assistant
@@ -72,6 +73,7 @@
     private AssistantStatusDto? _status;
     private RoutingOrderAssistant? _routing;
     private LocalAssistantSettings? _settings;
+    private OfflineLookup? _lookup;
     private string _text = string.Empty;
     private string _language = "auto";
     private string? _transcriptHint;
@@ -88,7 +90,13 @@
         // Only the phone app has the routing assistant (server or device); the web panel always uses the server.
         _routing = Services.GetService<RoutingOrderAssistant>();
         _settings = Services.GetService<LocalAssistantSettings>();
+        _lookup = Services.GetService<OfflineLookup>();
         Monitor.QualityChanged += OnQualityChanged;
+        if (_lookup is not null)
+        {
+            _lookup.Changed += OnLookupChanged;
+        }
+
         if (_routing is not null)
         {
             _routing.LocationChanged += OnLocationChanged;
@@ -117,6 +125,13 @@
     });
 
     private void OnLocationChanged() => InvokeAsync(StateHasChanged);
+
+    /// <summary>The phone's copy of clients and products arrives (or is wiped) after the panel was created: the on-device assistant depends on it.</summary>
+    private void OnLookupChanged() => InvokeAsync(async () =>
+    {
+        await LoadStatusAsync();
+        StateHasChanged();
+    });
 
     /// <summary>The speech model is downloaded on the server's first start: enable dictation as soon as it is ready.</summary>
     private async Task RefreshUntilSpeechIsReadyAsync(CancellationToken cancellationToken)
@@ -178,6 +193,11 @@
     public void Dispose()
     {
         Monitor.QualityChanged -= OnQualityChanged;
+        if (_lookup is not null)
+        {
+            _lookup.Changed -= OnLookupChanged;
+        }
+
         if (_routing is not null)
         {
             _routing.LocationChanged -= OnLocationChanged;
