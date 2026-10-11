@@ -54,6 +54,10 @@ namespace Kamada.Modules.Ordering.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("placed_by_worker_id");
 
+                    b.Property<Guid?>("RequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("request_id");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
@@ -148,6 +152,10 @@ namespace Kamada.Modules.Ordering.Infrastructure.Persistence.Migrations
                     b.HasIndex("Number")
                         .IsUnique()
                         .HasDatabaseName("ix_orders_number");
+
+                    b.HasIndex("RequestId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_orders_request_id");
 
                     b.HasIndex("PlacedByWorkerId", "CreatedAt")
                         .HasDatabaseName("ix_orders_placed_by_worker_id_created_at");

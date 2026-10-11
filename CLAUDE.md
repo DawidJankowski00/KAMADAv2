@@ -395,3 +395,10 @@ Record small decisions here (date — decision — reason).
   while not good. Slower than 2 s or one failed ping → `Poor`, two failed pings in a row or the browser's `offline` event →
   `Offline`; the browser's `online` event (and the app becoming visible) is confirmed by a ping. `BrowserNetworkEvents` wires the
   JS events and is started by the phone app's `MainLayout`, which shows `ConnectionBanner` under the app bar.
+- 2026-10-11 — Idempotent creates: `PlaceOrderRequest`, `CreateClientRequest` and `AddressRequest` take an optional client-generated
+  `RequestId`, stored in `request_id` (unique index per table: orders, clients, addresses). A request whose id was already used
+  answers with the resource created the first time (same status code, no validation of the repeated body); the id used for
+  another client's address or by another worker's order is `409 Requests.IdReused`. A race of identical retries is caught as a
+  unique violation (`DbUpdateExceptionExtensions.IsUniqueViolation`, not by index name: Postgres may report the username index
+  first) and answered with the winner; for orders the loser may instead hit the product's `xmin` (409 `Concurrency.Conflict`)
+  and gets the order on its next retry. Addresses created together with a client ignore their own `RequestId`.

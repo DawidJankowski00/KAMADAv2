@@ -39,6 +39,9 @@ internal sealed class Address : Entity, IAuditable
 
     public bool IsArchived { get; private set; }
 
+    /// <summary>Id the creating request carried (idempotent retries), if any.</summary>
+    public Guid? RequestId { get; private set; }
+
     public DateTimeOffset CreatedAt { get; private set; }
 
     public DateTimeOffset? UpdatedAt { get; private set; }
@@ -47,9 +50,9 @@ internal sealed class Address : Entity, IAuditable
 
     public AddressDetails Details => new(Type, Street, BuildingNumber, ApartmentNumber, City, PostalCode, Country);
 
-    internal static Address Create(Guid clientId, AddressDetails details)
+    internal static Address Create(Guid clientId, AddressDetails details, Guid? requestId = null)
     {
-        var address = new Address(Guid.CreateVersion7(), clientId);
+        var address = new Address(Guid.CreateVersion7(), clientId) { RequestId = requestId };
         address.Apply(details);
         return address;
     }

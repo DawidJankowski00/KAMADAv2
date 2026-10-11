@@ -87,6 +87,10 @@ namespace Kamada.Modules.Customers.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(10)")
                         .HasColumnName("postal_code");
 
+                    b.Property<Guid?>("RequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("request_id");
+
                     b.Property<string>("Street")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -114,6 +118,10 @@ namespace Kamada.Modules.Customers.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("ClientId")
                         .HasDatabaseName("ix_addresses_client_id");
+
+                    b.HasIndex("RequestId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_addresses_request_id");
 
                     b.ToTable("addresses", "customers", t =>
                         {
@@ -153,6 +161,10 @@ namespace Kamada.Modules.Customers.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("phone_number");
 
+                    b.Property<Guid?>("RequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("request_id");
+
                     b.Property<string>("Surname")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -181,6 +193,10 @@ namespace Kamada.Modules.Customers.Infrastructure.Persistence.Migrations
                     b.HasIndex("Email")
                         .IsUnique()
                         .HasDatabaseName("ix_clients_email");
+
+                    b.HasIndex("RequestId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_clients_request_id");
 
                     b.HasIndex("Username")
                         .IsUnique()

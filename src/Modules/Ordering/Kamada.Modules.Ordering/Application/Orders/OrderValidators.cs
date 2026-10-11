@@ -20,6 +20,7 @@ internal sealed class PlaceOrderRequestValidator : AbstractValidator<PlaceOrderR
             item.RuleFor(i => i.Quantity).InclusiveBetween(1, MaxQuantityPerLine);
         });
         RuleFor(r => r.Notes).MaximumLength(1000);
+        RuleFor(r => r.RequestId).NotEqual(Guid.Empty);
     }
 }
 

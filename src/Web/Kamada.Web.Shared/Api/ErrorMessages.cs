@@ -10,6 +10,7 @@ public static class ErrorMessages
         ["Auth.InvalidCredentials"] = "Nieprawidłowy login lub hasło.",
         ["Auth.InvalidRefreshToken"] = "Sesja wygasła. Zaloguj się ponownie.",
         ["Concurrency.Conflict"] = "Dane zostały w międzyczasie zmienione przez kogoś innego. Odśwież i spróbuj ponownie.",
+        ["Requests.IdReused"] = "Tego identyfikatora żądania użyto już dla innej operacji.",
         ["Workers.UsernameTaken"] = "Pracownik o takim loginie już istnieje.",
         ["Workers.CannotDeactivateSelf"] = "Nie możesz dezaktywować własnego konta.",
         ["Workers.CannotRemoveOwnAdminRole"] = "Nie możesz odebrać sobie roli administratora.",

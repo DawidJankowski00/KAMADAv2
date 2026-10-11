@@ -17,6 +17,7 @@ internal sealed class ClientConfiguration : IEntityTypeConfiguration<Client>
         builder.HasIndex(c => c.Username).IsUnique();
         builder.Property(c => c.Email).HasMaxLength(CustomerRules.EmailMaxLength).IsRequired();
         builder.HasIndex(c => c.Email).IsUnique();
+        builder.HasIndex(c => c.RequestId).IsUnique();
         builder.Property(c => c.Name).HasMaxLength(CustomerRules.NameMaxLength).IsRequired();
         builder.Property(c => c.Surname).HasMaxLength(CustomerRules.NameMaxLength).IsRequired();
         builder.Property(c => c.PhoneNumber).HasMaxLength(CustomerRules.PhoneNumberMaxLength).IsRequired();
@@ -50,6 +51,7 @@ internal sealed class AddressConfiguration : IEntityTypeConfiguration<Address>
         builder.Property(a => a.PostalCode).HasMaxLength(CustomerRules.PostalCodeMaxLength).IsRequired();
         builder.Property(a => a.Country).HasMaxLength(CustomerRules.CountryMaxLength).IsRequired();
         builder.Property(a => a.CoordinatesSource).HasConversion<string>().HasMaxLength(20);
+        builder.HasIndex(a => a.RequestId).IsUnique();
 
         builder.Ignore(a => a.Location);
         builder.Ignore(a => a.Details);

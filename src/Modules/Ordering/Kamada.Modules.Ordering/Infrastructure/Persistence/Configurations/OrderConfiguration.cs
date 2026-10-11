@@ -21,6 +21,7 @@ internal sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.HasIndex(o => o.ClientId);
         builder.HasIndex(o => new { o.PlacedByWorkerId, o.CreatedAt });
         builder.HasIndex(o => new { o.Status, o.CreatedAt });
+        builder.HasIndex(o => o.RequestId).IsUnique();
 
         // Snapshot stored in the orders row: shipping_address_id (diagram column) + shipping_* copies.
         builder.ComplexProperty(o => o.ShippingAddress, address =>

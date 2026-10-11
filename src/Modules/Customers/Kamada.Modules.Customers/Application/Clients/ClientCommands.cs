@@ -1,6 +1,7 @@
 using Kamada.Modules.Customers.Application.Abstractions;
 using Kamada.Modules.Customers.Domain.Clients;
 using Kamada.Shared.Contracts.Customers;
+using Kamada.Shared.Infrastructure.Persistence;
 using Kamada.Shared.Kernel.Geography;
 using Kamada.Shared.Kernel.Results;
 using Microsoft.EntityFrameworkCore;
@@ -11,13 +12,19 @@ internal sealed class ClientCommands(ICustomersDbContext db, AddressGeocoder geo
 {
     public async Task<Result<ClientDto>> CreateAsync(CreateClientRequest request, CancellationToken cancellationToken)
     {
+        // A retry of a create that already succeeded (checked first: the username is "taken" by that very client).
+        if (request.RequestId is { } requestId && await FindByRequestIdAsync(requestId, cancellationToken) is { } created)
+        {
+            return created.ToDto();
+        }
+
         var uniqueness = await CheckUniqueAsync(null, request.Username, request.Email, cancellationToken);
         if (uniqueness.IsFailure)
         {
             return uniqueness.Error;
         }
 
-        var client = Client.Create(request.Username, request.Email, request.Name, request.Surname, request.PhoneNumber);
+        var client = Client.Create(request.Username, request.Email, request.Name, request.Surname, request.PhoneNumber, request.RequestId);
         foreach (var addressRequest in request.Addresses ?? [])
         {
             var address = client.AddAddress(addressRequest.ToDomain());
@@ -25,7 +32,22 @@ internal sealed class ClientCommands(ICustomersDbContext db, AddressGeocoder geo
         }
 
         db.Clients.Add(client);
-        await db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (request.RequestId is not null && ex.IsUniqueViolation())
+        {
+            // An identical retry raced this one and was saved first; otherwise it is a real conflict.
+            var savedFirst = await FindByRequestIdAsync(request.RequestId.Value, cancellationToken);
+            if (savedFirst is null)
+            {
+                throw;
+            }
+
+            return savedFirst.ToDto();
+        }
+
         return client.ToDto();
     }
 
@@ -64,18 +86,37 @@ internal sealed class ClientCommands(ICustomersDbContext db, AddressGeocoder geo
 
     public async Task<Result<AddressDto>> AddAddressAsync(Guid clientId, AddressRequest request, CancellationToken cancellationToken)
     {
+        if (request.RequestId is { } requestId && await FindAddressByRequestIdAsync(requestId, cancellationToken) is { } created)
+        {
+            return created.ClientId == clientId ? created.ToDto() : RequestErrors.IdReused;
+        }
+
         var client = await LoadAsync(clientId, cancellationToken);
         if (client is null)
         {
             return ClientErrors.NotFound;
         }
 
-        var address = client.AddAddress(request.ToDomain());
+        var address = client.AddAddress(request.ToDomain(), request.RequestId);
         await geocoder.TryGeocodeAsync(address, cancellationToken);
 
         // Adding to a tracked collection: tell EF the address is new (its key is client-generated).
         db.Addresses.Add(address);
-        await db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (request.RequestId is not null && ex.IsUniqueViolation())
+        {
+            var savedFirst = await FindAddressByRequestIdAsync(request.RequestId.Value, cancellationToken);
+            if (savedFirst is null)
+            {
+                throw;
+            }
+
+            return savedFirst.ClientId == clientId ? savedFirst.ToDto() : RequestErrors.IdReused;
+        }
+
         return address.ToDto();
     }
 
@@ -153,6 +194,13 @@ internal sealed class ClientCommands(ICustomersDbContext db, AddressGeocoder geo
 
     private Task<Client?> LoadAsync(Guid id, CancellationToken cancellationToken) =>
         db.Clients.Include(c => c.Addresses).SingleOrDefaultAsync(c => c.Id == id, cancellationToken);
+
+    // Not tracked: after a failed save the context still tracks the rejected entity.
+    private Task<Client?> FindByRequestIdAsync(Guid requestId, CancellationToken cancellationToken) =>
+        db.Clients.AsNoTracking().Include(c => c.Addresses).SingleOrDefaultAsync(c => c.RequestId == requestId, cancellationToken);
+
+    private Task<Address?> FindAddressByRequestIdAsync(Guid requestId, CancellationToken cancellationToken) =>
+        db.Addresses.AsNoTracking().SingleOrDefaultAsync(a => a.RequestId == requestId, cancellationToken);
 
     private async Task<Result> ModifyAsync(Guid id, Func<Client, Result> change, CancellationToken cancellationToken)
     {
