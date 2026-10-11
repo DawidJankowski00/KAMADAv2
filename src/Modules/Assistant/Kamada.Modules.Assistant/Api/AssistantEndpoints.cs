@@ -22,7 +22,7 @@ internal static class AssistantEndpoints
     {
         var group = endpoints.MapGroup("/api/assistant")
             .WithTags("Assistant")
-            .RequireAuthorization(AuthorizationPolicies.AdminOnly);
+            .RequireAuthorization(AuthorizationPolicies.SalesAccess);
 
         group.MapGet("/status", (AssistantStatusQuery query) => TypedResults.Ok(query.Get()))
             .WithSummary("Whether the order assistant (and dictation) is available and which model it uses")
