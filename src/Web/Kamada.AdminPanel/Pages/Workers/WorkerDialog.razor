@@ -25,7 +25,10 @@
                     <MudTextField @bind-Value="_phone" Label="Telefon" Required="true" MaxLength="20" Placeholder="+48 600 000 000" />
                 </MudItem>
                 <MudItem xs="12" sm="6">
-                    <MudSelect @bind-Value="_role" Label="Rola">
+                    <MudSelect T="WorkerRole" Label="Role" MultiSelection="true" @bind-SelectedValues="_roles"
+                               ToStringFunc="@(role => Labels.Of(role))" Delimiter=", "
+                               Error="@(_roles.Count == 0)" ErrorText="Wybierz co najmniej jedną rolę."
+                               HelperText="Pracownik może mieć kilka ról">
                         <MudSelectItem Value="WorkerRole.Courier">@Labels.Of(WorkerRole.Courier)</MudSelectItem>
                         <MudSelectItem Value="WorkerRole.Admin">@Labels.Of(WorkerRole.Admin)</MudSelectItem>
                     </MudSelect>
@@ -48,7 +51,7 @@
     private string _name = string.Empty;
     private string _surname = string.Empty;
     private string _phone = string.Empty;
-    private WorkerRole _role = WorkerRole.Courier;
+    private IReadOnlyCollection<WorkerRole> _roles = [WorkerRole.Courier];
 
     [CascadingParameter] private IMudDialogInstance Dialog { get; set; } = default!;
 
@@ -61,22 +64,22 @@
             _name = Worker.Name;
             _surname = Worker.Surname;
             _phone = Worker.PhoneNumber;
-            _role = Worker.Role;
+            _roles = Worker.Roles;
         }
     }
 
     private async Task SaveAsync()
     {
         await _form!.ValidateAsync();
-        if (!_valid)
+        if (!_valid || _roles.Count == 0)
         {
             return;
         }
 
         _busy = true;
         var result = Worker is null
-            ? await Api.PostAsync<WorkerDto>("api/workers", new CreateWorkerRequest(_username, _password, _name, _surname, _phone, _role))
-            : await Api.PutAsync<WorkerDto>($"api/workers/{Worker.Id}", new UpdateWorkerRequest(_name, _surname, _phone, _role));
+            ? await Api.PostAsync<WorkerDto>("api/workers", new CreateWorkerRequest(_username, _password, _name, _surname, _phone, [.. _roles.Order()]))
+            : await Api.PutAsync<WorkerDto>($"api/workers/{Worker.Id}", new UpdateWorkerRequest(_name, _surname, _phone, [.. _roles.Order()]));
         _busy = false;
 
         if (Snackbar.Report(result, Worker is null ? "Konto zostało utworzone." : "Zmiany zapisane."))

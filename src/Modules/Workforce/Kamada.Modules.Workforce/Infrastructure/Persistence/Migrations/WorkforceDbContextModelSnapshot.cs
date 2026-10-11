@@ -117,11 +117,10 @@ namespace Kamada.Modules.Workforce.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("phone_number");
 
-                    b.Property<string>("Role")
+                    b.PrimitiveCollection<string[]>("Roles")
                         .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("role");
+                        .HasColumnType("text[]")
+                        .HasColumnName("roles");
 
                     b.Property<string>("Surname")
                         .IsRequired()
@@ -152,7 +151,10 @@ namespace Kamada.Modules.Workforce.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_workers_username");
 
-                    b.ToTable("workers", "workforce");
+                    b.ToTable("workers", "workforce", t =>
+                        {
+                            t.HasCheckConstraint("ck_workers_roles_not_empty", "cardinality(roles) > 0");
+                        });
                 });
 
             modelBuilder.Entity("Kamada.Modules.Workforce.Domain.Auth.RefreshToken", b =>

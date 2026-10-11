@@ -48,13 +48,13 @@ internal sealed partial class LoginHandler(
         var response = sessions.Start(worker);
         await db.SaveChangesAsync(cancellationToken);
 
-        LogSuccessfulLogin(worker.Id, worker.Role);
+        LogSuccessfulLogin(worker.Id, string.Join(", ", worker.Roles));
         return response;
     }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Failed login for {Username}: {Reason}")]
     private partial void LogFailedLogin(string username, string reason);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Worker {WorkerId} ({Role}) signed in")]
-    private partial void LogSuccessfulLogin(Guid workerId, WorkerRole role);
+    [LoggerMessage(Level = LogLevel.Information, Message = "Worker {WorkerId} ({Roles}) signed in")]
+    private partial void LogSuccessfulLogin(Guid workerId, string roles);
 }

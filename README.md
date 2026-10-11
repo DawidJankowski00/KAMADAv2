@@ -402,7 +402,7 @@ erDiagram
         uuid id PK
         varchar username UK
         varchar password_hash
-        varchar role
+        text[] roles
         bool is_active
     }
     REFRESH_TOKENS {

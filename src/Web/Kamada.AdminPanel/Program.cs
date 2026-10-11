@@ -12,7 +12,7 @@ var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? builder.HostEnvironment.
 builder.Services.AddKamadaClient(new KamadaClientOptions
 {
     ApiBaseUrl = new Uri(apiBaseUrl.EndsWith('/') ? apiBaseUrl : apiBaseUrl + "/"),
-    RequiredRole = Roles.Admin,
+    AllowedRoles = [Roles.Admin],
     StorageKey = "kamada.admin.session",
 });
 

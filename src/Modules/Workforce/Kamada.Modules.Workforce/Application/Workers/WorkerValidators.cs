@@ -13,7 +13,7 @@ internal sealed class CreateWorkerRequestValidator : AbstractValidator<CreateWor
         RuleFor(r => r.Name).PersonName();
         RuleFor(r => r.Surname).PersonName();
         RuleFor(r => r.PhoneNumber).PhoneNumber();
-        RuleFor(r => r.Role).IsInEnum();
+        RuleFor(r => r.Roles).WorkerRoles();
     }
 }
 
@@ -24,7 +24,7 @@ internal sealed class UpdateWorkerRequestValidator : AbstractValidator<UpdateWor
         RuleFor(r => r.Name).PersonName();
         RuleFor(r => r.Surname).PersonName();
         RuleFor(r => r.PhoneNumber).PhoneNumber();
-        RuleFor(r => r.Role).IsInEnum();
+        RuleFor(r => r.Roles).WorkerRoles();
     }
 }
 

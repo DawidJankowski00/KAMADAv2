@@ -14,9 +14,16 @@ internal static class TestWorkers
 {
     public const string DefaultPassword = "Test1234!";
 
-    public static async Task<TestWorker> CreateWorkerAsync(
+    public static Task<TestWorker> CreateWorkerAsync(
         this KamadaApiFactory factory,
         WorkerRole role,
+        bool isActive = true,
+        string password = DefaultPassword) =>
+        factory.CreateWorkerAsync([role], isActive, password);
+
+    public static async Task<TestWorker> CreateWorkerAsync(
+        this KamadaApiFactory factory,
+        IReadOnlyCollection<WorkerRole> roles,
         bool isActive = true,
         string password = DefaultPassword)
     {
@@ -24,8 +31,9 @@ internal static class TestWorkers
         var db = scope.ServiceProvider.GetRequiredService<WorkforceDbContext>();
         var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<Worker>>();
 
-        var username = $"{role.ToString().ToLowerInvariant()}-{Guid.NewGuid():N}"[..24];
-        var worker = Worker.Create(username, string.Empty, "Test", role.ToString(), "+48 600 000 000", role);
+        var roleNames = string.Join("-", roles).ToLowerInvariant();
+        var username = $"{roleNames}-{Guid.NewGuid():N}"[..24];
+        var worker = Worker.Create(username, string.Empty, "Test", string.Join(" ", roles), "+48 600 000 000", roles).Value;
         worker.ChangePasswordHash(hasher.HashPassword(worker, password));
         if (!isActive)
         {

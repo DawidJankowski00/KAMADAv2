@@ -1,13 +1,17 @@
 using System.Net;
 using Kamada.IntegrationTests.Infrastructure;
-using Kamada.Modules.Workforce.Domain.Workers;
 using Kamada.Shared.Contracts.Auth;
+using Kamada.Shared.Contracts.Workforce;
+using ContractRole = Kamada.Shared.Contracts.Workforce.WorkerRole;
+using WorkerRole = Kamada.Modules.Workforce.Domain.Workers.WorkerRole;
 
 namespace Kamada.IntegrationTests.Workforce;
 
 public sealed class AuthTests(KamadaApiFactory factory)
 {
     private readonly HttpClient _client = factory.CreateClient();
+
+    private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     [Fact]
     public async Task Login_WithValidCredentials_ReturnsTokenPairAndUser()
@@ -19,7 +23,7 @@ public sealed class AuthTests(KamadaApiFactory factory)
         tokens.AccessToken.ShouldNotBeNullOrWhiteSpace();
         tokens.RefreshToken.ShouldNotBeNullOrWhiteSpace();
         tokens.User.Id.ShouldBe(worker.Id);
-        tokens.User.Role.ShouldBe(Roles.Courier);
+        tokens.User.Roles.ShouldBe([Roles.Courier]);
         tokens.AccessTokenExpiresAt.ShouldBeLessThan(tokens.RefreshTokenExpiresAt);
     }
 
@@ -80,6 +84,53 @@ public sealed class AuthTests(KamadaApiFactory factory)
         afterReuse.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }
 
+
+    [Fact]
+    public async Task Login_WorkerWithSeveralRoles_CanCallEndpointsOfEachRole()
+    {
+        var worker = await factory.CreateWorkerAsync([WorkerRole.Admin, WorkerRole.Courier]);
+        var tokens = await _client.LoginAsync(worker.Username, worker.Password);
+        _client.WithBearer(tokens.AccessToken);
+
+        tokens.User.Roles.ShouldBe([Roles.Admin, Roles.Courier]);
+        (await _client.GetAsync("/api/workers", Ct)).StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await _client.GetAsync("/api/courier/delivery-runs?scope=Current", Ct)).StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task Refresh_WorkerWithSeveralRoles_KeepsAllRoles()
+    {
+        var worker = await factory.CreateWorkerAsync([WorkerRole.Admin, WorkerRole.Courier]);
+        var tokens = await _client.LoginAsync(worker.Username, worker.Password);
+
+        var refreshed = await (await _client.PostJsonAsync("/api/auth/refresh", new RefreshTokenRequest(tokens.RefreshToken)))
+            .ReadAsAsync<TokenResponse>();
+
+        refreshed.User.Roles.ShouldBe([Roles.Admin, Roles.Courier]);
+        _client.WithBearer(refreshed.AccessToken);
+        (await _client.GetAsync("/api/courier/delivery-runs?scope=Current", Ct)).StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task Refresh_AfterAdminChangedRoles_IssuesTokenWithNewRoles()
+    {
+        var (admin, _) = await factory.CreateSignedInClientAsync(WorkerRole.Admin);
+        var worker = await factory.CreateWorkerAsync(WorkerRole.Courier);
+        var tokens = await _client.LoginAsync(worker.Username, worker.Password);
+
+        (await admin.PutJsonAsync($"/api/workers/{worker.Id}", new UpdateWorkerRequest("Test", "Courier", "+48 600 000 000", [ContractRole.Admin])))
+            .EnsureSuccessStatusCode();
+
+        // The access token issued before the change keeps the old roles until it is refreshed.
+        _client.WithBearer(tokens.AccessToken);
+        (await _client.GetAsync("/api/workers", Ct)).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+
+        var refreshed = await (await _client.PostJsonAsync("/api/auth/refresh", new RefreshTokenRequest(tokens.RefreshToken)))
+            .ReadAsAsync<TokenResponse>();
+        refreshed.User.Roles.ShouldBe([Roles.Admin]);
+        _client.WithBearer(refreshed.AccessToken);
+        (await _client.GetAsync("/api/workers", Ct)).StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
     [Fact]
     public async Task Logout_RevokesRefreshToken()
     {

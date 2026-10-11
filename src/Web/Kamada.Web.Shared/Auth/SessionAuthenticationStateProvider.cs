@@ -33,7 +33,7 @@ public sealed class SessionAuthenticationStateProvider : AuthenticationStateProv
                 new Claim("name", user.Username),
                 new Claim("given_name", user.Name),
                 new Claim("family_name", user.Surname),
-                new Claim("role", user.Role),
+                .. user.Roles.Select(role => new Claim("role", role)),
             ],
             authenticationType: "kamada",
             nameType: "name",

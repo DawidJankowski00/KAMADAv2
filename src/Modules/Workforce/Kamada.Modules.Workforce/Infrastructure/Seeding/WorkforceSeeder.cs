@@ -37,7 +37,7 @@ internal sealed class WorkforceSeeder(WorkforceDbContext db, IPasswordHasher<Wor
 
     private Worker Add(string username, string password, string name, string surname, string phone, WorkerRole role)
     {
-        var worker = Worker.Create(username, string.Empty, name, surname, phone, role);
+        var worker = Worker.Create(username, string.Empty, name, surname, phone, [role]).Value;
         worker.ChangePasswordHash(passwordHasher.HashPassword(worker, password));
         db.Workers.Add(worker);
         return worker;

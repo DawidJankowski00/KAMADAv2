@@ -18,7 +18,7 @@
                           Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" DebounceInterval="300" Clearable="true" />
         </MudItem>
         <MudItem xs="6" md="3">
-            <MudSelect T="WorkerRole?" Value="_role" ValueChanged="OnRoleChanged" Label="Rola" Clearable="true">
+            <MudSelect T="WorkerRole?" Value="_role" ValueChanged="OnRoleChanged" Label="Ma rolę" Clearable="true">
                 <MudSelectItem T="WorkerRole?" Value="WorkerRole.Admin">@Labels.Of(WorkerRole.Admin)</MudSelectItem>
                 <MudSelectItem T="WorkerRole?" Value="WorkerRole.Courier">@Labels.Of(WorkerRole.Courier)</MudSelectItem>
             </MudSelect>
@@ -37,7 +37,7 @@
     <HeaderContent>
         <MudTh>Pracownik</MudTh>
         <MudTh>Login</MudTh>
-        <MudTh>Rola</MudTh>
+        <MudTh>Role</MudTh>
         <MudTh>Telefon</MudTh>
         <MudTh>Status</MudTh>
         <MudTh Style="text-align:right">Akcje</MudTh>
@@ -45,8 +45,11 @@
     <RowTemplate>
         <MudTd DataLabel="Pracownik">@context.Name @context.Surname</MudTd>
         <MudTd DataLabel="Login"><code>@context.Username</code></MudTd>
-        <MudTd DataLabel="Rola">
-            <MudChip T="string" Size="Size.Small" Color="@(context.Role == WorkerRole.Admin ? Color.Secondary : Color.Primary)">@Labels.Of(context.Role)</MudChip>
+        <MudTd DataLabel="Role">
+            @foreach (var role in context.Roles)
+            {
+                <MudChip T="string" Size="Size.Small" Color="@(role == WorkerRole.Admin ? Color.Secondary : Color.Primary)">@Labels.Of(role)</MudChip>
+            }
         </MudTd>
         <MudTd DataLabel="Telefon">@context.PhoneNumber</MudTd>
         <MudTd DataLabel="Status">

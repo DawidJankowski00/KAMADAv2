@@ -26,7 +26,7 @@ internal sealed class CourierDirectory(IWorkforceDbContext db) : ICourierDirecto
             return CourierNotFound;
         }
 
-        if (worker.Role != WorkerRole.Courier)
+        if (!worker.HasRole(WorkerRole.Courier))
         {
             return NotACourier;
         }

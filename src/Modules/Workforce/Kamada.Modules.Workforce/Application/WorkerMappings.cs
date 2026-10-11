@@ -14,12 +14,12 @@ internal static class WorkerMappings
         worker.Name,
         worker.Surname,
         worker.PhoneNumber,
-        worker.Role.ToContract(),
+        [.. worker.Roles.Select(r => r.ToContract())],
         worker.IsActive,
         worker.CreatedAt);
 
     public static AuthenticatedUserDto ToAuthenticatedUser(this Worker worker) =>
-        new(worker.Id, worker.Username, worker.Name, worker.Surname, worker.Role.ToRoleName());
+        new(worker.Id, worker.Username, worker.Name, worker.Surname, [.. worker.Roles.Select(r => r.ToRoleName())]);
 
     public static ContractRole ToContract(this DomainRole role) => role switch
     {

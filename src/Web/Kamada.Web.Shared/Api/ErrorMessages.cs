@@ -12,7 +12,7 @@ public static class ErrorMessages
         ["Concurrency.Conflict"] = "Dane zostały w międzyczasie zmienione przez kogoś innego. Odśwież i spróbuj ponownie.",
         ["Workers.UsernameTaken"] = "Pracownik o takim loginie już istnieje.",
         ["Workers.CannotDeactivateSelf"] = "Nie możesz dezaktywować własnego konta.",
-        ["Workers.CannotChangeOwnRole"] = "Nie możesz zmienić własnej roli.",
+        ["Workers.CannotRemoveOwnAdminRole"] = "Nie możesz odebrać sobie roli administratora.",
         ["Products.SkuTaken"] = "Produkt o takim SKU już istnieje.",
         ["Products.UnknownCategory"] = "Wybrana kategoria nie istnieje.",
         ["Products.InvalidPrice"] = "Cena musi być dodatnia i mieć najwyżej 2 miejsca po przecinku.",

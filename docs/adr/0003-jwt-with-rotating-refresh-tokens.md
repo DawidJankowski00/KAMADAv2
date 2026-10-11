@@ -11,7 +11,8 @@ password reset). There is no external identity provider in scope.
 
 ## Decision
 
-- **Access token**: JWT (HMAC-SHA256), 15 minutes, claims `sub`, `name`, `given_name`, `family_name`, `role`.
+- **Access token**: JWT (HMAC-SHA256), 15 minutes, claims `sub`, `name`, `given_name`, `family_name` and one
+  `role` claim per role of the worker.
   Validated statelessly by the API; inbound claim mapping disabled so claim names stay short.
 - **Refresh token**: 512-bit random opaque string, 14 days. Only its **SHA-256 hash** is stored
   (`workforce.refresh_tokens`) – a database leak does not expose usable tokens. A slow password hash is not
@@ -39,3 +40,12 @@ password reset). There is no external identity provider in scope.
 
 - Clients must refresh transparently (a delegating handler in both Blazor apps).
 - Tokens are stored in browser storage by the SPAs; mitigated by short access token lifetime and rotation.
+
+## Update 2026-10-11: workers with several roles
+
+A worker may have several roles (e.g. an administrator who also delivers, see the
+[phone app plan](../plans/mobile-app-roles.md)). The access token carries one `role` claim per role (a JSON array
+in the payload); `RequireRole` policies match any of them, so `AdminOnly` / `CourierOnly` did not change. A role
+change made by an administrator reaches the worker with the next refresh (≤ 15 min), like other changes to the
+access token. Each frontend lists the roles it accepts and signs the user out when a refresh no longer carries any
+of them.
