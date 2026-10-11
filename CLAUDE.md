@@ -406,3 +406,10 @@ Record small decisions here (date — decision — reason).
   `GET /api/clients/lookup` (active clients + current shipping addresses), both `SalesAccess`, unpaged (the phone keeps the whole
   list). `HttpContext.OkWithETag` serializes the body, tags it with a hash of it and answers `304` to a matching `If-None-Match`
   (the server still runs the query; the saving is the download). `Cache-Control: private, no-cache`; CORS exposes `ETag`.
+- 2026-10-11 — Phone local store: `ILocalStore` (Web.Shared/Offline) over IndexedDB (`local-store.js`, database named after the
+  app's `StorageKey`, stores `lookup` / `outbox` / `meta`), values serialized in C# with `KamadaJson.Options`; falls back to memory
+  when IndexedDB is missing; asks for `navigator.storage.persist()`. `OfflineLookup` keeps the lookup lists with their ETags,
+  only while the active role is Seller (admins order on the phone online only: less personal data on devices), refreshed after login, a role switch and when the connection becomes `Good`
+  (and at app start). Sign-out wipes the whole database; an expired session wipes the lookup lists but keeps the outbox for the
+  same worker (`meta.owner`); another worker signing in on the device starts from an empty database. Registered by the phone
+  app only (`AddKamadaOffline`).

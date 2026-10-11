@@ -4,6 +4,7 @@
 @inject RoleContext RoleContext
 @inject NavigationManager Navigation
 @inject Kamada.Web.Shared.Connectivity.BrowserNetworkEvents NetworkEvents
+@inject Kamada.Web.Shared.Offline.OfflineLookup OfflineLookup
 
 <MudThemeProvider Theme="MobileTheme.For(RoleContext.ActiveRole)" />
 <MudPopoverProvider />
@@ -109,6 +110,7 @@
         if (firstRender)
         {
             await NetworkEvents.StartAsync();
+            await OfflineLookup.StartAsync();
         }
     }
 
@@ -137,6 +139,8 @@
 
     private async Task LogoutAsync()
     {
+        // The device keeps clients' data only while someone is signed in.
+        await OfflineLookup.ForgetAsync();
         await Auth.LogoutAsync();
         Navigation.NavigateTo("login", replace: true);
     }
