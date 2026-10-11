@@ -56,8 +56,8 @@
         <MudTd DataLabel="Data">@Labels.Date(context.PlannedDate)</MudTd>
         <MudTd DataLabel="Nazwa"><b>@context.Name</b></MudTd>
         <MudTd DataLabel="Kurier">@context.CourierName</MudTd>
-        <MudTd DataLabel="Pojazd"><code>@context.VehiclePlate</code></MudTd>
-        <MudTd DataLabel="Start → koniec">
+        <MudTd DataLabel="Pojazd" HideSmall="true"><code>@context.VehiclePlate</code></MudTd>
+        <MudTd DataLabel="Start → koniec" HideSmall="true">
             @(context.StartLocationName == context.EndLocationName ? context.StartLocationName : $"{context.StartLocationName} → {context.EndLocationName}")
         </MudTd>
         <MudTd DataLabel="Przystanki" Style="text-align:right">

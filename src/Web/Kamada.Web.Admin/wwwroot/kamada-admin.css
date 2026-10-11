@@ -16,6 +16,21 @@
     cursor: grabbing;
 }
 
+/* Drag and drop works only with a mouse: touch screens get hints for the arrow buttons instead. */
+.kamada-touch-only {
+    display: none !important;
+}
+
+@media (pointer: coarse) {
+    .kamada-fine-pointer-only {
+        display: none !important;
+    }
+
+    .kamada-touch-only {
+        display: block !important;
+    }
+}
+
 /* Order assistant */
 .kamada-assistant {
     border-left: 4px solid var(--mud-palette-info);
@@ -33,11 +48,13 @@
  * - Tables hide secondary columns with "d-none d-sm-table-cell" and repeat the essentials in the main cell ("d-sm-none").
  * - Maps take their height from a variable with the desktop height as fallback:
  *   Height="var(--kamada-phone-map-height, 460px)" on pages, var(--kamada-phone-dialog-map-height, 400px) in dialogs.
+ *   Scrolling lists in dialogs likewise use var(--kamada-phone-dialog-list-height, 420px).
  */
 @media (max-width: 599.98px) {
     :root {
         --kamada-phone-map-height: 300px;
         --kamada-phone-dialog-map-height: 55vh;
+        --kamada-phone-dialog-list-height: calc(100vh - 260px);
     }
 
     .kamada-page-title {
@@ -56,5 +73,15 @@
 
     .mud-dialog.kamada-dialog-phone-fullscreen .mud-dialog-content {
         flex: 1 1 auto;
+    }
+
+    /* A status text next to the buttons moves to its own line instead of squeezing them. */
+    .mud-dialog.kamada-dialog-phone-fullscreen .mud-dialog-actions {
+        flex-wrap: wrap;
+        row-gap: 8px;
+    }
+
+    .mud-dialog.kamada-dialog-phone-fullscreen .mud-dialog-actions .mud-button-root {
+        white-space: nowrap;
     }
 }

@@ -1,7 +1,7 @@
 @inject ApiClient Api
 @inject ISnackbar Snackbar
 
-<MudDialog>
+<MudDialog Class="kamada-dialog-phone-fullscreen">
     <DialogContent>
         @if (_preview is null)
         {
@@ -66,7 +66,7 @@
                 <MudItem xs="12" md="6">
                     <MudSimpleTable Dense="true" Style="max-height:380px; overflow-y:auto">
                         <thead>
-                            <tr><th>#</th><th>Zamówienie</th><th style="text-align:right">Dojazd</th><th style="text-align:right">Przyjazd</th><th></th></tr>
+                            <tr><th>#</th><th>Zamówienie</th><th class="d-none d-sm-table-cell" style="text-align:right">Dojazd</th><th style="text-align:right">Przyjazd</th><th></th></tr>
                         </thead>
                         <tbody>
                             @foreach (var planned in optimized.Stops)
@@ -79,7 +79,7 @@
                                         <div>#@planned.OrderNumber @stop?.RecipientName</div>
                                         <MudText Typo="Typo.caption" Class="mud-text-secondary">@(stop is null ? string.Empty : Labels.Format(stop))</MudText>
                                     </td>
-                                    <td style="text-align:right; white-space:nowrap">@Labels.Duration(planned.LegDurationSeconds)<br /><MudText Typo="Typo.caption" Class="mud-text-secondary">@Labels.Distance(planned.LegDistanceMeters)</MudText></td>
+                                    <td class="d-none d-sm-table-cell" style="text-align:right; white-space:nowrap">@Labels.Duration(planned.LegDurationSeconds)<br /><MudText Typo="Typo.caption" Class="mud-text-secondary">@Labels.Distance(planned.LegDistanceMeters)</MudText></td>
                                     <td style="text-align:right; white-space:nowrap">+@Labels.Duration(planned.ArrivalOffsetSeconds)</td>
                                     <td>
                                         @if (previous != planned.Sequence)
@@ -93,8 +93,13 @@
                             }
                             <tr>
                                 <td></td>
-                                <td>Powrót: @Run.EndLocation.Name</td>
-                                <td style="text-align:right; white-space:nowrap">@Labels.Duration(optimized.ReturnLegDurationSeconds)<br /><MudText Typo="Typo.caption" Class="mud-text-secondary">@Labels.Distance(optimized.ReturnLegDistanceMeters)</MudText></td>
+                                <td>
+                                    Powrót: @Run.EndLocation.Name
+                                    <MudText Typo="Typo.caption" Class="d-block d-sm-none mud-text-secondary">
+                                        @Labels.Duration(optimized.ReturnLegDurationSeconds), @Labels.Distance(optimized.ReturnLegDistanceMeters)
+                                    </MudText>
+                                </td>
+                                <td class="d-none d-sm-table-cell" style="text-align:right; white-space:nowrap">@Labels.Duration(optimized.ReturnLegDurationSeconds)<br /><MudText Typo="Typo.caption" Class="mud-text-secondary">@Labels.Distance(optimized.ReturnLegDistanceMeters)</MudText></td>
                                 <td></td>
                                 <td></td>
                             </tr>
@@ -102,7 +107,7 @@
                     </MudSimpleTable>
                 </MudItem>
                 <MudItem xs="12" md="6">
-                    <LeafletMap Markers="_markers" Route="_route" Height="380px" />
+                    <LeafletMap Markers="_markers" Route="_route" Height="var(--kamada-phone-map-height, 380px)" />
                 </MudItem>
             </MudGrid>
         }

@@ -127,7 +127,9 @@ else
                 }
                 else if (IsDraft)
                 {
-                    <MudText Typo="Typo.caption" Class="mud-text-secondary d-block mb-1">Przeciągnij przystanek (lub użyj strzałek), aby zmienić kolejność, i zapisz.</MudText>
+                    @* Drag and drop needs a mouse; on touch screens the arrows reorder the stops. *@
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary d-block mb-1 kamada-fine-pointer-only">Przeciągnij przystanek (lub użyj strzałek), aby zmienić kolejność, i zapisz.</MudText>
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary d-block mb-1 kamada-touch-only">Zmień kolejność strzałkami i zapisz.</MudText>
                     <MudDropContainer T="DeliveryStopDto" @key="_dropVersion" Items="_order" ItemsSelector="@((_, _) => true)" ItemDropped="OnStopDropped">
                         <ChildContent>
                             <MudDropZone T="DeliveryStopDto" Identifier="stops" AllowReorder="true" Class="d-flex flex-column gap-1 kamada-stop-zone" />
@@ -135,7 +137,7 @@ else
                         <ItemRenderer>
                             @{ var index = _order.IndexOf(context); }
                             <MudPaper Outlined="true" Class="pa-2 d-flex align-center gap-2 kamada-stop">
-                                <MudIcon Icon="@Icons.Material.Filled.DragIndicator" Class="mud-text-secondary" Style="cursor:grab" />
+                                <MudIcon Icon="@Icons.Material.Filled.DragIndicator" Class="mud-text-secondary kamada-fine-pointer-only" Style="cursor:grab" />
                                 <MudAvatar Size="Size.Small" Color="Color.Primary">@(index + 1)</MudAvatar>
                                 <div class="flex-grow-1">
                                     <MudText Typo="Typo.body2"><MudLink Href="@($"orders/{context.OrderId}")">#@context.OrderNumber</MudLink> @context.RecipientName</MudText>
@@ -164,7 +166,7 @@ else
                 {
                     <MudSimpleTable Dense="true">
                         <thead>
-                            <tr><th>#</th><th>Zamówienie</th><th style="text-align:right">Przyjazd</th><th>Status</th><th></th></tr>
+                            <tr><th>#</th><th>Zamówienie</th><th class="d-none d-sm-table-cell" style="text-align:right">Przyjazd</th><th class="d-none d-sm-table-cell">Status</th><th></th></tr>
                         </thead>
                         <tbody>
                             @foreach (var stop in _order)
@@ -174,22 +176,22 @@ else
                                     <td>
                                         <div><MudLink Href="@($"orders/{stop.OrderId}")">#@stop.OrderNumber</MudLink> @stop.RecipientName · @stop.PhoneNumber</div>
                                         <MudText Typo="Typo.caption" Class="mud-text-secondary">@Labels.Format(stop)</MudText>
+                                        <div class="d-flex d-sm-none flex-wrap align-center gap-2 mt-1">
+                                            <MudChip T="string" Size="Size.Small" Color="Labels.ColorOf(stop.Status)" Class="ma-0">@Labels.Of(stop.Status)</MudChip>
+                                            @if (Arrival(stop) is { } arrival)
+                                            {
+                                                <MudText Typo="Typo.caption">@arrival</MudText>
+                                            }
+                                        </div>
                                         @if (stop.FailureReason is not null)
                                         {
                                             <MudText Typo="Typo.caption" Color="Color.Error" Class="d-block">Powód: @stop.FailureReason</MudText>
                                         }
                                     </td>
-                                    <td style="text-align:right; white-space:nowrap">
-                                        @if (stop.DeliveredAt is { } deliveredAt)
-                                        {
-                                            <span title="Dostarczono">@Labels.DateTime(deliveredAt)</span>
-                                        }
-                                        else if (stop.EstimatedArrivalOffsetSeconds is { } offset)
-                                        {
-                                            @(_run.StartedAt is { } startedAt ? $"~{startedAt.AddSeconds(offset).ToLocalTime():HH:mm}" : $"+{Labels.Duration(offset)}")
-                                        }
+                                    <td class="d-none d-sm-table-cell" style="text-align:right; white-space:nowrap">
+                                        <span title="@(stop.DeliveredAt is null ? null : "Dostarczono")">@Arrival(stop)</span>
                                     </td>
-                                    <td><MudChip T="string" Size="Size.Small" Color="Labels.ColorOf(stop.Status)">@Labels.Of(stop.Status)</MudChip></td>
+                                    <td class="d-none d-sm-table-cell"><MudChip T="string" Size="Size.Small" Color="Labels.ColorOf(stop.Status)">@Labels.Of(stop.Status)</MudChip></td>
                                     <td>
                                         @if (stop.NavigationUrl is not null)
                                         {
@@ -216,7 +218,7 @@ else
 
         <MudItem xs="12" lg="5">
             <MudPaper Class="pa-2" Elevation="1">
-                <LeafletMap Markers="_markers" Route="_route" Height="440px" />
+                <LeafletMap Markers="_markers" Route="_route" Height="var(--kamada-phone-map-height, 440px)" />
                 <MudText Typo="Typo.caption" Class="mud-text-secondary d-block pa-1">
                     Linie łączą kolejne punkty w prostej linii – dokładny przebieg drogi pokaże nawigacja.
                 </MudText>
@@ -275,6 +277,16 @@ else
     private bool IsDirty => _run is not null && !_order.Select(s => s.Id).SequenceEqual(_run.Stops.OrderBy(s => s.Sequence).Select(s => s.Id));
 
     private List<DeliveryStopDto> StopsWithoutCoordinates => _order.Where(s => !s.HasCoordinates).ToList();
+
+    /// <summary>Delivery time, otherwise the estimated arrival (clock time once the run started, offset before).</summary>
+    private string? Arrival(DeliveryStopDto stop) => stop switch
+    {
+        { DeliveredAt: { } deliveredAt } => Labels.DateTime(deliveredAt),
+        { EstimatedArrivalOffsetSeconds: { } offset } => _run!.StartedAt is { } startedAt
+            ? $"~{startedAt.AddSeconds(offset).ToLocalTime():HH:mm}"
+            : $"+{Labels.Duration(offset)}",
+        _ => null,
+    };
 
     private List<string> EndpointsWithoutCoordinates =>
         new[] { _run!.StartLocation, _run.EndLocation }.Where(l => !l.HasCoordinates).Select(l => l.Name).Distinct().ToList();

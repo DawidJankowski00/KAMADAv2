@@ -377,3 +377,6 @@ Record small decisions here (date — decision — reason).
   essentials under the main cell (`d-sm-none`). Desktop width is unchanged.
 - 2026-10-11 — Sortable `MudTable`s set `SortLabel="Sortuj według"`: in the phone card mode the header (with the sort labels) is
   hidden and MudBlazor shows a sort select instead, so sorting stays available on phones.
+- 2026-10-11 — Run stops on touch screens: drag and drop needs a mouse, so `(pointer: coarse)` hides the drag handle and the drag
+  hint (`kamada-fine-pointer-only` / `kamada-touch-only`) and the existing up/down buttons reorder the stops. Full-screen
+  dialogs wrap their actions (a status text gets its own line) and size scrolling lists with `--kamada-phone-dialog-list-height`.
