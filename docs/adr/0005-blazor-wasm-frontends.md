@@ -8,7 +8,7 @@
 There are two very different users: an **admin** at a desktop (tables, forms, a map, drag and drop) and a
 **courier** on a phone (a few big buttons, used outdoors, sometimes on a weak connection). Both talk to the same
 API and share a lot of plumbing: login with refresh tokens, error handling, Polish labels, the delivery run map.
-The project is a .NET portfolio, so the frontends should show C# end to end and share types with the API.
+The project is a .NET system, so the frontends should show C# end to end and share types with the API.
 
 ## Decision
 

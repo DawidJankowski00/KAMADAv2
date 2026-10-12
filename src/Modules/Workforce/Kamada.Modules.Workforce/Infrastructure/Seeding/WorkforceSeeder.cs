@@ -11,6 +11,7 @@ namespace Kamada.Modules.Workforce.Infrastructure.Seeding;
 /// </summary>
 internal sealed class WorkforceSeeder(WorkforceDbContext db, IPasswordHasher<Worker> passwordHasher, DemoSeedData seedData) : IDataSeeder
 {
+    // Demo-only credentials for local development. Never use them outside seeded demo data.
     public const string AdminPassword = "Admin123!";
     public const string CourierPassword = "Kurier123!";
     public const string ManagerPassword = "Kierownik123!";
