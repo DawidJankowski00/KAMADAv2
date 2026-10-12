@@ -63,6 +63,8 @@ services:
       API_BASE_URL: ${PUBLIC_API_URL:-http://localhost:5080/}
     ports:
       - "5082:80"
+    volumes:
+      - assistant-models:/usr/share/nginx/html/models:ro
     depends_on:
       - api
 
@@ -138,8 +140,21 @@ services:
       ollama:
         condition: service_healthy
 
+  # Optional models for the on-device assistant (docker compose --profile assistant up assistant-models), served by the
+  # phone app under /models. First run downloads them (~1.6 GB for the defaults); later runs reuse the volume.
+  assistant-models:
+    image: debian:trixie-slim
+    profiles: [assistant]
+    environment:
+      ASSISTANT_MODELS: ${ASSISTANT_DEVICE_MODELS:-Qwen3-1.7B-q4f16_1-MLC Qwen3-0.6B-q4f16_1-MLC onnx-community/whisper-base onnx-community/whisper-tiny}
+    entrypoint: ["/bin/sh", "-c", "apt-get update -qq && apt-get install -y -qq --no-install-recommends curl ca-certificates >/dev/null && exec sh /scripts/fetch-models.sh /models"]
+    volumes:
+      - assistant-models:/models
+      - ./deploy/assistant:/scripts:ro
+
 volumes:
   postgres-data:
   osrm-data:
   ollama-data:
   whisper-models:
+  assistant-models:

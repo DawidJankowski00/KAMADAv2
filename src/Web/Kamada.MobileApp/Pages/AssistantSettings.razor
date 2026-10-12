@@ -1,0 +1,193 @@
+@page "/settings/assistant"
+@using Kamada.Web.Shared.Assistant
+@using Kamada.Web.Shared.Offline
+@implements IDisposable
+@inject LocalAssistantRuntime Runtime
+@inject LocalAssistantSettings Settings
+@inject LocalOrderAssistant Local
+@inject OfflineLookup Lookup
+@inject RoleContext RoleContext
+@inject IDialogService Dialogs
+@inject ISnackbar Snackbar
+
+<PageTitle>Asystent w telefonie</PageTitle>
+
+<MudText Typo="Typo.h5" Class="mb-1">Asystent w telefonie</MudText>
+<MudText Typo="Typo.body2" Class="mud-text-secondary mb-3">
+    Gdy połączenie jest słabe albo go nie ma, zamówienie można podyktować lub opisać modelowi działającemu w samym telefonie.
+    Nagranie, tekst i dane klientów nie opuszczają urządzenia. Modele pobierasz raz (najlepiej przez Wi‑Fi), a kopia zostaje w telefonie.
+</MudText>
+
+@if (_capabilities is null)
+{
+    <MudProgressLinear Indeterminate="true" />
+}
+else if (!_capabilities.CanRunLanguageModel)
+{
+    <MudAlert Severity="Severity.Warning">
+        Ta przeglądarka lub telefon nie obsługuje WebGPU z 16-bitowymi shaderami, więc modelu nie da się tu uruchomić.
+        Asystent działa wtedy tylko na serwerze (wymaga połączenia). Spróbuj w aktualnej wersji Chrome na nowszym telefonie.
+    </MudAlert>
+}
+else
+{
+    @if (RoleContext.ActiveRole != Roles.Seller)
+    {
+        <MudAlert Severity="Severity.Info" Class="mb-3">
+            Asystent w telefonie korzysta z kopii klientów i produktów, którą telefon pobiera dla roli Sprzedawca. W roli
+            „@Labels.Role(RoleContext.ActiveRole ?? string.Empty)” jej nie ma, więc model zadziała dopiero po przełączeniu na Sprzedawcę.
+        </MudAlert>
+    }
+
+    <MudPaper Class="pa-3 mb-3" Elevation="1">
+        <MudSwitch T="bool" Value="Settings.Enabled" ValueChanged="SetEnabledAsync" Color="Color.Success" Disabled="!_languageInstalled"
+                   Label="Używaj asystenta w telefonie" />
+        @if (!_languageInstalled)
+        {
+            <MudText Typo="Typo.caption" Class="mud-text-secondary d-block">Najpierw pobierz model językowy poniżej.</MudText>
+        }
+
+        <MudText Typo="Typo.subtitle2" Class="mt-3">Którego asystenta używać</MudText>
+        <MudRadioGroup T="AssistantMode" Value="Settings.Mode" ValueChanged="Settings.SetModeAsync">
+            <MudRadio Value="AssistantMode.Auto" Color="Color.Primary">Automatycznie: serwer, a w telefonie przy słabym połączeniu lub awarii serwera</MudRadio>
+            <MudRadio Value="AssistantMode.Server" Color="Color.Primary">Zawsze serwer</MudRadio>
+            <MudRadio Value="AssistantMode.Device" Color="Color.Primary" Disabled="!_languageInstalled">Zawsze telefon</MudRadio>
+        </MudRadioGroup>
+    </MudPaper>
+
+    <MudPaper Class="pa-3 mb-3" Elevation="1">
+        <MudText Typo="Typo.subtitle2">Miejsce na dane</MudText>
+        @if (_capabilities.StorageQuotaBytes is { } quota)
+        {
+            <MudProgressLinear Value="@(100.0 * (_capabilities.StorageUsedBytes ?? 0) / quota)" Color="Color.Info" Class="my-1" />
+            <MudText Typo="Typo.caption" Class="mud-text-secondary">
+                Zajęte @Megabytes(_capabilities.StorageUsedBytes) z @Megabytes(quota) dostępnych przeglądarce.
+            </MudText>
+        }
+
+        @if (_capabilities.Persisted == false)
+        {
+            <MudText Typo="Typo.caption" Class="d-block mt-1">
+                Przeglądarka może usunąć pobrane modele, gdy zabraknie miejsca.
+                <MudLink OnClick="PersistAsync" Typo="Typo.caption">Poproś o zachowanie</MudLink>
+            </MudText>
+        }
+    </MudPaper>
+
+    <ModelPicker Title="Model językowy (rozumie treść zamówienia)" Models="LocalModels.Language" Selected="Settings.LanguageModel"
+                 Installed="_installed" Busy="_busyModel" Progress="_progress"
+                 OnSelect="Settings.SetLanguageModelAsync" OnDownload="DownloadAsync" OnDelete="DeleteAsync" />
+
+    <ModelPicker Title="Rozpoznawanie mowy (dyktowanie)" Models="LocalModels.Speech" Selected="Settings.SpeechModel"
+                 Installed="_installed" Busy="_busyModel" Progress="_progress"
+                 OnSelect="Settings.SetSpeechModelAsync" OnDownload="DownloadAsync" OnDelete="DeleteAsync" />
+
+    <MudText Typo="Typo.caption" Class="mud-text-secondary d-block mt-2">
+        Rozpoznawanie mowy jest opcjonalne – bez niego można wpisać treść zamówienia. @DeviceSummary
+        <MudLink Href="settings/assistant/eval" Typo="Typo.caption">Sprawdź dokładność modelu na tym telefonie</MudLink>
+    </MudText>
+}
+
+@code {
+    private DeviceCapabilities? _capabilities;
+    private readonly HashSet<string> _installed = [];
+    private LocalModel? _busyModel;
+    private DownloadProgress? _progress;
+
+    private bool _languageInstalled => _installed.Contains(Settings.LanguageModel.Id);
+
+    private string DeviceSummary => _capabilities is null
+        ? string.Empty
+        : $"Urządzenie: {_capabilities.Adapter ?? "GPU"}, pamięć {(_capabilities.DeviceMemoryGb is { } gb ? $"{gb} GB" : "?")}, rdzenie {_capabilities.Cores?.ToString() ?? "?"}.";
+
+    protected override async Task OnInitializedAsync()
+    {
+        Settings.Changed += OnSettingsChanged;
+        await Settings.LoadAsync();
+        _capabilities = await Runtime.GetCapabilitiesAsync();
+        await RefreshInstalledAsync();
+    }
+
+    public void Dispose() => Settings.Changed -= OnSettingsChanged;
+
+    private void OnSettingsChanged() => InvokeAsync(StateHasChanged);
+
+    private static string Megabytes(long? bytes) => bytes is null ? "?" : $"{bytes.Value / 1048576.0:0} MB";
+
+    private async Task RefreshInstalledAsync()
+    {
+        _installed.Clear();
+        foreach (var model in LocalModels.Language.Concat(LocalModels.Speech))
+        {
+            if (await Runtime.IsInstalledAsync(model))
+            {
+                _installed.Add(model.Id);
+            }
+        }
+
+        Local.Invalidate();
+        _capabilities = await Runtime.RefreshCapabilitiesAsync();
+    }
+
+    private async Task SetEnabledAsync(bool enabled)
+    {
+        await Settings.SetEnabledAsync(enabled);
+        Local.Invalidate();
+    }
+
+    private async Task PersistAsync()
+    {
+        var granted = await Runtime.PersistStorageAsync();
+        Snackbar.Add(granted ? "Modele zostaną zachowane w telefonie." : "Przeglądarka nie zgodziła się – zostaw aplikację zainstalowaną na ekranie głównym.", granted ? Severity.Success : Severity.Warning);
+        _capabilities = await Runtime.RefreshCapabilitiesAsync();
+    }
+
+    /// <summary>Downloads the model and loads it once to be sure it runs on this phone, then frees the memory again.</summary>
+    private async Task DownloadAsync(LocalModel model)
+    {
+        _busyModel = model;
+        _progress = new DownloadProgress(0, "Rozpoczynam pobieranie…");
+        try
+        {
+            await Runtime.PersistStorageAsync();
+            var progress = new Progress<DownloadProgress>(p => InvokeAsync(() =>
+            {
+                _progress = p;
+                StateHasChanged();
+            }));
+            await Runtime.LoadAsync(model, progress);
+            await Runtime.UnloadAsync();
+            if (model.Kind == LocalModelKind.Language && !Settings.Enabled)
+            {
+                await Settings.SetEnabledAsync(true);
+            }
+
+            Snackbar.Add($"Pobrano: {model.Title}.", Severity.Success);
+        }
+        catch (JSException)
+        {
+            Snackbar.Add($"Nie udało się pobrać lub uruchomić modelu „{model.Title}”. Sprawdź połączenie i wolne miejsce albo wybierz lżejszy model.", Severity.Error);
+        }
+        finally
+        {
+            (_busyModel, _progress) = (null, null);
+            await RefreshInstalledAsync();
+        }
+    }
+
+    private async Task DeleteAsync(LocalModel model)
+    {
+        if (!await Dialogs.ConfirmAsync("Usunąć model?", $"„{model.Title}” zajmuje ok. {model.DownloadMb} MB. Pobierzesz go ponownie, gdy będzie potrzebny.", "Usuń", Color.Error))
+        {
+            return;
+        }
+
+        await Runtime.DeleteAsync(model);
+        if (model.Kind == LocalModelKind.Language)
+        {
+            await Settings.SetEnabledAsync(false);
+        }
+
+        await RefreshInstalledAsync();
+    }
+}

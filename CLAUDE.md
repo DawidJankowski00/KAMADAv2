@@ -422,3 +422,30 @@ Record small decisions here (date — decision — reason).
   an online submit fails with a transient error. The seller's "Moje zamówienia" lists the outbox (edit = `/seller?outbox=<id>`,
   discard); the bottom navigation badge turns red when something needs attention; logging out with queued orders asks first
   (they are wiped). The AI assistant needs the server and is hidden while the form works locally.
+- 2026-10-11 — Shared matching (stage 6, ADR 0010): `src/Shared/Kamada.Shared.Matching` holds the pure order-draft code (text
+  similarity, client/address/product matchers, username suggestion, extraction prompt + schema + answer cleaning, `OrderDraftResolver`)
+  with no EF/ASP.NET (architecture test); the server modules and `Kamada.Web.Shared` reference it. The module Contracts reference it
+  too (`ClientMention`, `ClientCandidate`, `AddressMention`, `ProductCandidate` moved there). The resolver reads clients, addresses,
+  products and the geocoder through `IOrderDraftSource` (server: `ModuleOrderDraftSource` in the Assistant module; phone:
+  `LocalDraftSource` over `OfflineLookup`).
+- 2026-10-11 — `IOrderAssistant` (Web.Shared): `ServerOrderAssistant` (existing endpoints), `LocalOrderAssistant` (Whisper → model →
+  shared resolver, Seller role only because it needs the local copy) and `RoutingOrderAssistant` (the phone app's registration).
+  Policy in `AssistantPolicy` (unit tested): Auto = server while the connection is Good and the server's assistant is enabled, else
+  the phone; fallback on 0/502/503/504 only, in Auto mode only. Worker's choices (mode, models, enabled) are in `localStorage`
+  (`<StorageKey>.assistant`), not in the local store, which sign-out wipes.
+- 2026-10-11 — On-device runtime: `wwwroot/local-assistant.js` (Web.Shared) drives WebLLM (MLC models, JSON-schema grammar, temperature 0)
+  and transformers.js Whisper (WebGPU fp16 encoder + q4 decoder, WebAssembly q8 otherwise). Libraries are fetched, not committed
+  (`deploy/assistant/fetch-runtime.sh`, pinned, sha512-checked, git-ignored `Kamada.MobileApp/wwwroot/assistant/vendor`); the service
+  worker excludes `assistant/` from the precache and caches it on first use (`kamada-assistant-runtime-v1`). Models come from
+  `deploy/assistant/fetch-models.sh` into `/models` (compose profile `assistant`); `KamadaClientOptions.AssistantModelsUrl` /
+  `appsettings.Development.json` point development to a static server. WebGPU needs a secure context: on a real phone use
+  `adb reverse` (localhost) or HTTPS, not `http://<LAN ip>`.
+- 2026-10-11 — Accuracy page `/settings/assistant/eval` runs the server evals' `cases.json` (embedded resource) through
+  `LocalOrderAssistant` with the same scoring rules (`AssistantEvalScorer`, duplicated from the evals project on purpose: that one
+  reads `ClientDto`, this one `ClientLookupDto`) and copies a Markdown result.
+- 2026-10-11 — On-device models (measured on a desktop GPU, `docs/on-device-assistant.md`): default Qwen 3 1.7B (thinking off through
+  `extra_body.enable_thinking`, 50% of the 40 notes fully right) + Whisper base, lite Qwen 3 0.6B + Whisper tiny; Qwen 2.5 0.5B, Llama 3.2
+  1B and Gemma 3 1B (garbage output with WebLLM 0.2.86) are not offered. Phone numbers are still to be taken. `LlmOrderResponse` also moves
+  numbers the model put in the wrong address field (street "X 70", building "50/59") and ignores a leading `<think>` block – small
+  models need both, the server benefits too. A failed extraction drops the WebLLM engine (lost GPU device) and the assistant reloads
+  once; `AssistantPanel` re-reads the status when `OfflineLookup` changes, because the local assistant depends on it.

@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\Shared\Kamada.Shared.Kernel\Kamada.Shared.Kernel.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Kamada.Shared.Matching\Kamada.Shared.Matching.csproj" />
   </ItemGroup>
 
 </Project>

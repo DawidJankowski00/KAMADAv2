@@ -2,6 +2,7 @@ using System.Diagnostics;
 using Kamada.Modules.Assistant.Application;
 using Kamada.Modules.Assistant.Application.Abstractions;
 using Kamada.Modules.Assistant.Domain;
+using Kamada.Shared.Matching.Drafts;
 using Kamada.Shared.Kernel.Results;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,11 +31,11 @@ internal sealed partial class OllamaOrderExtractor(
             var options = new ChatOptions
             {
                 Temperature = 0,
-                ResponseFormat = ExtractionPrompt.ResponseFormat,
+                ResponseFormat = OllamaPrompt.ResponseFormat,
                 // Ollama-specific switch without an IChatClient equivalent: start from a native request.
                 RawRepresentationFactory = settings.Value.Ollama.Think is { } think ? _ => new ChatRequest { Think = think } : null,
             };
-            response = await chat.GetResponseAsync(ExtractionPrompt.Messages(text, language), options, cancellationToken);
+            response = await chat.GetResponseAsync(OllamaPrompt.Messages(text, language), options, cancellationToken);
         }
         catch (Exception ex) when (ex is HttpRequestException or OllamaException
                                        || (ex is TaskCanceledException && !cancellationToken.IsCancellationRequested))
@@ -43,9 +44,9 @@ internal sealed partial class OllamaOrderExtractor(
             return AssistantErrors.ModelUnavailable;
         }
 
-        var parsed = LlmOrderResponse.Parse(response.Text);
+        var parsed = ExtractionAnswer.Parse(response.Text);
         LogExtraction(stopwatch.ElapsedMilliseconds, parsed is not null, response.ModelId);
-        return parsed is null ? AssistantErrors.ExtractionFailed : parsed.ToDomain();
+        return parsed is null ? AssistantErrors.ExtractionFailed : parsed;
     }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Language model unavailable")]

@@ -1,8 +1,9 @@
 using Kamada.Modules.Customers.Application.Abstractions;
-using Kamada.Modules.Customers.Application.Lookup;
 using Kamada.Modules.Customers.Contracts;
 using Kamada.Modules.Customers.Domain.Clients;
 using Kamada.Shared.Kernel.Results;
+using Kamada.Shared.Matching.Addresses;
+using Kamada.Shared.Matching.Clients;
 using Microsoft.EntityFrameworkCore;
 
 namespace Kamada.Modules.Customers.Application;

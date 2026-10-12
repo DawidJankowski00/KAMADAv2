@@ -1,5 +1,6 @@
 using Kamada.Modules.Assistant.Application.Abstractions;
 using Kamada.Modules.Assistant.Domain;
+using Kamada.Shared.Matching.Drafts;
 using Kamada.Shared.Kernel.Results;
 
 namespace Kamada.IntegrationTests.Infrastructure;

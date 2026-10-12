@@ -1,5 +1,6 @@
 using Kamada.Modules.Assistant.Application;
 using Kamada.Modules.Assistant.Domain;
+using Kamada.Shared.Matching.Drafts;
 using Kamada.Modules.Assistant.Infrastructure.Ollama;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging.Abstractions;

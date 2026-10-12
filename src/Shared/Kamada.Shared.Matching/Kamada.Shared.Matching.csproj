@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Pure order matching (no EF, no ASP.NET): used by the server modules and by the phone app's on-device assistant. -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Kamada.Shared.Contracts\Kamada.Shared.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Kamada.Shared.Matching.UnitTests" />
+  </ItemGroup>
+
+</Project>

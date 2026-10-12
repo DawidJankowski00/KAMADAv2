@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using Kamada.Modules.Assistant.Application;
 using Kamada.Modules.Assistant.Application.Abstractions;
 using Kamada.Modules.Assistant.Domain;
+using Kamada.Shared.Matching.Drafts;
 using Kamada.Shared.Kernel.Results;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;

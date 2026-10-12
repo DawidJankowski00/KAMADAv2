@@ -19,11 +19,11 @@ public sealed class FrontendTests
     }
 
     [Fact]
-    public void SharedUiLibrary_ReferencesOnlyHttpContracts()
+    public void SharedUiLibrary_ReferencesOnlyHttpContractsAndPureMatching()
     {
         var path = Path.Combine(RepositoryPaths.Root, "src", "Web", "Kamada.Web.Shared", "Kamada.Web.Shared.csproj");
 
-        ProjectReferences.Of(path).ShouldBe(["Kamada.Shared.Contracts"]);
+        ProjectReferences.Of(path).ShouldBe(["Kamada.Shared.Contracts", "Kamada.Shared.Matching"], ignoreOrder: true);
     }
 
     [Fact]
@@ -32,5 +32,15 @@ public sealed class FrontendTests
         var path = Path.Combine(RepositoryPaths.Root, "src", "Web", "Kamada.Web.Admin", "Kamada.Web.Admin.csproj");
 
         ProjectReferences.Of(path).ShouldBe(["Kamada.Shared.Contracts", "Kamada.Web.Shared"], ignoreOrder: true);
+    }
+
+    [Fact]
+    public void MatchingLibrary_IsPure_ReferencesOnlyHttpContractsAndNoFramework()
+    {
+        var path = Path.Combine(RepositoryPaths.Root, "src", "Shared", "Kamada.Shared.Matching", "Kamada.Shared.Matching.csproj");
+
+        ProjectReferences.Of(path).ShouldBe(["Kamada.Shared.Contracts"]);
+        File.ReadAllText(path).ShouldNotContain("FrameworkReference");
+        File.ReadAllText(path).ShouldNotContain("PackageReference");
     }
 }

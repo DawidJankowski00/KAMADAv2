@@ -1,0 +1,129 @@
+@page "/settings/assistant/eval"
+@using System.Diagnostics
+@using System.Text.Json
+@using Kamada.Web.Shared.Assistant
+@using Kamada.Web.Shared.Assistant.Evaluation
+@using Kamada.Web.Shared.Offline
+@inject LocalOrderAssistant Local
+@inject LocalAssistantSettings Settings
+@inject LocalAssistantRuntime Runtime
+@inject OfflineLookup Lookup
+@inject IJSRuntime JS
+@inject ISnackbar Snackbar
+
+<PageTitle>Test dokładności asystenta</PageTitle>
+
+<MudText Typo="Typo.h5" Class="mb-1">Test dokładności asystenta w telefonie</MudText>
+<MudText Typo="Typo.body2" Class="mud-text-secondary mb-3">
+    Uruchamia modelowi w telefonie te same przykładowe zamówienia, co testy serwerowych modeli (dane demonstracyjne), i porównuje
+    wynik z oczekiwanym. Do pomiaru używany jest wybrany w ustawieniach model językowy; rozpoznawanie mowy nie bierze udziału
+    (zamówienia są wpisane jako tekst). Pierwsze zamówienie ładuje model i nie jest wliczane do czasu.
+</MudText>
+
+@if (_message is not null)
+{
+    <MudAlert Severity="Severity.Warning" Class="mb-3">@_message</MudAlert>
+}
+
+<div class="d-flex flex-wrap align-center gap-2 mb-3">
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="RunAsync" Disabled="_running">Uruchom test</MudButton>
+    <MudButton Variant="Variant.Outlined" OnClick="CopyAsync" Disabled="@(_running || _results.Count == 0)">Kopiuj wynik (Markdown)</MudButton>
+    <MudButton Variant="Variant.Text" Href="settings/assistant">Ustawienia</MudButton>
+</div>
+
+@if (_running)
+{
+    <MudProgressLinear Value="@(100.0 * _results.Count / Math.Max(1, _cases.Count))" Color="Color.Info" Class="mb-1" />
+    <MudText Typo="Typo.caption" Class="mud-text-secondary d-block mb-2">@_status</MudText>
+}
+
+@if (_results.Count > 0)
+{
+    <MudSimpleTable Dense="true" Class="mb-3">
+        <tbody>
+            <tr><td>Decyzja o kliencie</td><td>@AssistantEvalReport.Percent(_results.Count(r => r.ClientCorrect), _results.Count)</td></tr>
+            <tr><td>Decyzja o adresie</td><td>@AssistantEvalReport.Percent(_results.Count(r => r.AddressCorrect), _results.Count)</td></tr>
+            <tr><td>Produkty</td><td>@AssistantEvalReport.Percent(_results.Sum(r => r.ProductsCorrect), _results.Sum(r => r.LinesCounted))</td></tr>
+            <tr><td>Ilości</td><td>@AssistantEvalReport.Percent(_results.Sum(r => r.QuantitiesCorrect), _results.Sum(r => r.LinesCounted))</td></tr>
+            <tr><td>Wszystko dobrze</td><td>@AssistantEvalReport.Percent(_results.Count(r => r.AllCorrect), _results.Count)</td></tr>
+            <tr><td>Czas (p50 / p95)</td><td>@AssistantEvalReport.Seconds(Latency(0.5)) / @AssistantEvalReport.Seconds(Latency(0.95))</td></tr>
+        </tbody>
+    </MudSimpleTable>
+
+    @foreach (var result in _results)
+    {
+        <MudText Typo="Typo.body2" Color="@(result.AllCorrect ? Color.Success : Color.Error)">
+            @(result.AllCorrect ? "OK" : "BŁĄD") · @result.Case.Id · @AssistantEvalReport.Seconds(result.LatencyMs)
+        </MudText>
+        @foreach (var problem in result.Problems)
+        {
+            <MudText Typo="Typo.caption" Class="mud-text-secondary d-block ml-4">@problem</MudText>
+        }
+    }
+}
+
+@code {
+    private List<AssistantEvalCase> _cases = [];
+    private readonly List<AssistantEvalResult> _results = [];
+    private bool _running;
+    private string? _message;
+    private string _status = string.Empty;
+    private string _subject = string.Empty;
+
+    private long Latency(double percentile) =>
+        AssistantEvalReport.Percentile([.. _results.Select(r => r.LatencyMs).Order()], percentile);
+
+    private async Task RunAsync()
+    {
+        _message = null;
+        await Settings.LoadAsync();
+        Local.Invalidate();
+        if (!await Local.IsReadyAsync())
+        {
+            _message = "Asystent w telefonie nie jest gotowy: pobierz model językowy, włącz asystenta w telefonie i upewnij się, że pracujesz jako Sprzedawca (potrzebna jest kopia klientów i produktów).";
+            return;
+        }
+
+        await using var cases = typeof(AssistantEval).Assembly.GetManifestResourceStream("assistant-eval-cases.json")!;
+        _cases = (await JsonSerializer.DeserializeAsync<List<AssistantEvalCase>>(cases, new JsonSerializerOptions(JsonSerializerDefaults.Web)))!;
+        var capabilities = await Runtime.GetCapabilitiesAsync();
+        _subject = $"{Settings.LanguageModel.Title} ({capabilities.Adapter ?? "GPU"}, {capabilities.DeviceMemoryGb?.ToString() ?? "?"} GB)";
+
+        _running = true;
+        _results.Clear();
+        try
+        {
+            _status = "Ładuję model (pierwsze uruchomienie)…";
+            StateHasChanged();
+            await Local.CreateDraftAsync("Zamówienie dla Jana: jedna kawa.", "pl");
+
+            foreach (var evalCase in _cases)
+            {
+                _status = $"{_results.Count + 1}/{_cases.Count}: {evalCase.Id}";
+                StateHasChanged();
+                await Task.Yield();
+
+                var stopwatch = Stopwatch.StartNew();
+                var result = await Local.CreateDraftAsync(evalCase.Text, evalCase.Language);
+                stopwatch.Stop();
+
+                _results.Add(result.IsSuccess
+                    ? AssistantEvalScorer.Evaluate(evalCase, result.Value, SelectedClient(result.Value), stopwatch.ElapsedMilliseconds)
+                    : AssistantEvalScorer.Failed(evalCase, stopwatch.ElapsedMilliseconds, result.Problem!.Message));
+            }
+        }
+        finally
+        {
+            _running = false;
+        }
+    }
+
+    private Kamada.Shared.Contracts.Customers.ClientLookupDto? SelectedClient(Kamada.Shared.Contracts.Assistant.OrderDraftDto draft) =>
+        draft.Client.SelectedId is { } id ? Lookup.Clients?.Items.FirstOrDefault(c => c.Id == id) : null;
+
+    private async Task CopyAsync()
+    {
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", AssistantEvalReport.Build(_subject, _results, DateOnly.FromDateTime(DateTime.Now)));
+        Snackbar.Add("Skopiowano wynik.", Severity.Success);
+    }
+}

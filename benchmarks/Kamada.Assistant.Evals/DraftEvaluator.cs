@@ -1,6 +1,6 @@
 using Kamada.Shared.Contracts.Assistant;
 using Kamada.Shared.Contracts.Customers;
-using Kamada.Shared.Kernel.Text;
+using Kamada.Shared.Matching.Text;
 
 namespace Kamada.Assistant.Evals;
 

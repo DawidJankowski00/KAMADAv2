@@ -484,3 +484,6 @@ $RECYCLE.BIN/
 # Local AI models downloaded on first start (Whisper GGML files)
 src/Kamada.Api/models/
 *.bin.download
+
+# On-device assistant: downloaded by deploy/assistant/fetch-runtime.sh
+src/Web/Kamada.MobileApp/wwwroot/assistant/vendor/

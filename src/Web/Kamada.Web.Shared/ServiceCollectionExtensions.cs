@@ -1,4 +1,5 @@
 using Kamada.Web.Shared.Api;
+using Kamada.Web.Shared.Assistant;
 using Kamada.Web.Shared.Auth;
 using Kamada.Web.Shared.Connectivity;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -23,6 +24,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<AuthorizingHandler>();
         services.AddSingleton<ConnectionMonitor>();
         services.AddSingleton<BrowserNetworkEvents>();
+        services.AddTransient<IOrderAssistant, ServerOrderAssistant>();
 
         services.AddHttpClient(AuthService.AnonymousClientName, http => http.BaseAddress = options.ApiBaseUrl);
         services.AddHttpClient<ApiClient>(http =>

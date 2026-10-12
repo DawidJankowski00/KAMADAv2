@@ -1,5 +1,6 @@
 using FluentValidation;
 using Kamada.Modules.Assistant.Domain;
+using Kamada.Shared.Matching.Drafts;
 using Kamada.Shared.Contracts.Assistant;
 using Microsoft.Extensions.Options;
 

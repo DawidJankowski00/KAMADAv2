@@ -17,6 +17,12 @@ public sealed class KamadaClientOptions
     /// <summary>Key the app used before a rename; a session found there is moved to <see cref="StorageKey"/> once.</summary>
     public string? PreviousStorageKey { get; init; }
 
+    /// <summary>
+    /// Where the on-device assistant's model files are served from (<c>deploy/assistant/fetch-models.sh</c> fills it): relative to the app,
+    /// or an absolute address (development).
+    /// </summary>
+    public string AssistantModelsUrl { get; init; } = "models/";
+
     /// <summary>Where snackbars appear (<c>MudBlazor.Defaults.Classes.Position</c>); on phones the bottom is taken by action buttons.</summary>
     public string SnackbarPosition { get; init; } = MudBlazor.Defaults.Classes.Position.BottomRight;
 }

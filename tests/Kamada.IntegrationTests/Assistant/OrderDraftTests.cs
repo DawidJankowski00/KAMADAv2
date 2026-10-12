@@ -1,3 +1,4 @@
+using Kamada.Shared.Matching.Drafts;
 using System.Net;
 using Kamada.IntegrationTests.Infrastructure;
 using Kamada.Modules.Assistant.Domain;

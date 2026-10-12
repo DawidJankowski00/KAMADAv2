@@ -15,6 +15,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Kamada.Shared.Kernel\Kamada.Shared.Kernel.csproj" />
     <ProjectReference Include="..\Kamada.Shared.Contracts\Kamada.Shared.Contracts.csproj" />
+    <ProjectReference Include="..\Kamada.Shared.Matching\Kamada.Shared.Matching.csproj" />
   </ItemGroup>
 
   <ItemGroup>
