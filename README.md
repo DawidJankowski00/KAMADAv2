@@ -89,7 +89,7 @@ a Blazor WebAssembly admin panel and a Blazor PWA for workers (couriers, sellers
 
 ## Quick start
 
-Requirements: Docker.
+Requirements: Docker. The credentials and keys in the dev configuration are demo-only placeholders.
 
 ```bash
 docker compose up --build
