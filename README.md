@@ -5,6 +5,8 @@
 Order management and courier delivery platform with **route optimization**. It is a .NET 10 modular monolith with
 a Blazor WebAssembly admin panel and a Blazor PWA for workers (couriers, sellers and administrators).
 
+This is not a portfolio piece: it is a close copy of a system I built to improve the work of a local business.
+
 **Admin panel** (desktop):
 
 - **Catalog.** Products with a category tree and multiple categories per product, search, filters and paging.
