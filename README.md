@@ -274,7 +274,7 @@ dotnet test --project tests/Kamada.ArchitectureTests      # module boundaries on
 
 ## Architecture
 
-A **modular monolith** ([ADR 0001](docs/adr/0001-modular-monolith.md)): one API host and eight modules. Each
+A **modular monolith** ([ADR 0001](docs/adr/0001-modular-monolith.md)): one API host and seven modules. Each
 module has an implementation project and a public `Contracts` project. Modules talk to each other only through
 contracts: plain interfaces called in-process, sharing one database transaction when needed
 ([ADR 0002](docs/adr/0002-schema-and-dbcontext-per-module.md)).
@@ -290,8 +290,7 @@ flowchart LR
         Workforce["Workforce<br/>workers, JWT auth"]
         Catalog["Catalog<br/>products, categories, stock"]
         Customers["Customers<br/>clients, addresses"]
-        Ordering["Ordering<br/>orders, lifecycle"]
-        Payments["Payments<br/>simulated provider"]
+        Ordering["Ordering<br/>orders, lifecycle,<br/>payments (simulated provider)"]
         Delivery["Delivery<br/>locations, runs, stops"]
         RouteOpt["RouteOptimization<br/>matrix + solvers + Maps links"]
         Assistant["Assistant<br/>order drafts (local AI)"]
@@ -303,7 +302,6 @@ flowchart LR
     Ordering -- ICatalogInventory --> Catalog
     Ordering -- ICustomerDirectory --> Customers
     Ordering -- IWorkerDirectory --> Workforce
-    Payments -- IOrderPayments --> Ordering
     Delivery -- IOrderFulfillment --> Ordering
     Delivery -- ICustomerDirectory --> Customers
     Delivery -- ICourierDirectory --> Workforce
@@ -346,7 +344,8 @@ docs/adr/                           # architecture decision records
 
 One database, one schema and one `DbContext` per module. Solid lines are foreign keys within a schema. Dashed
 lines are references to another module: plain ids with no foreign key across schemas. An order keeps a snapshot
-of the recipient and address, so later edits of the client do not change placed orders.
+of the recipient and address, so later edits of the client do not change placed orders. Payments live in the
+`ordering` schema next to the orders (they were a separate module until 2026-11-09) and still reference them by id only.
 
 ```mermaid
 erDiagram

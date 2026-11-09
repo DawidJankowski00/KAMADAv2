@@ -12,7 +12,7 @@ be atomic – most notably placing an order (Ordering) and decrementing stock (C
 ## Decision
 
 - One PostgreSQL database; **each module owns a schema** (`workforce`, `catalog`, `customers`, `ordering`,
-  `payments`, `delivery`).
+  `delivery`; until 2026-11-09 also `payments`, now part of `ordering`, see [ADR 0001](0001-modular-monolith.md)).
 - **Each module has its own `DbContext`** that maps only its own tables, has its own migrations
   (`Infrastructure/Persistence/Migrations`) and its own `__ef_migrations_history` table inside its schema.
   Registration goes through `AddModuleDbContext<T>(schema)` (snake_case naming, auditing interceptor,
