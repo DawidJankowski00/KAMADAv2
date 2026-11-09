@@ -43,8 +43,8 @@ password reset). There is no external identity provider in scope.
 
 ## Update 2026-10-11: workers with several roles
 
-A worker may have several roles (e.g. an administrator who also delivers, see the
-[phone app plan](../plans/mobile-app-roles.md)). The access token carries one `role` claim per role (a JSON array
+A worker may have several roles (e.g. an administrator who also delivers, switching roles in the phone app,
+[ADR 0005](0005-blazor-wasm-frontends.md)). The access token carries one `role` claim per role (a JSON array
 in the payload); `RequireRole` policies match any of them, so `AdminOnly` / `CourierOnly` did not change. A role
 change made by an administrator reaches the worker with the next refresh (≤ 15 min), like other changes to the
 access token. Each frontend lists the roles it accepts and signs the user out when a refresh no longer carries any

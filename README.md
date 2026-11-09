@@ -651,8 +651,6 @@ Measurements per model and phone, and how to take them, are in [docs/on-device-a
 | [0009](docs/adr/0009-offline-ordering-on-the-phone.md) | Offline ordering on the phone: local copy, outbox, idempotent creates |
 | [0010](docs/adr/0010-on-device-assistant-as-a-fallback.md) | On-device assistant as a fallback: server by default, the phone model when the connection is poor |
 
-Smaller decisions are logged in [CLAUDE.md](CLAUDE.md#minor-decisions-log).
-
 ## Possible improvements
 
 - **Delivery time windows** per order: TSP with time windows, with arrival estimates as constraints.
