@@ -17,7 +17,6 @@
     <ProjectReference Include="..\Modules\Catalog\Kamada.Modules.Catalog\Kamada.Modules.Catalog.csproj" />
     <ProjectReference Include="..\Modules\Customers\Kamada.Modules.Customers\Kamada.Modules.Customers.csproj" />
     <ProjectReference Include="..\Modules\Ordering\Kamada.Modules.Ordering\Kamada.Modules.Ordering.csproj" />
-    <ProjectReference Include="..\Modules\Payments\Kamada.Modules.Payments\Kamada.Modules.Payments.csproj" />
     <ProjectReference Include="..\Modules\Workforce\Kamada.Modules.Workforce\Kamada.Modules.Workforce.csproj" />
     <ProjectReference Include="..\Modules\Delivery\Kamada.Modules.Delivery\Kamada.Modules.Delivery.csproj" />
     <ProjectReference Include="..\Modules\RouteOptimization\Kamada.Modules.RouteOptimization\Kamada.Modules.RouteOptimization.csproj" />

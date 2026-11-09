@@ -1,22 +1,21 @@
-using Kamada.Modules.Ordering.Contracts;
-using Kamada.Modules.Payments.Application.Abstractions;
-using Kamada.Modules.Payments.Domain.Payments;
+using Kamada.Modules.Ordering.Application.Abstractions;
+using Kamada.Modules.Ordering.Domain.Payments;
 using Kamada.Shared.Contracts.Payments;
 using Kamada.Shared.Infrastructure.Persistence;
 using Kamada.Shared.Kernel.Results;
 using Microsoft.EntityFrameworkCore;
-using DomainProvider = Kamada.Modules.Payments.Domain.Payments.PaymentProvider;
-using PaymentStatus = Kamada.Modules.Payments.Domain.Payments.PaymentStatus;
+using DomainProvider = Kamada.Modules.Ordering.Domain.Payments.PaymentProvider;
+using PaymentStatus = Kamada.Modules.Ordering.Domain.Payments.PaymentStatus;
 
-namespace Kamada.Modules.Payments.Application;
+namespace Kamada.Modules.Ordering.Application.Payments;
 
 /// <summary>
 /// Payment use cases. Whenever a payment completes, the order is marked as paid in the same transaction.
 /// </summary>
 internal sealed class PaymentService(
-    IPaymentsDbContext db,
+    IOrderingDbContext db,
     IPaymentGateway gateway,
-    IOrderPayments orders,
+    OrderPayments orders,
     IUnitOfWork unitOfWork,
     TimeProvider clock)
 {

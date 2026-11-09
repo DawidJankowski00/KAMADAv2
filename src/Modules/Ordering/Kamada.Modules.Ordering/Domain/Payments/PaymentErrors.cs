@@ -1,6 +1,6 @@
 using Kamada.Shared.Kernel.Results;
 
-namespace Kamada.Modules.Payments.Domain.Payments;
+namespace Kamada.Modules.Ordering.Domain.Payments;
 
 internal static class PaymentErrors
 {

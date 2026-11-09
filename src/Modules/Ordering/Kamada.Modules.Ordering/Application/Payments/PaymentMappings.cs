@@ -1,10 +1,10 @@
 using FluentValidation;
-using Kamada.Modules.Payments.Domain.Payments;
+using Kamada.Modules.Ordering.Domain.Payments;
 using Kamada.Shared.Contracts.Payments;
 using ContractProvider = Kamada.Shared.Contracts.Payments.PaymentProvider;
 using ContractStatus = Kamada.Shared.Contracts.Payments.PaymentStatus;
 
-namespace Kamada.Modules.Payments.Application;
+namespace Kamada.Modules.Ordering.Application.Payments;
 
 internal static class PaymentMappings
 {

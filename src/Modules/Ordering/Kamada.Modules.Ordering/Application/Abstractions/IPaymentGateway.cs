@@ -1,6 +1,6 @@
-using Kamada.Modules.Payments.Domain.Payments;
+using Kamada.Modules.Ordering.Domain.Payments;
 
-namespace Kamada.Modules.Payments.Application.Abstractions;
+namespace Kamada.Modules.Ordering.Application.Abstractions;
 
 internal enum GatewayOutcome
 {

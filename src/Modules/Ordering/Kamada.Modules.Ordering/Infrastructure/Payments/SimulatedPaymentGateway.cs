@@ -1,8 +1,8 @@
 using System.Globalization;
-using Kamada.Modules.Payments.Application.Abstractions;
-using Kamada.Modules.Payments.Domain.Payments;
+using Kamada.Modules.Ordering.Application.Abstractions;
+using Kamada.Modules.Ordering.Domain.Payments;
 
-namespace Kamada.Modules.Payments.Infrastructure;
+namespace Kamada.Modules.Ordering.Infrastructure.Payments;
 
 /// <summary>
 /// Demo provider: cash is approved, card is approved unless a decline is requested, transfer waits for manual

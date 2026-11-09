@@ -1,4 +1,4 @@
-using Kamada.Modules.Payments.Application;
+using Kamada.Modules.Ordering.Application.Payments;
 using Kamada.Shared.Contracts.Payments;
 using Kamada.Shared.Infrastructure.Auth;
 using Kamada.Shared.Infrastructure.Http;
@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 
-namespace Kamada.Modules.Payments.Api;
+namespace Kamada.Modules.Ordering.Api;
 
 internal static class PaymentEndpoints
 {

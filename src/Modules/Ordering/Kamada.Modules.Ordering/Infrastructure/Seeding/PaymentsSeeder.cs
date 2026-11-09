@@ -1,19 +1,20 @@
-using Kamada.Modules.Payments.Application;
-using Kamada.Modules.Payments.Infrastructure.Persistence;
+using Kamada.Modules.Ordering.Application.Payments;
+using Kamada.Modules.Ordering.Infrastructure.Payments;
+using Kamada.Modules.Ordering.Infrastructure.Persistence;
 using Kamada.Shared.Contracts.Payments;
 using Kamada.Shared.Infrastructure.Persistence;
 using Kamada.Shared.Kernel.Results;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Kamada.Modules.Payments.Infrastructure.Seeding;
+namespace Kamada.Modules.Ordering.Infrastructure.Seeding;
 
 /// <summary>
 /// Pays the demo orders through <see cref="PaymentService"/> (which marks them paid), replayed with a
 /// <see cref="SeedClock"/> a few minutes after each order was placed. Mix of card, cash and confirmed transfers;
 /// one card is declined before a second attempt succeeds, the newest orders are unpaid or wait for a transfer.
 /// </summary>
-internal sealed class PaymentsSeeder(PaymentsDbContext db, IServiceProvider services, DemoSeedData seedData, TimeProvider clock) : IDataSeeder
+internal sealed class PaymentsSeeder(OrderingDbContext db, IServiceProvider services, DemoSeedData seedData, TimeProvider clock) : IDataSeeder
 {
     private static readonly TimeSpan JustPlaced = TimeSpan.FromHours(3);
 

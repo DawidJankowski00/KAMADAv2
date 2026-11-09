@@ -1,13 +1,12 @@
 using Kamada.Modules.Ordering.Application.Abstractions;
-using Kamada.Modules.Ordering.Contracts;
 using Kamada.Modules.Ordering.Domain.Orders;
 using Kamada.Shared.Kernel.Results;
 using Microsoft.EntityFrameworkCore;
 
-namespace Kamada.Modules.Ordering.Application;
+namespace Kamada.Modules.Ordering.Application.Payments;
 
-/// <summary>Ordering's public API for the Payments module.</summary>
-internal sealed class OrderPayments(IOrderingDbContext db) : IOrderPayments
+/// <summary>The order side of a payment: its amount and payment state, and <c>New → Paid</c>.</summary>
+internal sealed class OrderPayments(IOrderingDbContext db)
 {
     public async Task<Result<OrderForPayment>> GetOrderForPaymentAsync(Guid orderId, CancellationToken cancellationToken)
     {
@@ -30,6 +29,7 @@ internal sealed class OrderPayments(IOrderingDbContext db) : IOrderPayments
         return new OrderForPayment(order.Id, order.Number, order.TotalAmount, state);
     }
 
+    /// <summary>Moves the order <c>New → Paid</c>. Call inside <c>IUnitOfWork</c> together with saving the payment.</summary>
     public async Task<Result> MarkPaidAsync(Guid orderId, CancellationToken cancellationToken)
     {
         var order = await db.Orders.SingleOrDefaultAsync(o => o.Id == orderId, cancellationToken);

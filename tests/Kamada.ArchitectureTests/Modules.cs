@@ -4,7 +4,6 @@ using Kamada.Modules.Catalog;
 using Kamada.Modules.Customers;
 using Kamada.Modules.Delivery;
 using Kamada.Modules.Ordering;
-using Kamada.Modules.Payments;
 using Kamada.Modules.RouteOptimization;
 using Kamada.Modules.Workforce;
 
@@ -20,7 +19,6 @@ internal static class Modules
         new(CatalogModule.Name, typeof(CatalogModule).Assembly),
         new(CustomersModule.Name, typeof(CustomersModule).Assembly),
         new(OrderingModule.Name, typeof(OrderingModule).Assembly),
-        new(PaymentsModule.Name, typeof(PaymentsModule).Assembly),
         new(WorkforceModule.Name, typeof(WorkforceModule).Assembly),
         new(DeliveryModule.Name, typeof(DeliveryModule).Assembly),
         new(RouteOptimizationModule.Name, typeof(RouteOptimizationModule).Assembly),

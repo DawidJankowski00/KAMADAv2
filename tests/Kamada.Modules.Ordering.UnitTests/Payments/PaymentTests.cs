@@ -1,9 +1,9 @@
-using Kamada.Modules.Payments.Application.Abstractions;
-using Kamada.Modules.Payments.Domain.Payments;
-using Kamada.Modules.Payments.Infrastructure;
+using Kamada.Modules.Ordering.Application.Abstractions;
+using Kamada.Modules.Ordering.Domain.Payments;
+using Kamada.Modules.Ordering.Infrastructure.Payments;
 using Microsoft.Extensions.Time.Testing;
 
-namespace Kamada.Modules.Payments.UnitTests;
+namespace Kamada.Modules.Ordering.UnitTests.Payments;
 
 public sealed class PaymentTests
 {

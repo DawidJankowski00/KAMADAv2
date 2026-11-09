@@ -1,7 +1,7 @@
 using Kamada.Shared.Kernel.Domain;
 using Kamada.Shared.Kernel.Results;
 
-namespace Kamada.Modules.Payments.Domain.Payments;
+namespace Kamada.Modules.Ordering.Domain.Payments;
 
 internal enum PaymentProvider
 {
