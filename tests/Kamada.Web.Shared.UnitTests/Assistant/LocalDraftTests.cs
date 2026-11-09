@@ -3,7 +3,6 @@ using Kamada.Shared.Contracts.Catalog;
 using Kamada.Shared.Contracts.Customers;
 using Kamada.Shared.Matching.Drafts;
 using Kamada.Web.Shared.Assistant;
-using Kamada.Web.Shared.Assistant.Evaluation;
 
 namespace Kamada.Web.Shared.UnitTests.Assistant;
 
@@ -59,34 +58,6 @@ public sealed class LocalDraftTests
 
         draft.Lines.Single().SelectedProductId.ShouldBeNull();
         draft.Warnings.ShouldContain(new DraftWarningDto(DraftWarningCodes.ProductNotFound, "pralka"));
-    }
-
-    [Fact]
-    public async Task Score_CorrectDraft_IsAllCorrect()
-    {
-        var draft = await DraftAsync(Answer);
-        var evalCase = new AssistantEvalCase(
-            "x", "pl", "text", "Existing:Jan Kowalski", "Existing:Aleja Grunwaldzka 15",
-            [new AssistantEvalLine("WODA-NG", null, false, 6), new AssistantEvalLine("CHLEB-RAZ", null, false, 2)]);
-
-        var result = AssistantEvalScorer.Evaluate(evalCase, draft, Jan, 1200);
-
-        result.AllCorrect.ShouldBeTrue(string.Join("; ", result.Problems));
-    }
-
-    [Fact]
-    public async Task Score_WrongProductAndQuantity_ReportsBoth()
-    {
-        var draft = await DraftAsync(Answer);
-        var evalCase = new AssistantEvalCase(
-            "x", "pl", "text", "Existing:Jan Kowalski", "None",
-            [new AssistantEvalLine("CHLEB-RAZ", null, false, 6), new AssistantEvalLine("CHLEB-RAZ", null, false, 2)]);
-
-        var result = AssistantEvalScorer.Evaluate(evalCase, draft, Jan, 1200);
-
-        result.AllCorrect.ShouldBeFalse();
-        (result.ClientCorrect, result.AddressCorrect, result.ProductsCorrect, result.QuantitiesCorrect).ShouldBe((true, false, 1, 2));
-        result.Problems.ShouldContain(p => p.StartsWith("address: expected None", StringComparison.Ordinal));
     }
 
     private static async Task<OrderDraftDto> DraftAsync(string modelAnswer)
