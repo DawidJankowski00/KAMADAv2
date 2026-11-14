@@ -17,6 +17,7 @@ internal static class WorkerMappings
         worker.PhoneNumber,
         [.. worker.Roles.Select(r => r.ToContract())],
         worker.IsActive,
+        worker.LockedUntil,
         worker.CreatedAt);
 
     public static AuthenticatedUserDto ToAuthenticatedUser(this Worker worker) =>

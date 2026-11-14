@@ -41,6 +41,10 @@ public static class WorkforceModule
         services.AddScoped<ChangePasswordHandler>();
         services.AddScoped<ForgotPasswordHandler>();
         services.AddScoped<ResetPasswordHandler>();
+        services.AddOptions<AccountLockoutOptions>()
+            .Bind(configuration.GetSection(AccountLockoutOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
         services.AddOptions<PasswordResetOptions>()
             .Bind(configuration.GetSection(PasswordResetOptions.SectionName))
             .ValidateDataAnnotations()

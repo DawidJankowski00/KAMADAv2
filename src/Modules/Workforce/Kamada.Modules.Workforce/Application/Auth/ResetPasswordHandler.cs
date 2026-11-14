@@ -38,6 +38,7 @@ internal sealed partial class ResetPasswordHandler(
 
         token.Invalidate(now);
         worker.ChangePasswordHash(passwordHasher.HashPassword(worker, request.NewPassword));
+        worker.ClearFailedLogins();
         await db.RevokeAllSessionsAsync(worker.Id, now, cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
 

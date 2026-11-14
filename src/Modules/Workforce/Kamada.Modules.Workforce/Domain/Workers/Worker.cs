@@ -40,6 +40,12 @@ internal sealed class Worker : Entity, IAuditable
 
     public bool IsActive { get; private set; }
 
+    /// <summary>Wrong passwords since the last successful login or lockout.</summary>
+    public int FailedLoginCount { get; private set; }
+
+    /// <summary>Sign-in is refused until then (after too many wrong passwords).</summary>
+    public DateTimeOffset? LockedUntil { get; private set; }
+
     public DateTimeOffset CreatedAt { get; private set; }
 
     public DateTimeOffset? UpdatedAt { get; private set; }
@@ -109,6 +115,34 @@ internal sealed class Worker : Entity, IAuditable
     }
 
     public void ChangePasswordHash(string passwordHash) => PasswordHash = passwordHash;
+
+    public bool IsLockedOut(DateTimeOffset now) => LockedUntil > now;
+
+    /// <summary>
+    /// Counts a wrong password; the <paramref name="maxAttempts"/>-th one locks the account for
+    /// <paramref name="lockout"/> and starts counting again. Attempts while locked are not counted.
+    /// </summary>
+    public void RegisterFailedLogin(DateTimeOffset now, int maxAttempts, TimeSpan lockout)
+    {
+        if (IsLockedOut(now))
+        {
+            return;
+        }
+
+        FailedLoginCount++;
+        if (FailedLoginCount >= maxAttempts)
+        {
+            LockedUntil = now + lockout;
+            FailedLoginCount = 0;
+        }
+    }
+
+    /// <summary>After a successful login, an admin unlock or a password reset: no lockout, counting from zero.</summary>
+    public void ClearFailedLogins()
+    {
+        FailedLoginCount = 0;
+        LockedUntil = null;
+    }
 
     public Result Deactivate(Guid deactivatedBy)
     {

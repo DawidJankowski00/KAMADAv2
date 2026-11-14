@@ -85,7 +85,22 @@ internal sealed class WorkerCommands(
         }
 
         worker.ChangePasswordHash(passwordHasher.HashPassword(worker, request.NewPassword));
+        worker.ClearFailedLogins();
         await db.RevokeAllSessionsAsync(worker.Id, clock.GetUtcNow(), cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
+        return Result.Success();
+    }
+
+    /// <summary>Lifts a lockout after repeated wrong passwords (the worker may sign in again at once).</summary>
+    public async Task<Result> UnlockAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var worker = await db.Workers.SingleOrDefaultAsync(w => w.Id == id, cancellationToken);
+        if (worker is null)
+        {
+            return WorkerErrors.NotFound;
+        }
+
+        worker.ClearFailedLogins();
         await db.SaveChangesAsync(cancellationToken);
         return Result.Success();
     }

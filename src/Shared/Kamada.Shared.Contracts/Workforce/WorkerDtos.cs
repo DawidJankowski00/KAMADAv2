@@ -8,6 +8,7 @@ public enum WorkerRole
 }
 
 /// <param name="Roles">One or more roles, in enum order.</param>
+/// <param name="LockedUntil">Set while sign-in is refused after repeated wrong passwords (may already be in the past).</param>
 public sealed record WorkerDto(
     Guid Id,
     string Username,
@@ -17,6 +18,7 @@ public sealed record WorkerDto(
     string PhoneNumber,
     IReadOnlyList<WorkerRole> Roles,
     bool IsActive,
+    DateTimeOffset? LockedUntil,
     DateTimeOffset CreatedAt);
 
 public sealed record CreateWorkerRequest(

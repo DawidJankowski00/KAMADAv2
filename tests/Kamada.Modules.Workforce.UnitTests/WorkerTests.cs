@@ -122,6 +122,57 @@ public sealed class WorkerTests
     }
 
     [Fact]
+    public void RegisterFailedLogin_ReachingTheLimit_LocksForTheDurationAndRestartsCounting()
+    {
+        var worker = CreateWorker(WorkerRole.Courier);
+        var now = new DateTimeOffset(2026, 11, 14, 12, 0, 0, TimeSpan.Zero);
+
+        for (var attempt = 1; attempt < 5; attempt++)
+        {
+            worker.RegisterFailedLogin(now, maxAttempts: 5, TimeSpan.FromMinutes(15));
+        }
+
+        worker.IsLockedOut(now).ShouldBeFalse();
+        worker.RegisterFailedLogin(now, maxAttempts: 5, TimeSpan.FromMinutes(15));
+
+        worker.IsLockedOut(now.AddMinutes(14)).ShouldBeTrue();
+        worker.IsLockedOut(now.AddMinutes(15)).ShouldBeFalse();
+        worker.FailedLoginCount.ShouldBe(0);
+    }
+
+    [Fact]
+    public void RegisterFailedLogin_WhileLocked_IsNotCounted()
+    {
+        var worker = CreateWorker(WorkerRole.Courier);
+        var now = new DateTimeOffset(2026, 11, 14, 12, 0, 0, TimeSpan.Zero);
+        worker.RegisterFailedLogin(now, maxAttempts: 3, TimeSpan.FromMinutes(15));
+        worker.RegisterFailedLogin(now, maxAttempts: 3, TimeSpan.FromMinutes(15));
+        worker.RegisterFailedLogin(now, maxAttempts: 3, TimeSpan.FromMinutes(15));
+        var lockedUntil = worker.LockedUntil;
+
+        worker.RegisterFailedLogin(now.AddMinutes(5), maxAttempts: 3, TimeSpan.FromMinutes(15));
+
+        worker.LockedUntil.ShouldBe(lockedUntil);
+        worker.FailedLoginCount.ShouldBe(0);
+    }
+
+    [Fact]
+    public void ClearFailedLogins_LiftsTheLockout()
+    {
+        var worker = CreateWorker(WorkerRole.Courier);
+        var now = new DateTimeOffset(2026, 11, 14, 12, 0, 0, TimeSpan.Zero);
+        for (var attempt = 0; attempt < 3; attempt++)
+        {
+            worker.RegisterFailedLogin(now, maxAttempts: 3, TimeSpan.FromMinutes(15));
+        }
+
+        worker.ClearFailedLogins();
+
+        worker.IsLockedOut(now).ShouldBeFalse();
+        worker.LockedUntil.ShouldBeNull();
+    }
+
+    [Fact]
     public void SetRoles_OwnerRemovingAdminFromAnotherWorker_Succeeds()
     {
         var worker = CreateWorker(WorkerRole.Admin, WorkerRole.Courier);
