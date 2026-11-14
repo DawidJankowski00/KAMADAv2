@@ -67,7 +67,8 @@ This is not a portfolio piece: it is a close copy of a system I built to improve
   only extracts what was said; matching to the database is deterministic C#. Accuracy is measured by an
   evaluation suite.
 - **Tests:** unit, integration (Testcontainers) and architecture tests, plus BenchmarkDotNet for the solvers.
-  CI runs on GitHub Actions.
+  CI runs on GitHub Actions and also checks NuGet packages for known vulnerabilities, the git history for secrets
+  (gitleaks) and the Docker images for fixable vulnerabilities (Grype), on every push and weekly.
 - **Deployment:** one-command startup with Docker Compose and realistic demo data: real addresses in
   the Tricity and Szczecin, orders in every status, runs planned for today and one completed yesterday.
 
@@ -633,6 +634,7 @@ dotnet run -c Release --project benchmarks/Kamada.Assistant.Evals -- --model qwe
 | [0010](docs/adr/0010-on-device-assistant-as-a-fallback.md) | ~~On-device assistant as a fallback~~ – superseded: removed, the phone uses the server's assistant |
 | [0011](docs/adr/0011-two-factor-authentication.md) | Two-factor authentication with TOTP, recovery codes and a stateless sign-in challenge |
 | [0012](docs/adr/0012-least-privilege-database-role.md) | The API connects with a data-only database role; migrations run as the schema owner |
+| [0013](docs/adr/0013-security-baseline-asvs-level-2.md) | Security baseline: OWASP ASVS 4.0.3 level 2, reviewed in [docs/security.md](docs/security.md) |
 
 ## Possible improvements
 
