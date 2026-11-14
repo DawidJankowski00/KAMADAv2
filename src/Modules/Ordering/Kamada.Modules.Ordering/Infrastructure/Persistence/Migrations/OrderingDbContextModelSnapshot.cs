@@ -295,7 +295,7 @@ namespace Kamada.Modules.Ordering.Infrastructure.Persistence.Migrations
 
                     b.HasIndex(new[] { "OrderId" }, "ux_payments_one_active_per_order")
                         .IsUnique()
-                        .HasDatabaseName("ix_payments_order_id1")
+                        .HasDatabaseName("ux_payments_one_active_per_order")
                         .HasFilter("status IN ('Pending', 'Completed')");
 
                     b.ToTable("payments", "ordering", t =>
@@ -312,6 +312,16 @@ namespace Kamada.Modules.Ordering.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_order_items_orders_order_id");
+                });
+
+            modelBuilder.Entity("Kamada.Modules.Ordering.Domain.Payments.Payment", b =>
+                {
+                    b.HasOne("Kamada.Modules.Ordering.Domain.Orders.Order", null)
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_payments_orders_order_id");
                 });
 
             modelBuilder.Entity("Kamada.Modules.Ordering.Domain.Orders.Order", b =>

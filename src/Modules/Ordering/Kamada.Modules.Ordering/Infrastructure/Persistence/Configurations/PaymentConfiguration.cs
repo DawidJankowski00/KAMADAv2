@@ -1,3 +1,4 @@
+using Kamada.Modules.Ordering.Domain.Orders;
 using Kamada.Modules.Ordering.Domain.Payments;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -19,10 +20,18 @@ internal sealed class PaymentConfiguration : IEntityTypeConfiguration<Payment>
         builder.Property(p => p.FailureReason).HasMaxLength(500);
 
         // Last line of defence against two concurrent "pay" clicks: one active payment per order.
+        // Named explicitly: the snake_case convention would otherwise call it ix_payments_order_id1.
         builder.HasIndex(p => p.OrderId, "ux_payments_one_active_per_order")
             .IsUnique()
-            .HasFilter("status IN ('Pending', 'Completed')");
+            .HasFilter("status IN ('Pending', 'Completed')")
+            .HasDatabaseName("ux_payments_one_active_per_order");
         builder.HasIndex(p => p.OrderId, "ix_payments_order_id");
+        // Same schema since payments moved into Ordering, so the database can enforce the reference.
+        // Restrict: an order with payments is never deleted.
+        builder.HasOne<Order>()
+            .WithMany()
+            .HasForeignKey(p => p.OrderId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.Ignore(p => p.IsActive);
         builder.Ignore(p => p.DomainEvents);
