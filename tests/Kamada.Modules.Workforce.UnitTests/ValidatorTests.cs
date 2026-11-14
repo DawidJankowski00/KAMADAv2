@@ -1,4 +1,6 @@
+using Kamada.Modules.Workforce.Application.Auth;
 using Kamada.Modules.Workforce.Application.Workers;
+using Kamada.Shared.Contracts.Auth;
 using Kamada.Shared.Contracts.Workforce;
 
 namespace Kamada.Modules.Workforce.UnitTests;
@@ -89,5 +91,19 @@ public sealed class ValidatorTests
         var result = new UpdateWorkerRequestValidator().Validate(request);
 
         result.Errors.ShouldContain(e => e.PropertyName == nameof(UpdateWorkerRequest.Roles));
+    }
+
+    [Fact]
+    public void ChangePassword_SameAsCurrent_Fails()
+    {
+        var result = new ChangePasswordRequestValidator().Validate(new ChangePasswordRequest("Secret123", "Secret123"));
+
+        result.Errors.ShouldContain(e => e.PropertyName == nameof(ChangePasswordRequest.NewPassword));
+    }
+
+    [Fact]
+    public void ChangePassword_StrongNewPassword_Passes()
+    {
+        new ChangePasswordRequestValidator().Validate(new ChangePasswordRequest("Secret123", "Nowe1234!")).IsValid.ShouldBeTrue();
     }
 }

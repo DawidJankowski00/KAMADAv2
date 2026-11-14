@@ -45,6 +45,15 @@ internal static class AuthEndpoints
             .WithValidation<LogoutRequest>()
             .WithSummary("Revoke a refresh token");
 
+        group.MapPost("/change-password", async (ChangePasswordRequest request, ChangePasswordHandler handler, ICurrentUser user, CancellationToken ct) =>
+                (await handler.HandleAsync(user.Id, request, ct)).ToHttpResult(TypedResults.Ok))
+            .RequireRateLimiting(RateLimitPolicies.Login)
+            .WithValidation<ChangePasswordRequest>()
+            .WithSummary("Change own password (signs out every other session, returns a new token pair)")
+            .Produces<TokenResponse>()
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status429TooManyRequests);
+
         group.MapGet("/me", async (IWorkforceDbContext db, ICurrentUser user, CancellationToken ct) =>
             {
                 var worker = await db.Workers.AsNoTracking().SingleOrDefaultAsync(w => w.Id == user.Id, ct);

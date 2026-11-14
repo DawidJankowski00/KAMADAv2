@@ -38,6 +38,7 @@ public static class WorkforceModule
 
         services.AddScoped<AuthSessionFactory>();
         services.AddScoped<LoginHandler>();
+        services.AddScoped<ChangePasswordHandler>();
         services.AddScoped<RefreshTokenHandler>();
         services.AddScoped<LogoutHandler>();
         services.AddScoped<WorkerQueries>();

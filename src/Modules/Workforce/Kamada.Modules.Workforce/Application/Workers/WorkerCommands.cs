@@ -1,4 +1,5 @@
 using Kamada.Modules.Workforce.Application.Abstractions;
+using Kamada.Modules.Workforce.Application.Auth;
 using Kamada.Modules.Workforce.Domain.Workers;
 using Kamada.Shared.Contracts.Workforce;
 using Kamada.Shared.Infrastructure.Auth;
@@ -84,7 +85,7 @@ internal sealed class WorkerCommands(
         }
 
         worker.ChangePasswordHash(passwordHasher.HashPassword(worker, request.NewPassword));
-        await RevokeSessionsAsync(worker.Id, cancellationToken);
+        await db.RevokeAllSessionsAsync(worker.Id, clock.GetUtcNow(), cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
         return Result.Success();
     }
@@ -103,7 +104,7 @@ internal sealed class WorkerCommands(
             return result;
         }
 
-        await RevokeSessionsAsync(worker.Id, cancellationToken);
+        await db.RevokeAllSessionsAsync(worker.Id, clock.GetUtcNow(), cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
         return Result.Success();
     }
@@ -125,19 +126,5 @@ internal sealed class WorkerCommands(
     {
         var normalized = Worker.NormalizeEmail(email);
         return db.Workers.AnyAsync(w => w.Email == normalized && w.Id != workerId, cancellationToken);
-    }
-
-    /// <summary>Signs the worker out everywhere (their access tokens expire within minutes).</summary>
-    private async Task RevokeSessionsAsync(Guid workerId, CancellationToken cancellationToken)
-    {
-        var now = clock.GetUtcNow();
-        var active = await db.RefreshTokens
-            .Where(t => t.WorkerId == workerId && t.RevokedAt == null)
-            .ToListAsync(cancellationToken);
-
-        foreach (var token in active)
-        {
-            token.Revoke(now);
-        }
     }
 }
