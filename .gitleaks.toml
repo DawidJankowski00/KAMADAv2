@@ -1,0 +1,13 @@
+# Secret scanning (gitleaks, run in CI). The default rules apply; only the placeholder keys below are allowed – they are
+# test and local-development values, never used outside them (appsettings.json ships an empty signing key and the API
+# refuses to start without a real one).
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Placeholder JWT signing keys of tests, evals and local development"
+regexes = [
+    '''integration-tests-signing-key-0123456789''',
+    '''assistant-evals-only-signing-key-0123456789''',
+    '''development-only-signing-key-change-me-0123456789''',
+]

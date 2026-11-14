@@ -59,4 +59,4 @@ csp="$csp; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri '
     echo 'add_header Permissions-Policy "camera=(), geolocation=(), payment=(), microphone=(self)" always;'
     echo "add_header Content-Security-Policy \"$csp\" always;"
 } > "$headers"
-echo "KAMADA: Content-Security-Policy allows the API at ${api_origin:-'self'} and$(echo "$script_hashes" | wc -w) inline script(s)"
+echo "KAMADA: Content-Security-Policy allows the API at ${api_origin:-'self'} and $(echo "$script_hashes" | wc -w | tr -d ' ') inline script(s)"
