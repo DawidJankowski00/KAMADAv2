@@ -57,7 +57,7 @@ Only the requirements that apply to this system are listed; the numbers are ASVS
 | 3.3.2 Re-authentication (L2: 12 h or 30 min idle) | Gap | Refresh tokens are valid for 14 days and slide with use; there is no absolute session lifetime. G2. |
 | 3.3.3 Sign out other sessions after a password change | Met | Automatic (change, reset and admin reset revoke every session). |
 | 3.3.4 See and end own sessions | Met | "Moje sesje": device, IP, times; sign out one or all others. |
-| 3.5.2 / 3.5.3 Signed, short-lived stateless tokens | Met | HS256 JWT, 15 min, issuer/audience/lifetime validated, unsigned tokens refused. The accepted algorithm is not pinned explicitly (the symmetric key only verifies HMAC). G12. |
+| 3.5.2 / 3.5.3 Signed, short-lived stateless tokens | Met | HS256 JWT, 15 min, issuer/audience/lifetime validated, unsigned tokens refused, only HS256 accepted (`ValidAlgorithms`). Closed G12. |
 | 3.7.1 Re-authentication before sensitive operations | Partial | Own password change and turning 2FA off need the password (and a code). Admin actions on other accounts (reset password, reset 2FA) need only the admin's session. G13. |
 
 ## V4 Access control
@@ -167,5 +167,5 @@ Only the requirements that apply to this system are listed; the numbers are ASVS
 | G9 | 2.1.8, 2.1.12 | "Show password" toggle and a strength hint on the password forms. | small |
 | G10 | 2.1.7 | Ship or configure a large breached-password list (licence to check, e.g. SecLists – MIT). | small |
 | G11 | 3.2.3 | Accepted for the web apps (CSP mitigates); resolved for the phone by MAUI secure storage (stage 4). | stage 4 |
-| G12 | 3.5.3 | Pin `ValidAlgorithms = HS256` in the JWT validation. | small |
+| ~~G12~~ | 3.5.3 | Done 2026-11-14: only HS256 accepted. | – |
 | G13 | 3.7.1 | Ask for the admin's password or code before resetting another worker's password or 2FA. | medium |

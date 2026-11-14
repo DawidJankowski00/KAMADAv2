@@ -33,6 +33,8 @@ public static class AuthServiceCollectionExtensions
                     ValidIssuer = jwt.Issuer,
                     ValidAudience = jwt.Audience,
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.SigningKey)),
+                    // Only the algorithm the API signs with; a token's own "alg" header never chooses another.
+                    ValidAlgorithms = [SecurityAlgorithms.HmacSha256],
                     NameClaimType = KamadaClaimTypes.Name,
                     RoleClaimType = KamadaClaimTypes.Role,
                     ClockSkew = TimeSpan.FromSeconds(30),
