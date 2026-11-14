@@ -36,13 +36,24 @@ internal static class HostingExtensions
 
     public static IServiceCollection AddKamadaCors(this IServiceCollection services, IConfiguration configuration)
     {
-        var origins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+        var settings = configuration.GetSection(CorsSettings.SectionName).Get<CorsSettings>() ?? new CorsSettings();
+        var (origins, invalid) = settings.Normalize();
+        if (invalid is not null)
+        {
+            // Fail at start-up: a wildcard or a URL with a path would either open the API to every site or silently
+            // block the apps.
+            throw new InvalidOperationException(
+                $"Cors:AllowedOrigins contains '{invalid}', which is not an origin (scheme://host[:port], no path, no wildcard).");
+        }
+
         return services.AddCors(options => options.AddPolicy(FrontendsCorsPolicy, policy => policy
             .WithOrigins(origins)
-            .AllowAnyHeader()
-            .AllowAnyMethod()
+            // Only what the apps send: the bearer token, JSON or a multipart upload, and the ETag of offline data.
+            .WithHeaders(HeaderNames.Authorization, HeaderNames.ContentType, HeaderNames.IfNoneMatch)
+            .WithMethods(HttpMethods.Get, HttpMethods.Post, HttpMethods.Put, HttpMethods.Delete)
             // The phone app reads the tag of its offline lookup data to send it back in If-None-Match.
-            .WithExposedHeaders(HeaderNames.ETag)));
+            .WithExposedHeaders(HeaderNames.ETag)
+            .SetPreflightMaxAge(TimeSpan.FromMinutes(10))));
     }
 
     /// <summary>
