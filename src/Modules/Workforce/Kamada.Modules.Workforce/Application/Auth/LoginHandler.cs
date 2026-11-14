@@ -24,7 +24,7 @@ internal sealed partial class LoginHandler(
     private static readonly Lazy<string> DummyHash =
         new(() => new PasswordHasher<Worker>().HashPassword(null!, Guid.NewGuid().ToString()));
 
-    public async Task<Result<TokenResponse>> HandleAsync(LoginRequest request, CancellationToken cancellationToken)
+    public async Task<Result<TokenResponse>> HandleAsync(LoginRequest request, SessionClient client, CancellationToken cancellationToken)
     {
         var username = Worker.NormalizeUsername(request.Username);
         var worker = await db.Workers.SingleOrDefaultAsync(w => w.Username == username, cancellationToken);
@@ -63,7 +63,7 @@ internal sealed partial class LoginHandler(
         }
 
         worker.ClearFailedLogins();
-        var response = sessions.Start(worker);
+        var response = sessions.Start(worker, client);
         await db.SaveChangesAsync(cancellationToken);
 
         LogSuccessfulLogin(worker.Id, string.Join(", ", worker.Roles));

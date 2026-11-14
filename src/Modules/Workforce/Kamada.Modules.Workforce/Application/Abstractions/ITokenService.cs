@@ -10,7 +10,8 @@ internal interface ITokenService
 {
     TimeSpan RefreshTokenLifetime { get; }
 
-    AccessToken CreateAccessToken(Worker worker);
+    /// <param name="sessionId">The refresh token family (one per sign-in); sent as the <c>sid</c> claim.</param>
+    AccessToken CreateAccessToken(Worker worker, Guid sessionId);
 
     /// <summary>
     /// Cryptographically random opaque token (refresh tokens, password reset tokens) plus the SHA-256 hash that is

@@ -20,7 +20,7 @@ internal sealed partial class ChangePasswordHandler(
     TimeProvider clock,
     ILogger<ChangePasswordHandler> logger)
 {
-    public async Task<Result<TokenResponse>> HandleAsync(Guid workerId, ChangePasswordRequest request, CancellationToken cancellationToken)
+    public async Task<Result<TokenResponse>> HandleAsync(Guid workerId, ChangePasswordRequest request, SessionClient client, CancellationToken cancellationToken)
     {
         var worker = await db.Workers.SingleOrDefaultAsync(w => w.Id == workerId && w.IsActive, cancellationToken);
         if (worker is null)
@@ -36,7 +36,7 @@ internal sealed partial class ChangePasswordHandler(
 
         worker.ChangePasswordHash(passwordHasher.HashPassword(worker, request.NewPassword));
         await db.RevokeAllSessionsAsync(worker.Id, clock.GetUtcNow(), cancellationToken);
-        var response = sessions.Start(worker);
+        var response = sessions.Start(worker, client);
         await db.SaveChangesAsync(cancellationToken);
 
         LogPasswordChanged(worker.Id);

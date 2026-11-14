@@ -18,8 +18,8 @@ internal static class AuthEndpoints
     {
         var group = endpoints.MapGroup("/api/auth").WithTags("Auth");
 
-        group.MapPost("/login", async (LoginRequest request, LoginHandler handler, CancellationToken ct) =>
-                (await handler.HandleAsync(request, ct)).ToHttpResult(TypedResults.Ok))
+        group.MapPost("/login", async (LoginRequest request, LoginHandler handler, HttpContext http, CancellationToken ct) =>
+                (await handler.HandleAsync(request, http.ToSessionClient(), ct)).ToHttpResult(TypedResults.Ok))
             .AllowAnonymous()
             .RequireRateLimiting(RateLimitPolicies.Login)
             .WithValidation<LoginRequest>()
@@ -28,8 +28,8 @@ internal static class AuthEndpoints
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status429TooManyRequests);
 
-        group.MapPost("/refresh", async (RefreshTokenRequest request, RefreshTokenHandler handler, CancellationToken ct) =>
-                (await handler.HandleAsync(request, ct)).ToHttpResult(TypedResults.Ok))
+        group.MapPost("/refresh", async (RefreshTokenRequest request, RefreshTokenHandler handler, HttpContext http, CancellationToken ct) =>
+                (await handler.HandleAsync(request, http.ToSessionClient(), ct)).ToHttpResult(TypedResults.Ok))
             .AllowAnonymous()
             .RequireRateLimiting(RateLimitPolicies.Login)
             .WithValidation<RefreshTokenRequest>()
@@ -45,8 +45,8 @@ internal static class AuthEndpoints
             .WithValidation<LogoutRequest>()
             .WithSummary("Revoke a refresh token");
 
-        group.MapPost("/change-password", async (ChangePasswordRequest request, ChangePasswordHandler handler, ICurrentUser user, CancellationToken ct) =>
-                (await handler.HandleAsync(user.Id, request, ct)).ToHttpResult(TypedResults.Ok))
+        group.MapPost("/change-password", async (ChangePasswordRequest request, ChangePasswordHandler handler, ICurrentUser user, HttpContext http, CancellationToken ct) =>
+                (await handler.HandleAsync(user.Id, request, http.ToSessionClient(), ct)).ToHttpResult(TypedResults.Ok))
             .RequireRateLimiting(RateLimitPolicies.Login)
             .WithValidation<ChangePasswordRequest>()
             .WithSummary("Change own password (signs out every other session, returns a new token pair)")

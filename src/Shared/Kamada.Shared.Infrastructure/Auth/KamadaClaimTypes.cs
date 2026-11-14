@@ -10,4 +10,7 @@ public static class KamadaClaimTypes
     public const string Role = "role";
     public const string GivenName = "given_name";
     public const string FamilyName = "family_name";
+
+    /// <summary>Session (refresh token family) the access token belongs to.</summary>
+    public const string SessionId = "sid";
 }

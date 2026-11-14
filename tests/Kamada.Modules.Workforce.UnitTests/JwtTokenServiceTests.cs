@@ -27,7 +27,8 @@ public sealed class JwtTokenServiceTests
     {
         var worker = Worker.Create("admin", "jan@kamada.test", "hash", "Anna", "Nowak", "+48 600 000 000", [WorkerRole.Admin]).Value;
 
-        var accessToken = CreateService().CreateAccessToken(worker);
+        var sessionId = Guid.NewGuid();
+        var accessToken = CreateService().CreateAccessToken(worker, sessionId);
 
         accessToken.ExpiresAt.ShouldBe(_clock.GetUtcNow() + Options.AccessTokenLifetime);
         var jwt = new JsonWebToken(accessToken.Token);
@@ -36,6 +37,7 @@ public sealed class JwtTokenServiceTests
         jwt.Subject.ShouldBe(worker.Id.ToString());
         jwt.GetClaim(KamadaClaimTypes.Role).Value.ShouldBe("Admin");
         jwt.GetClaim(KamadaClaimTypes.Name).Value.ShouldBe("admin");
+        jwt.GetClaim(KamadaClaimTypes.SessionId).Value.ShouldBe(sessionId.ToString());
     }
 
     [Fact]
@@ -43,7 +45,7 @@ public sealed class JwtTokenServiceTests
     {
         var worker = Worker.Create("anna", "jan@kamada.test", "hash", "Anna", "Nowak", "+48 600 000 000", [WorkerRole.Courier, WorkerRole.Admin]).Value;
 
-        var accessToken = CreateService().CreateAccessToken(worker);
+        var accessToken = CreateService().CreateAccessToken(worker, Guid.NewGuid());
 
         var jwt = new JsonWebToken(accessToken.Token);
         jwt.Claims.Where(c => c.Type == KamadaClaimTypes.Role).Select(c => c.Value).ShouldBe(["Admin", "Courier"]);

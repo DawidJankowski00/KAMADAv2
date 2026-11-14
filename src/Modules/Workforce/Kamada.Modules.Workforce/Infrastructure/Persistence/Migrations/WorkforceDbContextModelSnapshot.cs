@@ -92,6 +92,11 @@ namespace Kamada.Modules.Workforce.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("family_id");
 
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(45)
+                        .HasColumnType("character varying(45)")
+                        .HasColumnName("ip_address");
+
                     b.Property<Guid?>("ReplacedByTokenId")
                         .HasColumnType("uuid")
                         .HasColumnName("replaced_by_token_id");
@@ -109,6 +114,11 @@ namespace Kamada.Modules.Workforce.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
+
+                    b.Property<string>("UserAgent")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("user_agent");
 
                     b.Property<uint>("Version")
                         .IsConcurrencyToken()

@@ -14,7 +14,7 @@ internal sealed partial class RefreshTokenHandler(
     TimeProvider clock,
     ILogger<RefreshTokenHandler> logger)
 {
-    public async Task<Result<TokenResponse>> HandleAsync(RefreshTokenRequest request, CancellationToken cancellationToken)
+    public async Task<Result<TokenResponse>> HandleAsync(RefreshTokenRequest request, SessionClient client, CancellationToken cancellationToken)
     {
         var hash = tokens.HashOpaqueToken(request.RefreshToken);
         var current = await db.RefreshTokens.SingleOrDefaultAsync(t => t.TokenHash == hash, cancellationToken);
@@ -46,7 +46,7 @@ internal sealed partial class RefreshTokenHandler(
             return AuthErrors.InvalidRefreshToken;
         }
 
-        var response = sessions.Rotate(worker, current);
+        var response = sessions.Rotate(worker, current, client);
         await db.SaveChangesAsync(cancellationToken);
         return response;
     }
