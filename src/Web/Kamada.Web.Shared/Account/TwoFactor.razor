@@ -1,0 +1,176 @@
+@page "/account/two-factor"
+@attribute [Authorize]
+@using Kamada.Shared.Contracts.Auth
+@inject ApiClient Api
+@inject ISnackbar Snackbar
+@inject IJSRuntime Js
+
+@* Shared by the web panel and the phone app; no role in [Authorize], so every role of the phone app shows it. *@
+<PageTitle>Logowanie dwuetapowe – KAMADA</PageTitle>
+
+<MudText Typo="Typo.h5" HtmlTag="h1" Class="mb-2">Logowanie dwuetapowe</MudText>
+<MudText Typo="Typo.body2" Class="mud-text-secondary mb-4" Style="max-width: 640px">
+    Po włączeniu przy logowaniu oprócz hasła trzeba wpisać kod z aplikacji uwierzytelniającej w telefonie
+    (np. Google Authenticator, Microsoft Authenticator, Aegis). Ktoś, kto pozna Twoje hasło, nie zaloguje się bez telefonu.
+</MudText>
+
+<MudPaper Class="pa-4" Style="max-width: 640px">
+    @if (_status is null)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else if (_recoveryCodes is not null)
+    {
+        <MudAlert Severity="Severity.Success" Class="mb-4">Zapisz kody zapasowe – zobaczysz je tylko teraz.</MudAlert>
+        <MudText Typo="Typo.body2" Class="mb-3">
+            Każdy kod pozwala zalogować się jeden raz bez telefonu (np. po jego zgubieniu). Przechowuj je w bezpiecznym miejscu,
+            np. wydrukowane albo w menedżerze haseł.
+        </MudText>
+        <div class="mb-4" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; font-size: 1.05rem">
+            @foreach (var recoveryCode in _recoveryCodes)
+            {
+                <code>@recoveryCode</code>
+            }
+        </div>
+        <div class="d-flex flex-wrap gap-2 justify-end">
+            <MudButton StartIcon="@Icons.Material.Filled.ContentCopy" OnClick="CopyCodesAsync">Kopiuj</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="CodesSavedAsync">Zapisałem(-am) kody</MudButton>
+        </div>
+    }
+    else if (_status.Enabled)
+    {
+        <div class="d-flex align-center gap-2 mb-3">
+            <MudIcon Icon="@Icons.Material.Filled.VerifiedUser" Color="Color.Success" />
+            <MudText Typo="Typo.subtitle1">Włączone</MudText>
+        </div>
+        <MudText Typo="Typo.body2" Class="@(_status.RecoveryCodesLeft <= 2 ? "mud-error-text mb-4" : "mud-text-secondary mb-4")">
+            Pozostałe kody zapasowe: @_status.RecoveryCodesLeft z 10.
+        </MudText>
+
+        <MudTextField @bind-Value="_code" Label="Kod z aplikacji albo kod zapasowy" Variant="Variant.Outlined" MaxLength="20" Class="mb-3"
+                      UserAttributes="@(new Dictionary<string, object?> { ["autocomplete"] = "one-time-code" })" />
+        <MudTextField @bind-Value="_password" Label="Hasło (tylko do wyłączenia)" Variant="Variant.Outlined" InputType="InputType.Password"
+                      MaxLength="128" Class="mb-4" UserAttributes="@(new Dictionary<string, object?> { ["autocomplete"] = "current-password" })" />
+        <div class="d-flex flex-wrap gap-2 justify-end">
+            <MudButton OnClick="RegenerateAsync" Disabled="@(_busy || string.IsNullOrWhiteSpace(_code))">Nowe kody zapasowe</MudButton>
+            <MudButton Color="Color.Error" Variant="Variant.Outlined" OnClick="DisableAsync"
+                       Disabled="@(_busy || string.IsNullOrWhiteSpace(_code) || string.IsNullOrEmpty(_password))">Wyłącz</MudButton>
+        </div>
+    }
+    else if (_setup is not null)
+    {
+        <MudText Typo="Typo.subtitle1" Class="mb-2">1. Zeskanuj kod w aplikacji uwierzytelniającej</MudText>
+        <div class="d-flex flex-wrap gap-4 align-center mb-4">
+            <img src="@_qrCode" alt="Kod QR do aplikacji uwierzytelniającej" width="180" height="180" style="image-rendering: pixelated" />
+            <div style="min-width: 0">
+                <MudText Typo="Typo.body2" Class="mud-text-secondary">Nie możesz zeskanować? Wpisz klucz ręcznie:</MudText>
+                <code style="word-break: break-all">@_setup.SharedKey</code>
+            </div>
+        </div>
+        <MudText Typo="Typo.subtitle1" Class="mb-2">2. Wpisz kod pokazany w aplikacji</MudText>
+        <div class="d-flex flex-wrap gap-2 align-center">
+            <MudTextField @bind-Value="_code" Label="Kod (6 cyfr)" Variant="Variant.Outlined" MaxLength="10" InputMode="InputMode.numeric"
+                          Style="max-width: 200px" UserAttributes="@(new Dictionary<string, object?> { ["autocomplete"] = "one-time-code" })" />
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="EnableAsync" Disabled="@(_busy || string.IsNullOrWhiteSpace(_code))">Włącz</MudButton>
+            <MudButton OnClick="() => _setup = null" Disabled="_busy">Anuluj</MudButton>
+        </div>
+    }
+    else
+    {
+        <div class="d-flex align-center gap-2 mb-4">
+            <MudIcon Icon="@Icons.Material.Filled.GppMaybe" Color="Color.Warning" />
+            <MudText Typo="Typo.subtitle1">Wyłączone</MudText>
+        </div>
+        <div class="d-flex justify-end">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="BeginAsync" Disabled="_busy">Włącz logowanie dwuetapowe</MudButton>
+        </div>
+    }
+</MudPaper>
+
+@code {
+    private TwoFactorStatusDto? _status;
+    private TwoFactorSetupDto? _setup;
+    private string? _qrCode;
+    private IReadOnlyList<string>? _recoveryCodes;
+    private string _code = string.Empty;
+    private string _password = string.Empty;
+    private bool _busy;
+
+    /// <summary>Raised when 2FA was just turned on (the phone app and panel use it to let an admin continue).</summary>
+    [Parameter] public EventCallback OnEnabled { get; set; }
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        var result = await Api.GetAsync<TwoFactorStatusDto>("api/auth/two-factor");
+        _status = Snackbar.Report(result) ? result.Value : new TwoFactorStatusDto(false, 0);
+    }
+
+    private async Task BeginAsync()
+    {
+        _busy = true;
+        var result = await Api.PostAsync<TwoFactorSetupDto>("api/auth/two-factor/setup");
+        _busy = false;
+        if (Snackbar.Report(result))
+        {
+            _setup = result.Value;
+            _qrCode = QrCodeImage.ToDataUrl(result.Value.AuthenticatorUri);
+            _code = string.Empty;
+        }
+    }
+
+    private async Task EnableAsync()
+    {
+        _busy = true;
+        var result = await Api.PostAsync<RecoveryCodesDto>("api/auth/two-factor/enable", new TwoFactorCodeRequest(_code.Trim()));
+        _busy = false;
+        if (Snackbar.Report(result, "Logowanie dwuetapowe zostało włączone."))
+        {
+            _setup = null;
+            _recoveryCodes = result.Value.Codes;
+            _code = string.Empty;
+        }
+    }
+
+    private async Task RegenerateAsync()
+    {
+        _busy = true;
+        var result = await Api.PostAsync<RecoveryCodesDto>("api/auth/two-factor/recovery-codes", new TwoFactorCodeRequest(_code.Trim()));
+        _busy = false;
+        if (Snackbar.Report(result, "Utworzono nowe kody zapasowe. Poprzednie przestały działać."))
+        {
+            _recoveryCodes = result.Value.Codes;
+            _code = string.Empty;
+        }
+    }
+
+    private async Task DisableAsync()
+    {
+        _busy = true;
+        var result = await Api.PostAsync("api/auth/two-factor/disable", new DisableTwoFactorRequest(_password, _code.Trim()));
+        _busy = false;
+        _password = string.Empty;
+        if (Snackbar.Report(result, "Logowanie dwuetapowe zostało wyłączone."))
+        {
+            _code = string.Empty;
+            await LoadAsync();
+        }
+    }
+
+    private async Task CopyCodesAsync()
+    {
+        await Js.InvokeVoidAsync("navigator.clipboard.writeText", string.Join('\n', _recoveryCodes!));
+        Snackbar.Add("Skopiowano kody zapasowe.", Severity.Info);
+    }
+
+    private async Task CodesSavedAsync()
+    {
+        _recoveryCodes = null;
+        await LoadAsync();
+        if (_status?.Enabled == true)
+        {
+            await OnEnabled.InvokeAsync();
+        }
+    }
+}

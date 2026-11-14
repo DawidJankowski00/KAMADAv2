@@ -64,6 +64,12 @@
             {
                 <MudChip T="string" Size="Size.Small">Nieaktywny</MudChip>
             }
+            @if (context.TwoFactorEnabled)
+            {
+                <MudTooltip Text="Logowanie dwuetapowe włączone">
+                    <MudChip T="string" Size="Size.Small" Color="Color.Info" Icon="@Icons.Material.Filled.VerifiedUser">2FA</MudChip>
+                </MudTooltip>
+            }
             @if (IsLocked(context))
             {
                 <MudTooltip Text="@($"Za dużo błędnych haseł. Logowanie zablokowane do {Labels.DateTime(context.LockedUntil!.Value)}.")">
@@ -74,6 +80,10 @@
         <MudTd Style="text-align:right; white-space:nowrap">
             <MudTooltip Text="Edytuj"><MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="() => EditAsync(context)" /></MudTooltip>
             <MudTooltip Text="Resetuj hasło"><MudIconButton Icon="@Icons.Material.Filled.LockReset" Size="Size.Small" OnClick="() => ResetPasswordAsync(context)" /></MudTooltip>
+            @if (context.TwoFactorEnabled)
+            {
+                <MudTooltip Text="Wyłącz logowanie dwuetapowe (zgubiony telefon)"><MudIconButton Icon="@Icons.Material.Filled.PhonelinkErase" Size="Size.Small" OnClick="() => ResetTwoFactorAsync(context)" /></MudTooltip>
+            }
             @if (IsLocked(context))
             {
                 <MudTooltip Text="Odblokuj logowanie"><MudIconButton Icon="@Icons.Material.Filled.LockOpen" Size="Size.Small" OnClick="() => UnlockAsync(context)" /></MudTooltip>
@@ -146,6 +156,20 @@
     {
         var parameters = new DialogParameters<ResetPasswordDialog> { { d => d.Worker, worker } };
         await Dialogs.ShowForResultAsync<ResetPasswordDialog, bool>($"Nowe hasło: {worker.Username}", parameters, MaxWidth.ExtraSmall);
+    }
+
+    private async Task ResetTwoFactorAsync(WorkerDto worker)
+    {
+        if (!await Dialogs.ConfirmAsync("Wyłączenie logowania dwuetapowego", $"Wyłączyć logowanie dwuetapowe dla {worker.Username}? Użyj tego, gdy pracownik zgubił telefon i kody zapasowe. Pracownik zostanie wylogowany i zaloguje się samym hasłem.", "Wyłącz", Color.Warning))
+        {
+            return;
+        }
+
+        var result = await Api.PostAsync($"api/workers/{worker.Id}/reset-two-factor");
+        if (Snackbar.Report(result, "Logowanie dwuetapowe wyłączone."))
+        {
+            await _table!.ReloadServerData();
+        }
     }
 
     private static bool IsLocked(WorkerDto worker) => worker.LockedUntil > DateTimeOffset.UtcNow;

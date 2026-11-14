@@ -27,40 +27,61 @@ public sealed class AuthService(IHttpClientFactory httpClientFactory, TokenStore
         return session is not null && session.RefreshTokenExpiresAt > clock.GetUtcNow() ? session.User : null;
     }
 
-    public async Task<ApiResult<AuthenticatedUserDto>> LoginAsync(string username, string password, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// First sign-in step. Signs in at once, or – for an account with two-factor authentication – returns the challenge
+    /// to finish with <see cref="CompleteTwoFactorLoginAsync"/>.
+    /// </summary>
+    public async Task<ApiResult<LoginStep>> LoginAsync(string username, string password, CancellationToken cancellationToken = default)
     {
         var http = httpClientFactory.CreateClient(AnonymousClientName);
-        TokenResponse tokens;
+        LoginResponse login;
         try
         {
             using var response = await http.PostAsJsonAsync("api/auth/login", new LoginRequest(username, password), KamadaJson.Options, cancellationToken);
             if (!response.IsSuccessStatusCode)
             {
+                return ApiResult<LoginStep>.Fail(await ApiClient.ReadProblemAsync(response, cancellationToken));
+            }
+
+            login = (await response.Content.ReadFromJsonAsync<LoginResponse>(KamadaJson.Options, cancellationToken))!;
+        }
+        catch (HttpRequestException)
+        {
+            return ApiResult<LoginStep>.Fail(ApiProblem.Network);
+        }
+
+        if (login.TwoFactor is not null)
+        {
+            return ApiResult<LoginStep>.Ok(new LoginStep(null, login.TwoFactor));
+        }
+
+        var signedIn = await SignInAsync(login.Tokens!, cancellationToken);
+        return signedIn.IsSuccess
+            ? ApiResult<LoginStep>.Ok(new LoginStep(signedIn.Value, null))
+            : ApiResult<LoginStep>.Fail(signedIn.Problem!);
+    }
+
+    /// <summary>Second sign-in step: the challenge from <see cref="LoginAsync"/> and an authenticator or recovery code.</summary>
+    public async Task<ApiResult<AuthenticatedUserDto>> CompleteTwoFactorLoginAsync(string challengeToken, string code, CancellationToken cancellationToken = default)
+    {
+        var http = httpClientFactory.CreateClient(AnonymousClientName);
+        TokenResponse tokens;
+        try
+        {
+            using var response = await http.PostAsJsonAsync("api/auth/login/two-factor", new TwoFactorLoginRequest(challengeToken, code), KamadaJson.Options, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
                 return ApiResult<AuthenticatedUserDto>.Fail(await ApiClient.ReadProblemAsync(response, cancellationToken));
             }
 
-            var login = (await response.Content.ReadFromJsonAsync<LoginResponse>(KamadaJson.Options, cancellationToken))!;
-            if (login.Tokens is null)
-            {
-                return ApiResult<AuthenticatedUserDto>.Fail(new ApiProblem(401, "To konto ma logowanie dwuetapowe, którego ta aplikacja jeszcze nie obsługuje."));
-            }
-
-            tokens = login.Tokens;
+            tokens = (await response.Content.ReadFromJsonAsync<TokenResponse>(KamadaJson.Options, cancellationToken))!;
         }
         catch (HttpRequestException)
         {
             return ApiResult<AuthenticatedUserDto>.Fail(ApiProblem.Network);
         }
 
-        if (!HasAccess(tokens.User))
-        {
-            await RevokeAsync(tokens, cancellationToken);
-            return ApiResult<AuthenticatedUserDto>.Fail(new ApiProblem(403, "To konto nie ma dostępu do tej aplikacji."));
-        }
-
-        await store.SetAsync(tokens);
-        SessionChanged?.Invoke();
-        return ApiResult<AuthenticatedUserDto>.Ok(tokens.User);
+        return await SignInAsync(tokens, cancellationToken);
     }
 
     public async Task LogoutAsync(CancellationToken cancellationToken = default)
@@ -209,6 +230,20 @@ public sealed class AuthService(IHttpClientFactory httpClientFactory, TokenStore
         {
             return ApiResult.Fail(ApiProblem.Network);
         }
+    }
+
+    /// <summary>Keeps the session if the account has a role this app accepts; otherwise revokes it at once.</summary>
+    private async Task<ApiResult<AuthenticatedUserDto>> SignInAsync(TokenResponse tokens, CancellationToken cancellationToken)
+    {
+        if (!HasAccess(tokens.User))
+        {
+            await RevokeAsync(tokens, cancellationToken);
+            return ApiResult<AuthenticatedUserDto>.Fail(new ApiProblem(403, "To konto nie ma dostępu do tej aplikacji."));
+        }
+
+        await store.SetAsync(tokens);
+        SessionChanged?.Invoke();
+        return ApiResult<AuthenticatedUserDto>.Ok(tokens.User);
     }
 
     private bool HasAccess(AuthenticatedUserDto user) => user.Roles.Any(options.AllowedRoles.Contains);

@@ -146,6 +146,37 @@ public sealed class AuthServiceTests : IDisposable
         _api.RequestedPaths.ShouldBe(["/api/auth/forgot-password"]);
     }
 
+    [Fact]
+    public async Task LoginAsync_AccountWithTwoFactor_ReturnsTheChallengeWithoutSigningIn()
+    {
+        _api.LoginChallenge = new TwoFactorChallengeDto("challenge", DateTimeOffset.UtcNow.AddMinutes(5));
+
+        var result = await _auth.LoginAsync("anna", "secret", TestContext.Current.CancellationToken);
+
+        result.Value.NeedsCode.ShouldBeTrue();
+        (await _auth.GetCurrentUserAsync()).ShouldBeNull();
+    }
+
+    [Fact]
+    public async Task CompleteTwoFactorLoginAsync_ValidCode_SignsIn()
+    {
+        _api.TwoFactorResponse = StubApi.Tokens(Roles.Courier);
+
+        var result = await _auth.CompleteTwoFactorLoginAsync("challenge", "123456", TestContext.Current.CancellationToken);
+
+        result.IsSuccess.ShouldBeTrue();
+        GetStoredAccessToken().ShouldBe(_api.TwoFactorResponse.AccessToken);
+    }
+
+    [Fact]
+    public async Task CompleteTwoFactorLoginAsync_WrongCode_StaysSignedOut()
+    {
+        var result = await _auth.CompleteTwoFactorLoginAsync("challenge", "000000", TestContext.Current.CancellationToken);
+
+        result.IsSuccess.ShouldBeFalse();
+        (await _auth.GetCurrentUserAsync()).ShouldBeNull();
+    }
+
     private string GetStoredAccessToken() =>
         JsonSerializer.Deserialize<TokenResponse>(_js.LocalStorage[StorageKey], KamadaJson.Options)!.AccessToken;
 }

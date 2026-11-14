@@ -12,6 +12,12 @@ internal sealed class StubApi : HttpMessageHandler, IHttpClientFactory
 
     public TokenResponse? RefreshResponse { get; set; }
 
+    /// <summary>When set, login answers with this 2FA challenge instead of tokens.</summary>
+    public TwoFactorChallengeDto? LoginChallenge { get; set; }
+
+    /// <summary>Answer to the second sign-in step (null: 401).</summary>
+    public TokenResponse? TwoFactorResponse { get; set; }
+
     /// <summary>Answer to change-password; null means 400 with the code <c>Auth.CurrentPasswordInvalid</c>.</summary>
     public TokenResponse? ChangePasswordResponse { get; set; }
 
@@ -45,7 +51,8 @@ internal sealed class StubApi : HttpMessageHandler, IHttpClientFactory
 
         object? body = path switch
         {
-            "/api/auth/login" => LoginResponse is null ? null : new LoginResponse(LoginResponse, null),
+            "/api/auth/login" => LoginChallenge is not null ? new LoginResponse(null, LoginChallenge) : LoginResponse is null ? null : new LoginResponse(LoginResponse, null),
+            "/api/auth/login/two-factor" => TwoFactorResponse,
             "/api/auth/refresh" => RefreshResponse,
             "/api/auth/change-password" => ChangePasswordResponse,
             _ => null,
