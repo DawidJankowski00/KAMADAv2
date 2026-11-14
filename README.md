@@ -632,6 +632,7 @@ dotnet run -c Release --project benchmarks/Kamada.Assistant.Evals -- --model qwe
 | [0009](docs/adr/0009-offline-ordering-on-the-phone.md) | Offline ordering on the phone: local copy, outbox, idempotent creates |
 | [0010](docs/adr/0010-on-device-assistant-as-a-fallback.md) | ~~On-device assistant as a fallback~~ – superseded: removed, the phone uses the server's assistant |
 | [0011](docs/adr/0011-two-factor-authentication.md) | Two-factor authentication with TOTP, recovery codes and a stateless sign-in challenge |
+| [0012](docs/adr/0012-least-privilege-database-role.md) | The API connects with a data-only database role; migrations run as the schema owner |
 
 ## Possible improvements
 

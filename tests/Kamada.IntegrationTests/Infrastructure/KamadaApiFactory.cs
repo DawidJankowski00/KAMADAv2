@@ -75,6 +75,12 @@ public sealed class KamadaApiFactory : WebApplicationFactory<Program>, IAsyncLif
             .UseSetting("ConnectionStrings:Kamada", new NpgsqlConnectionStringBuilder(_postgres.GetConnectionString()) { Database = database }.ConnectionString)
             .UseSetting("Database:SeedDemoData", "true"));
 
+    /// <summary>Superuser connection string of the test container, optionally for another database in it.</summary>
+    public string AdminConnectionString(string? database = null) =>
+        database is null
+            ? _postgres.GetConnectionString()
+            : new NpgsqlConnectionStringBuilder(_postgres.GetConnectionString()) { Database = database }.ConnectionString;
+
     public override async ValueTask DisposeAsync()
     {
         await base.DisposeAsync();
