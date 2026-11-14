@@ -19,6 +19,20 @@ public sealed class SecurityHeadersTests(KamadaApiFactory factory)
     }
 
     [Fact]
+    public async Task ApiResponse_IsNotStored_UnlessTheEndpointSetsItsOwnCaching()
+    {
+        var (seller, _) = await factory.CreateSignedInClientAsync(Kamada.Modules.Workforce.Domain.Workers.WorkerRole.Seller);
+
+        var orders = await seller.GetAsync("/api/orders/mine", Ct);
+        var lookup = await seller.GetAsync("/api/products/lookup", Ct);
+
+        orders.Headers.CacheControl!.NoStore.ShouldBeTrue();
+        lookup.Headers.CacheControl!.NoStore.ShouldBeFalse();
+        lookup.Headers.CacheControl.NoCache.ShouldBeTrue();
+        lookup.Headers.CacheControl.Private.ShouldBeTrue();
+    }
+
+    [Fact]
     public async Task NonApiResponse_OnlyForbidsFraming()
     {
         var response = await factory.CreateClient().GetAsync("/health", Ct);

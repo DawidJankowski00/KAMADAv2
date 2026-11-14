@@ -102,7 +102,7 @@ Only the requirements that apply to this system are listed; the numbers are ASVS
 
 | Req. | Status | How / decision |
 |---|---|---|
-| 8.1.1 Sensitive data not cached | Gap | API responses carry no `Cache-Control` (except the ETag lookups: `private, no-cache`). Should default to `no-store`. G4. |
+| 8.1.1 Sensitive data not cached | Met | API responses default to `Cache-Control: no-store`; the phone's ETag lookups keep `private, no-cache` (revalidated every time). Closed G4. |
 | 8.2.1 / 8.2.2 Browser storage | Partial | The phone keeps clients and products offline for sellers only, wiped on sign-out ([ADR 0009](adr/0009-offline-ordering-on-the-phone.md)); IndexedDB is not encrypted. |
 | 8.3.1 Sensitive data in the body, not the URL | Met | Search terms in query strings are names, not credentials. |
 | 8.3.4 Personal data identified | Partial | Clients (name, address, phone, e-mail) and workers; no retention or deletion policy yet (clients are deactivated, not deleted, because orders reference them). |
@@ -159,7 +159,7 @@ Only the requirements that apply to this system are listed; the numbers are ASVS
 | G1 | 2.2.3, 2.5.5 | E-mail the worker when the password, the e-mail address or 2FA changes (through the existing queue). | small |
 | G2 | 3.3.2 | Absolute session lifetime: a refresh token family ends after N hours of use (12 h at L2) or 30 min idle, configurable per role (couriers work full shifts). | medium |
 | G3 | 2.3.1 | Force a password change at the first sign-in after an admin set or reset the password. | medium |
-| G4 | 8.1.1 | `Cache-Control: no-store` on API responses by default (the ETag lookups keep `private, no-cache`). | small |
+| ~~G4~~ | 8.1.1 | Done 2026-11-14: `no-store` by default on `/api`. | – |
 | G5 | 14.3.3 | Remove the `Server: Kestrel` header (`AddServerHeader = false`). | small |
 | G6 | 10.3.2, 14.2.3 | Leaflet: Subresource Integrity on the jsDelivr files, or serve them from the app. | small |
 | G7 | 6.4.1 | Encrypt the Data Protection key ring at rest (certificate or key vault) in production. | stage 5 |
