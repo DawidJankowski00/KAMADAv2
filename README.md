@@ -345,7 +345,7 @@ docs/adr/                           # architecture decision records
 One database, one schema and one `DbContext` per module. Solid lines are foreign keys within a schema. Dashed
 lines are references to another module: plain ids with no foreign key across schemas. An order keeps a snapshot
 of the recipient and address, so later edits of the client do not change placed orders. Payments live in the
-`ordering` schema next to the orders (they were a separate module until 2026-11-09) and still reference them by id only.
+`ordering` schema next to the orders (they were a separate module until 2026-11-09), with a foreign key to them.
 
 ```mermaid
 erDiagram
@@ -354,6 +354,7 @@ erDiagram
     PRODUCTS ||--o{ PRODUCT_CATEGORIES : ""
     CLIENTS ||--o{ ADDRESSES : ""
     ORDERS ||--|{ ORDER_ITEMS : ""
+    ORDERS ||--o{ PAYMENTS : ""
     WORKERS ||--o{ REFRESH_TOKENS : ""
     DELIVERY_RUNS ||--o{ DELIVERY_RUN_ORDERS : "stops"
     ROUTE_LOCATIONS ||--o{ DELIVERY_RUNS : "start / end"
@@ -361,7 +362,6 @@ erDiagram
     CLIENTS ||..o{ ORDERS : "client_id"
     ADDRESSES ||..o{ ORDERS : "shipping_address_id"
     PRODUCTS ||..o{ ORDER_ITEMS : "product_id"
-    ORDERS ||..o{ PAYMENTS : "order_id"
     ORDERS ||..o{ DELIVERY_RUN_ORDERS : "order_id"
     WORKERS ||..o{ DELIVERY_RUNS : "courier_id"
 
@@ -422,7 +422,7 @@ erDiagram
     }
     PAYMENTS {
         uuid id PK
-        uuid order_id
+        uuid order_id FK
         varchar provider
         varchar status
         numeric amount
