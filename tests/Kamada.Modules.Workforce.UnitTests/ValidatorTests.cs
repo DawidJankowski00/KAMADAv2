@@ -6,12 +6,22 @@ namespace Kamada.Modules.Workforce.UnitTests;
 public sealed class ValidatorTests
 {
     private static CreateWorkerRequest ValidRequest() =>
-        new("kurier9", "Secret123", "Jan", "Kowalski", "+48 600 000 000", [WorkerRole.Courier]);
+        new("kurier9", "kurier9@kamada.test", "Secret123", "Jan", "Kowalski", "+48 600 000 000", [WorkerRole.Courier]);
 
     [Fact]
     public void CreateWorker_ValidRequest_Passes()
     {
         new CreateWorkerRequestValidator().Validate(ValidRequest()).IsValid.ShouldBeTrue();
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("not-an-email")]
+    public void CreateWorker_InvalidEmail_Fails(string email)
+    {
+        var result = new CreateWorkerRequestValidator().Validate(ValidRequest() with { Email = email });
+
+        result.Errors.ShouldContain(e => e.PropertyName == nameof(CreateWorkerRequest.Email));
     }
 
     [Theory]
@@ -74,7 +84,7 @@ public sealed class ValidatorTests
     [Fact]
     public void UpdateWorker_UnknownRole_Fails()
     {
-        var request = new UpdateWorkerRequest("Jan", "Kowalski", "+48 600 000 000", [(WorkerRole)42]);
+        var request = new UpdateWorkerRequest("jan@kamada.test", "Jan", "Kowalski", "+48 600 000 000", [(WorkerRole)42]);
 
         var result = new UpdateWorkerRequestValidator().Validate(request);
 

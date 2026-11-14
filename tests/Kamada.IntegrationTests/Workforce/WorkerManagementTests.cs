@@ -13,6 +13,7 @@ public sealed class WorkerManagementTests(KamadaApiFactory factory)
 
     private static CreateWorkerRequest NewCourierRequest() => new(
         $"courier-{Guid.NewGuid():N}"[..20],
+        $"{Guid.NewGuid():N}@kamada.test",
         "Courier123",
         "Adam",
         "Zieliński",
@@ -50,6 +51,7 @@ public sealed class WorkerManagementTests(KamadaApiFactory factory)
         var created = await response.ReadAsAsync<WorkerDto>();
         created.Roles.ShouldBe([WorkerRole.Courier]);
         created.IsActive.ShouldBeTrue();
+        created.Email.ShouldBe(request.Email);
 
         var tokens = await factory.CreateClient().LoginAsync(request.Username, request.Password);
         tokens.User.Roles.ShouldBe([Roles.Courier]);
@@ -66,6 +68,35 @@ public sealed class WorkerManagementTests(KamadaApiFactory factory)
 
         duplicate.StatusCode.ShouldBe(HttpStatusCode.Conflict);
         (await duplicate.ReadProblemCodeAsync()).ShouldBe("Workers.UsernameTaken");
+    }
+
+    [Fact]
+    public async Task Create_WithTakenEmail_Returns409()
+    {
+        var (admin, _) = await factory.CreateSignedInClientAsync(DomainRole.Admin);
+        var first = NewCourierRequest();
+        (await admin.PostJsonAsync("/api/workers", first)).EnsureSuccessStatusCode();
+
+        var second = NewCourierRequest() with { Email = first.Email.ToUpperInvariant() };
+        var duplicate = await admin.PostJsonAsync("/api/workers", second);
+
+        duplicate.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+        (await duplicate.ReadProblemCodeAsync()).ShouldBe("Workers.EmailTaken");
+    }
+
+    [Fact]
+    public async Task Update_ToAnotherWorkersEmail_Returns409()
+    {
+        var (admin, _) = await factory.CreateSignedInClientAsync(DomainRole.Admin);
+        var other = await (await admin.PostJsonAsync("/api/workers", NewCourierRequest())).ReadAsAsync<WorkerDto>();
+        var courier = await factory.CreateWorkerAsync(DomainRole.Courier);
+
+        var response = await admin.PutJsonAsync(
+            $"/api/workers/{courier.Id}",
+            new UpdateWorkerRequest(other.Email, "Test", "Courier", "+48 600 000 000", [WorkerRole.Courier]));
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+        (await response.ReadProblemCodeAsync()).ShouldBe("Workers.EmailTaken");
     }
 
     [Fact]
@@ -136,7 +167,7 @@ public sealed class WorkerManagementTests(KamadaApiFactory factory)
 
         var response = await admin.PutJsonAsync(
             $"/api/workers/{courier.Id}",
-            new UpdateWorkerRequest("Test", "Courier", "+48 600 000 000", [WorkerRole.Admin, WorkerRole.Courier]));
+            new UpdateWorkerRequest($"{Guid.NewGuid():N}@kamada.test", "Test", "Courier", "+48 600 000 000", [WorkerRole.Admin, WorkerRole.Courier]));
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await response.ReadAsAsync<WorkerDto>()).Roles.ShouldBe([WorkerRole.Admin, WorkerRole.Courier]);
@@ -147,7 +178,7 @@ public sealed class WorkerManagementTests(KamadaApiFactory factory)
     {
         var (admin, self) = await factory.CreateSignedInClientAsync(DomainRole.Admin);
 
-        var response = await admin.PutJsonAsync($"/api/workers/{self.Id}", new UpdateWorkerRequest("Test", "Admin", "+48 600 000 000", [WorkerRole.Courier]));
+        var response = await admin.PutJsonAsync($"/api/workers/{self.Id}", new UpdateWorkerRequest($"{Guid.NewGuid():N}@kamada.test", "Test", "Admin", "+48 600 000 000", [WorkerRole.Courier]));
 
         response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
         (await response.ReadProblemCodeAsync()).ShouldBe("Workers.CannotRemoveOwnAdminRole");
@@ -160,7 +191,7 @@ public sealed class WorkerManagementTests(KamadaApiFactory factory)
 
         var response = await admin.PutJsonAsync(
             $"/api/workers/{self.Id}",
-            new UpdateWorkerRequest("Test", "Admin", "+48 600 000 000", [WorkerRole.Admin, WorkerRole.Courier]));
+            new UpdateWorkerRequest($"{Guid.NewGuid():N}@kamada.test", "Test", "Admin", "+48 600 000 000", [WorkerRole.Admin, WorkerRole.Courier]));
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await response.ReadAsAsync<WorkerDto>()).Roles.ShouldBe([WorkerRole.Admin, WorkerRole.Courier]);

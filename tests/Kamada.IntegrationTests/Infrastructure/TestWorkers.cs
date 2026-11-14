@@ -33,7 +33,7 @@ internal static class TestWorkers
 
         var roleNames = string.Join("-", roles).ToLowerInvariant();
         var username = $"{roleNames}-{Guid.NewGuid():N}"[..24];
-        var worker = Worker.Create(username, string.Empty, "Test", string.Join(" ", roles), "+48 600 000 000", roles).Value;
+        var worker = Worker.Create(username, $"{username}@kamada.test", string.Empty, "Test", string.Join(" ", roles), "+48 600 000 000", roles).Value;
         worker.ChangePasswordHash(hasher.HashPassword(worker, password));
         if (!isActive)
         {

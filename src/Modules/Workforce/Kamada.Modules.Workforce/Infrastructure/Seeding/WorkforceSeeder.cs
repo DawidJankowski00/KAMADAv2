@@ -26,18 +26,18 @@ internal sealed class WorkforceSeeder(WorkforceDbContext db, IPasswordHasher<Wor
             return;
         }
 
-        var admin = Add("admin", AdminPassword, "Anna", "Nowak", "+48 600 100 200", WorkerRole.Admin);
+        var admin = Add("admin", "admin@kamada.test", AdminPassword, "Anna", "Nowak", "+48 600 100 200", WorkerRole.Admin);
         var couriers = new[]
         {
-            Add("kurier1", CourierPassword, "Jan", "Kowalski", "+48 601 111 111", WorkerRole.Courier),
-            Add("kurier2", CourierPassword, "Piotr", "Wiśniewski", "+48 602 222 222", WorkerRole.Courier),
-            Add("kurier3", CourierPassword, "Katarzyna", "Wójcik", "+48 603 333 333", WorkerRole.Courier),
+            Add("kurier1", "kurier1@kamada.test", CourierPassword, "Jan", "Kowalski", "+48 601 111 111", WorkerRole.Courier),
+            Add("kurier2", "kurier2@kamada.test", CourierPassword, "Piotr", "Wiśniewski", "+48 602 222 222", WorkerRole.Courier),
+            Add("kurier3", "kurier3@kamada.test", CourierPassword, "Katarzyna", "Wójcik", "+48 603 333 333", WorkerRole.Courier),
         };
 
-        var seller = Add("sprzedawca1", SellerPassword, "Ewa", "Lewandowska", "+48 605 555 555", WorkerRole.Seller);
+        var seller = Add("sprzedawca1", "sprzedawca1@kamada.test", SellerPassword, "Ewa", "Lewandowska", "+48 605 555 555", WorkerRole.Seller);
 
         // A worker with every role, for switching roles in the phone app.
-        Add("kierownik", ManagerPassword, "Marek", "Zieliński", "+48 604 444 444", WorkerRole.Admin, WorkerRole.Courier, WorkerRole.Seller);
+        Add("kierownik", "kierownik@kamada.test", ManagerPassword, "Marek", "Zieliński", "+48 604 444 444", WorkerRole.Admin, WorkerRole.Courier, WorkerRole.Seller);
 
         await db.SaveChangesAsync(cancellationToken);
         seedData.AdminId = admin.Id;
@@ -45,9 +45,9 @@ internal sealed class WorkforceSeeder(WorkforceDbContext db, IPasswordHasher<Wor
         seedData.CourierIds = [.. couriers.Select(c => c.Id)];
     }
 
-    private Worker Add(string username, string password, string name, string surname, string phone, params WorkerRole[] roles)
+    private Worker Add(string username, string email, string password, string name, string surname, string phone, params WorkerRole[] roles)
     {
-        var worker = Worker.Create(username, string.Empty, name, surname, phone, roles).Value;
+        var worker = Worker.Create(username, email, string.Empty, name, surname, phone, roles).Value;
         worker.ChangePasswordHash(passwordHasher.HashPassword(worker, password));
         db.Workers.Add(worker);
         return worker;

@@ -10,10 +10,11 @@ internal sealed class Worker : Entity, IAuditable
 {
     private List<WorkerRole> _roles = [];
 
-    private Worker(Guid id, string username, string passwordHash, string name, string surname, string phoneNumber)
+    private Worker(Guid id, string username, string email, string passwordHash, string name, string surname, string phoneNumber)
         : base(id)
     {
         Username = username;
+        Email = email;
         PasswordHash = passwordHash;
         Name = name;
         Surname = surname;
@@ -22,6 +23,9 @@ internal sealed class Worker : Entity, IAuditable
     }
 
     public string Username { get; private set; }
+
+    /// <summary>Unique, stored normalized (trimmed, lower case); used for password reset e-mails.</summary>
+    public string Email { get; private set; }
 
     public string PasswordHash { get; private set; }
 
@@ -45,8 +49,11 @@ internal sealed class Worker : Entity, IAuditable
     /// <summary>Usernames are case-insensitive; they are stored normalized.</summary>
     public static string NormalizeUsername(string username) => username.Trim().ToLowerInvariant();
 
+    public static string NormalizeEmail(string email) => email.Trim().ToLowerInvariant();
+
     public static Result<Worker> Create(
         string username,
+        string email,
         string passwordHash,
         string name,
         string surname,
@@ -59,7 +66,7 @@ internal sealed class Worker : Entity, IAuditable
             return validation.Error;
         }
 
-        var worker = new Worker(Guid.CreateVersion7(), NormalizeUsername(username), passwordHash, name.Trim(), surname.Trim(), phoneNumber.Trim())
+        var worker = new Worker(Guid.CreateVersion7(), NormalizeUsername(username), NormalizeEmail(email), passwordHash, name.Trim(), surname.Trim(), phoneNumber.Trim())
         {
             _roles = [.. roles.Order()],
         };
@@ -68,8 +75,9 @@ internal sealed class Worker : Entity, IAuditable
 
     public bool HasRole(WorkerRole role) => _roles.Contains(role);
 
-    public void UpdateProfile(string name, string surname, string phoneNumber)
+    public void UpdateProfile(string email, string name, string surname, string phoneNumber)
     {
+        Email = NormalizeEmail(email);
         Name = name.Trim();
         Surname = surname.Trim();
         PhoneNumber = phoneNumber.Trim();

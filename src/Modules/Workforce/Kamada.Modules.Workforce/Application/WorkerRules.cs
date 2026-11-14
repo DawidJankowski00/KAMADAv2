@@ -14,6 +14,7 @@ internal static class WorkerRules
     public const int PasswordMaxLength = 128;
     public const int NameMaxLength = 100;
     public const int PhoneNumberMaxLength = 20;
+    public const int EmailMaxLength = 254;
 
     public static IRuleBuilderOptions<T, string> ValidUsername<T>(this IRuleBuilder<T, string> rule) =>
         rule.NotEmpty()
@@ -27,6 +28,9 @@ internal static class WorkerRules
             .Matches("[A-Z]").WithMessage("Password must contain an uppercase letter.")
             .Matches("[a-z]").WithMessage("Password must contain a lowercase letter.")
             .Matches("[0-9]").WithMessage("Password must contain a digit.");
+
+    public static IRuleBuilderOptions<T, string> WorkerEmail<T>(this IRuleBuilder<T, string> rule) =>
+        rule.NotEmpty().EmailAddress().MaximumLength(EmailMaxLength);
 
     public static IRuleBuilderOptions<T, string> PersonName<T>(this IRuleBuilder<T, string> rule) =>
         rule.NotEmpty().MaximumLength(NameMaxLength);

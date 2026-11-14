@@ -15,6 +15,8 @@ internal sealed class WorkerConfiguration : IEntityTypeConfiguration<Worker>
 
         builder.Property(w => w.Username).HasMaxLength(WorkerRules.UsernameMaxLength).IsRequired();
         builder.HasIndex(w => w.Username).IsUnique();
+        builder.Property(w => w.Email).HasMaxLength(WorkerRules.EmailMaxLength).IsRequired();
+        builder.HasIndex(w => w.Email).IsUnique();
 
         builder.Property(w => w.PasswordHash).HasMaxLength(256).IsRequired();
         builder.Property(w => w.Name).HasMaxLength(WorkerRules.NameMaxLength).IsRequired();

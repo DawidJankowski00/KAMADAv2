@@ -112,6 +112,8 @@ Demo accounts (seeded in the Development environment):
 | Seller | `sprzedawca1` | `Sprzedawca123!` |
 | All roles: administrator, courier and seller (switches roles in the phone app) | `kierownik` | `Kierownik123!` |
 
+Each demo account has the e-mail address `<username>@kamada.test` (`.test` is a reserved domain, nothing is delivered).
+
 ### Demo data
 
 On first start with an empty database, the API seeds a small company delivering in two areas: the Tricity

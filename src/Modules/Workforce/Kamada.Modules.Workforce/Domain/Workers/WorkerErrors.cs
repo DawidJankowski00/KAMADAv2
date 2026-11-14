@@ -10,6 +10,9 @@ internal static class WorkerErrors
     public static readonly Error UsernameTaken =
         Error.Conflict("Workers.UsernameTaken", "A worker with this username already exists.");
 
+    public static readonly Error EmailTaken =
+        Error.Conflict("Workers.EmailTaken", "A worker with this e-mail address already exists.");
+
     public static readonly Error CannotDeactivateSelf =
         Error.Conflict("Workers.CannotDeactivateSelf", "You cannot deactivate your own account.");
 

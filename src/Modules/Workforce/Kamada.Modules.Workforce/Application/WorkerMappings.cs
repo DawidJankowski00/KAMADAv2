@@ -11,6 +11,7 @@ internal static class WorkerMappings
     public static WorkerDto ToDto(this Worker worker) => new(
         worker.Id,
         worker.Username,
+        worker.Email,
         worker.Name,
         worker.Surname,
         worker.PhoneNumber,

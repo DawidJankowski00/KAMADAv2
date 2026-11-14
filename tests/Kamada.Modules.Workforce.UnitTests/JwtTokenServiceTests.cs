@@ -25,7 +25,7 @@ public sealed class JwtTokenServiceTests
     [Fact]
     public void CreateAccessToken_ContainsIdentityAndRoleClaims()
     {
-        var worker = Worker.Create("admin", "hash", "Anna", "Nowak", "+48 600 000 000", [WorkerRole.Admin]).Value;
+        var worker = Worker.Create("admin", "jan@kamada.test", "hash", "Anna", "Nowak", "+48 600 000 000", [WorkerRole.Admin]).Value;
 
         var accessToken = CreateService().CreateAccessToken(worker);
 
@@ -41,7 +41,7 @@ public sealed class JwtTokenServiceTests
     [Fact]
     public void CreateAccessToken_SeveralRoles_ContainsOneRoleClaimPerRole()
     {
-        var worker = Worker.Create("anna", "hash", "Anna", "Nowak", "+48 600 000 000", [WorkerRole.Courier, WorkerRole.Admin]).Value;
+        var worker = Worker.Create("anna", "jan@kamada.test", "hash", "Anna", "Nowak", "+48 600 000 000", [WorkerRole.Courier, WorkerRole.Admin]).Value;
 
         var accessToken = CreateService().CreateAccessToken(worker);
 

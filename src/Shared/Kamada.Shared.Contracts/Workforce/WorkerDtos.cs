@@ -11,6 +11,7 @@ public enum WorkerRole
 public sealed record WorkerDto(
     Guid Id,
     string Username,
+    string Email,
     string Name,
     string Surname,
     string PhoneNumber,
@@ -20,6 +21,7 @@ public sealed record WorkerDto(
 
 public sealed record CreateWorkerRequest(
     string Username,
+    string Email,
     string Password,
     string Name,
     string Surname,
@@ -27,7 +29,7 @@ public sealed record CreateWorkerRequest(
     IReadOnlyList<WorkerRole> Roles);
 
 /// <param name="Roles">Replaces all roles; a worker cannot remove the Admin role from their own account.</param>
-public sealed record UpdateWorkerRequest(string Name, string Surname, string PhoneNumber, IReadOnlyList<WorkerRole> Roles);
+public sealed record UpdateWorkerRequest(string Email, string Name, string Surname, string PhoneNumber, IReadOnlyList<WorkerRole> Roles);
 
 public sealed record ResetPasswordRequest(string NewPassword);
 

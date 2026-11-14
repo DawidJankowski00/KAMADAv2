@@ -9,6 +9,7 @@ internal sealed class CreateWorkerRequestValidator : AbstractValidator<CreateWor
     public CreateWorkerRequestValidator()
     {
         RuleFor(r => r.Username).ValidUsername();
+        RuleFor(r => r.Email).WorkerEmail();
         RuleFor(r => r.Password).StrongPassword();
         RuleFor(r => r.Name).PersonName();
         RuleFor(r => r.Surname).PersonName();
@@ -21,6 +22,7 @@ internal sealed class UpdateWorkerRequestValidator : AbstractValidator<UpdateWor
 {
     public UpdateWorkerRequestValidator()
     {
+        RuleFor(r => r.Email).WorkerEmail();
         RuleFor(r => r.Name).PersonName();
         RuleFor(r => r.Surname).PersonName();
         RuleFor(r => r.PhoneNumber).PhoneNumber();

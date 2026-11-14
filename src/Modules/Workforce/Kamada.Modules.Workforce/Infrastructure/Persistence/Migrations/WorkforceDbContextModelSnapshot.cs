@@ -95,6 +95,12 @@ namespace Kamada.Modules.Workforce.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)")
+                        .HasColumnName("email");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean")
                         .HasColumnName("is_active");
@@ -146,6 +152,10 @@ namespace Kamada.Modules.Workforce.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_workers");
+
+                    b.HasIndex("Email")
+                        .IsUnique()
+                        .HasDatabaseName("ix_workers_email");
 
                     b.HasIndex("Username")
                         .IsUnique()

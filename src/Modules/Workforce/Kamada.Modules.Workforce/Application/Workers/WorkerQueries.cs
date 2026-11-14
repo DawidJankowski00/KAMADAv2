@@ -19,6 +19,7 @@ internal sealed class WorkerQueries(IWorkforceDbContext db)
             var pattern = LikePattern.Contains(query.Search);
             workers = workers.Where(w =>
                 EF.Functions.ILike(w.Username, pattern) ||
+                EF.Functions.ILike(w.Email, pattern) ||
                 EF.Functions.ILike(w.Name, pattern) ||
                 EF.Functions.ILike(w.Surname, pattern));
         }

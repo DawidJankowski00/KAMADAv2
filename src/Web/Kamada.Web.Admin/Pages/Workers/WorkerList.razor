@@ -14,7 +14,7 @@
 <MudPaper Class="pa-4 mb-4" Elevation="1">
     <MudGrid Spacing="2">
         <MudItem xs="12" md="6">
-            <MudTextField T="string" Value="_search" ValueChanged="OnSearchChanged" Label="Szukaj (login, imię, nazwisko)"
+            <MudTextField T="string" Value="_search" ValueChanged="OnSearchChanged" Label="Szukaj (login, e-mail, imię, nazwisko)"
                           Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" DebounceInterval="300" Clearable="true" />
         </MudItem>
         <MudItem xs="6" md="3">
@@ -39,6 +39,7 @@
         <MudTh>Pracownik</MudTh>
         <MudTh>Login</MudTh>
         <MudTh>Role</MudTh>
+        <MudTh>E-mail</MudTh>
         <MudTh>Telefon</MudTh>
         <MudTh>Status</MudTh>
         <MudTh Style="text-align:right">Akcje</MudTh>
@@ -52,6 +53,7 @@
                 <MudChip T="string" Size="Size.Small" Color="@Labels.ColorOf(role)">@Labels.Of(role)</MudChip>
             }
         </MudTd>
+        <MudTd DataLabel="E-mail" HideSmall="true">@context.Email</MudTd>
         <MudTd DataLabel="Telefon">@context.PhoneNumber</MudTd>
         <MudTd DataLabel="Status">
             @if (context.IsActive)

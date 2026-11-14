@@ -12,6 +12,7 @@ public static class ErrorMessages
         ["Concurrency.Conflict"] = "Dane zostały w międzyczasie zmienione przez kogoś innego. Odśwież i spróbuj ponownie.",
         ["Requests.IdReused"] = "Tego identyfikatora żądania użyto już dla innej operacji.",
         ["Workers.UsernameTaken"] = "Pracownik o takim loginie już istnieje.",
+        ["Workers.EmailTaken"] = "Pracownik o takim adresie e-mail już istnieje.",
         ["Workers.CannotDeactivateSelf"] = "Nie możesz dezaktywować własnego konta.",
         ["Workers.CannotRemoveOwnAdminRole"] = "Nie możesz odebrać sobie roli administratora.",
         ["Products.SkuTaken"] = "Produkt o takim SKU już istnieje.",

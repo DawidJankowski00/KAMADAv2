@@ -25,8 +25,14 @@ internal sealed class WorkerCommands(
             return WorkerErrors.UsernameTaken;
         }
 
+        if (await EmailTakenAsync(request.Email, workerId: null, cancellationToken))
+        {
+            return WorkerErrors.EmailTaken;
+        }
+
         var created = Worker.Create(
             username,
+            request.Email,
             passwordHash: string.Empty,
             request.Name,
             request.Surname,
@@ -53,13 +59,18 @@ internal sealed class WorkerCommands(
             return WorkerErrors.NotFound;
         }
 
+        if (await EmailTakenAsync(request.Email, worker.Id, cancellationToken))
+        {
+            return WorkerErrors.EmailTaken;
+        }
+
         var roleChange = worker.SetRoles([.. request.Roles.Select(r => r.ToDomain())], currentUser.Id);
         if (roleChange.IsFailure)
         {
             return roleChange.Error;
         }
 
-        worker.UpdateProfile(request.Name, request.Surname, request.PhoneNumber);
+        worker.UpdateProfile(request.Email, request.Name, request.Surname, request.PhoneNumber);
         await db.SaveChangesAsync(cancellationToken);
         return worker.ToDto();
     }
@@ -108,6 +119,12 @@ internal sealed class WorkerCommands(
         worker.Activate();
         await db.SaveChangesAsync(cancellationToken);
         return Result.Success();
+    }
+
+    private Task<bool> EmailTakenAsync(string email, Guid? workerId, CancellationToken cancellationToken)
+    {
+        var normalized = Worker.NormalizeEmail(email);
+        return db.Workers.AnyAsync(w => w.Email == normalized && w.Id != workerId, cancellationToken);
     }
 
     /// <summary>Signs the worker out everywhere (their access tokens expire within minutes).</summary>
