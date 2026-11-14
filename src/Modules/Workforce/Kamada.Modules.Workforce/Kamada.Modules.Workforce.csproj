@@ -5,6 +5,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.DataProtection.EntityFrameworkCore" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Kamada.Modules.Workforce.Contracts\Kamada.Modules.Workforce.Contracts.csproj" />
     <ProjectReference Include="..\..\..\Shared\Kamada.Shared.Kernel\Kamada.Shared.Kernel.csproj" />
     <ProjectReference Include="..\..\..\Shared\Kamada.Shared.Infrastructure\Kamada.Shared.Infrastructure.csproj" />

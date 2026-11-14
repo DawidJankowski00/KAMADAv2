@@ -11,6 +11,7 @@ using Kamada.Modules.Workforce.Infrastructure.Persistence;
 using Kamada.Modules.Workforce.Infrastructure.Seeding;
 using Kamada.Shared.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
@@ -31,6 +32,9 @@ public static class WorkforceModule
         ArgumentNullException.ThrowIfNull(configuration);
 
         services.AddModuleDbContext<WorkforceDbContext>(WorkforceDbContext.Schema);
+        services.AddDataProtection()
+            .SetApplicationName("kamada")
+            .PersistKeysToDbContext<WorkforceDbContext>();
         services.AddScoped<IWorkforceDbContext>(sp => sp.GetRequiredService<WorkforceDbContext>());
 
         services.AddSingleton<IPasswordHasher<Worker>, PasswordHasher<Worker>>();
