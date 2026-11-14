@@ -147,7 +147,7 @@ Only the requirements that apply to this system are listed; the numbers are ASVS
 | 14.1.x Build pipeline | Met | Warnings as errors in production code, tests, CI on every push and weekly. |
 | 14.2.1 / 14.2.3 Up-to-date components, CDN integrity | Partial | CI fails on vulnerable NuGet packages and on fixable high/critical image vulnerabilities (Grype); images build with `--pull`. Leaflet without SRI (G6). |
 | 14.3.2 No debug features in production | Met | Scalar/OpenAPI not mapped in Production; exception details only in Development (`GlobalExceptionHandler`). |
-| 14.3.3 No version information in headers | Partial | nginx `server_tokens off`; the API still sends `Server: Kestrel`. G5. |
+| 14.3.3 No version information in headers | Met | nginx `server_tokens off`; Kestrel with `AddServerHeader = false`. Closed G5. |
 | 14.4.1–14.4.7 Security headers | Met | API: `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, CSP `default-src 'none'`, HSTS. Apps: CSP with hashes and the API origin, `nosniff`, framing denied, referrer and permissions policies. |
 | 14.5.3 CORS allowlist | Met | Exact origins from configuration, validated at start-up; no credentials. |
 | Secrets in the repository | Met | gitleaks over the whole history in CI; only test/dev placeholders allowed. |
@@ -160,7 +160,7 @@ Only the requirements that apply to this system are listed; the numbers are ASVS
 | G2 | 3.3.2 | Absolute session lifetime: a refresh token family ends after N hours of use (12 h at L2) or 30 min idle, configurable per role (couriers work full shifts). | medium |
 | G3 | 2.3.1 | Force a password change at the first sign-in after an admin set or reset the password. | medium |
 | ~~G4~~ | 8.1.1 | Done 2026-11-14: `no-store` by default on `/api`. | – |
-| G5 | 14.3.3 | Remove the `Server: Kestrel` header (`AddServerHeader = false`). | small |
+| ~~G5~~ | 14.3.3 | Done 2026-11-14: no `Server` header from Kestrel. | – |
 | G6 | 10.3.2, 14.2.3 | Leaflet: Subresource Integrity on the jsDelivr files, or serve them from the app. | small |
 | G7 | 6.4.1 | Encrypt the Data Protection key ring at rest (certificate or key vault) in production. | stage 5 |
 | G8 | 1.1.2 | A short threat model (data flows, trust boundaries, abuse cases) in `docs/`. | small |

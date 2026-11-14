@@ -16,6 +16,9 @@ using Serilog.Events;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// No "Server: Kestrel" header: it tells an attacker which stack to probe (ASVS 14.3.3).
+builder.WebHost.ConfigureKestrel(kestrel => kestrel.AddServerHeader = false);
+
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services
     .AddKamadaLogging()
