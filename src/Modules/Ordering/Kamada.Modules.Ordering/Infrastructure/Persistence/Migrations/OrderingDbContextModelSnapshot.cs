@@ -50,7 +50,7 @@ namespace Kamada.Modules.Ordering.Infrastructure.Persistence.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Number"));
 
-                    b.Property<Guid?>("PlacedByWorkerId")
+                    b.Property<Guid>("PlacedByWorkerId")
                         .HasColumnType("uuid")
                         .HasColumnName("placed_by_worker_id");
 

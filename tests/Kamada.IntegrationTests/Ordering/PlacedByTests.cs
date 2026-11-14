@@ -36,7 +36,7 @@ public sealed class PlacedByTests(KamadaApiFactory factory)
 
         var summary = page.Items.ShouldHaveSingleItem();
         summary.Id.ShouldBe(own.Id);
-        summary.PlacedBy!.WorkerId.ShouldBe(sellerWorker.Id);
+        summary.PlacedBy.WorkerId.ShouldBe(sellerWorker.Id);
     }
 
     [Fact]

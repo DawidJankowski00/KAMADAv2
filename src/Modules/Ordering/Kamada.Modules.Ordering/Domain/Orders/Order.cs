@@ -42,8 +42,8 @@ internal sealed class Order : Entity, IAuditable
 
     public Guid ClientId { get; private set; }
 
-    /// <summary>The worker who placed the order; <c>null</c> for orders placed before this was recorded.</summary>
-    public Guid? PlacedByWorkerId { get; private set; }
+    /// <summary>The worker who placed the order (an admin or a seller).</summary>
+    public Guid PlacedByWorkerId { get; private set; }
 
     /// <summary>Id the placing request carried (idempotent retries from the phone app), if any.</summary>
     public Guid? RequestId { get; private set; }

@@ -141,7 +141,7 @@ else
     [Parameter] public Guid Id { get; set; }
 
     private string PlacedSubtitle =>
-        $"Złożone {Labels.DateTime(_order!.CreatedAt)}{(_order.PlacedBy is { } placedBy ? $" · przyjął(a) {placedBy.Name}" : string.Empty)}";
+        $"Złożone {Labels.DateTime(_order!.CreatedAt)}{(_order.PlacedBy.Name is { Length: > 0 } placedBy ? $" · przyjął(a) {placedBy}" : string.Empty)}";
 
     private bool HasPaymentActions(PaymentDto payment) =>
         payment is { Status: PaymentStatus.Pending, Provider: PaymentProvider.Transfer }
