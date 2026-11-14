@@ -24,11 +24,11 @@ internal sealed class LogoutRequestValidator : AbstractValidator<LogoutRequest>
 
 internal sealed class ChangePasswordRequestValidator : AbstractValidator<ChangePasswordRequest>
 {
-    public ChangePasswordRequestValidator()
+    public ChangePasswordRequestValidator(PasswordPolicy passwordPolicy)
     {
         RuleFor(r => r.CurrentPassword).NotEmpty().MaximumLength(WorkerRules.PasswordMaxLength);
         RuleFor(r => r.NewPassword)
-            .StrongPassword()
+            .NewPassword(passwordPolicy)
             .NotEqual(r => r.CurrentPassword).WithMessage("The new password must differ from the current one.");
     }
 }
@@ -40,10 +40,10 @@ internal sealed class ForgotPasswordRequestValidator : AbstractValidator<ForgotP
 
 internal sealed class CompletePasswordResetRequestValidator : AbstractValidator<CompletePasswordResetRequest>
 {
-    public CompletePasswordResetRequestValidator()
+    public CompletePasswordResetRequestValidator(PasswordPolicy passwordPolicy)
     {
         RuleFor(r => r.Token).NotEmpty().MaximumLength(200);
-        RuleFor(r => r.NewPassword).StrongPassword();
+        RuleFor(r => r.NewPassword).NewPassword(passwordPolicy);
     }
 }
 

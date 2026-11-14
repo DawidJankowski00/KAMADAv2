@@ -1,9 +1,14 @@
 namespace Kamada.Web.Shared.Auth;
 
-/// <summary>Client-side mirror of the server password policy (the server validates again).</summary>
+/// <summary>
+/// Client-side mirror of the server password policy (length only; the server also refuses common passwords and
+/// validates again).
+/// </summary>
 public static class PasswordRules
 {
-    public const string Hint = "Min. 8 znaków, mała i wielka litera, cyfra";
+    public const int MinLength = 12;
+
+    public const string Hint = "Min. 12 znaków. Najlepiej kilka słów, np. zdanie, którego nikt nie zgadnie.";
 
     public static string? Validate(string? password)
     {
@@ -12,16 +17,6 @@ public static class PasswordRules
             return null;
         }
 
-        if (password.Length < 8)
-        {
-            return "Hasło musi mieć co najmniej 8 znaków.";
-        }
-
-        if (!password.Any(char.IsUpper) || !password.Any(char.IsLower) || !password.Any(char.IsDigit))
-        {
-            return "Hasło musi zawierać małą i wielką literę oraz cyfrę.";
-        }
-
-        return null;
+        return password.Length < MinLength ? $"Hasło musi mieć co najmniej {MinLength} znaków." : null;
     }
 }

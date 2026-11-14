@@ -12,7 +12,7 @@
                     </MudItem>
                     <MudItem xs="12" sm="6">
                         <MudTextField @bind-Value="_password" Label="Hasło" Required="true" InputType="InputType.Password" MaxLength="128"
-                                      HelperText="Min. 8 znaków, mała i wielka litera, cyfra" Validation="@(new Func<string, string?>(PasswordRules.Validate))" />
+                                      HelperText="@PasswordRules.Hint" Validation="@(new Func<string, string?>(PasswordRules.Validate))" />
                     </MudItem>
                 }
                 <MudItem xs="12" sm="6">

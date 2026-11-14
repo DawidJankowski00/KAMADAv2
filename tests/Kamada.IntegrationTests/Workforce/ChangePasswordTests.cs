@@ -8,7 +8,7 @@ namespace Kamada.IntegrationTests.Workforce;
 
 public sealed class ChangePasswordTests(KamadaApiFactory factory)
 {
-    private const string NewPassword = "Nowe1234!";
+    private const string NewPassword = "Nowe-haslo-do-testow";
 
     [Fact]
     public async Task ChangePassword_WithCurrentPassword_ReturnsNewSessionAndRevokesOthers()

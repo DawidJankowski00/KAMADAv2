@@ -8,7 +8,7 @@ namespace Kamada.IntegrationTests.Workforce;
 
 public sealed partial class PasswordResetTests(KamadaApiFactory factory)
 {
-    private const string NewPassword = "Nowe1234!";
+    private const string NewPassword = "Nowe-haslo-do-testow";
 
     private readonly HttpClient _client = factory.CreateClient();
 
@@ -44,7 +44,7 @@ public sealed partial class PasswordResetTests(KamadaApiFactory factory)
         var token = TokenFrom((await factory.Emails.WaitForAsync(worker.Email)).TextBody);
         (await _client.PostJsonAsync("/api/auth/reset-password", new CompletePasswordResetRequest(token, NewPassword))).EnsureSuccessStatusCode();
 
-        var again = await _client.PostJsonAsync("/api/auth/reset-password", new CompletePasswordResetRequest(token, "Inne1234!"));
+        var again = await _client.PostJsonAsync("/api/auth/reset-password", new CompletePasswordResetRequest(token, "Inne-haslo-do-testow"));
 
         again.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         (await again.ReadProblemCodeAsync()).ShouldBe("Auth.InvalidResetToken");

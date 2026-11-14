@@ -17,6 +17,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Application/Auth/common-passwords.txt" LogicalName="Kamada.Modules.Workforce.Application.Auth.common-passwords.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="Kamada.Modules.Workforce.UnitTests" />
     <InternalsVisibleTo Include="Kamada.IntegrationTests" />
     <InternalsVisibleTo Include="Kamada.ArchitectureTests" />

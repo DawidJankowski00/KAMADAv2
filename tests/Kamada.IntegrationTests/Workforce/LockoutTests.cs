@@ -61,10 +61,10 @@ public sealed class LockoutTests(KamadaApiFactory factory)
         var text = (await factory.Emails.WaitForAsync(worker.Email)).TextBody;
         var token = Uri.UnescapeDataString(text[(text.IndexOf("?token=", StringComparison.Ordinal) + 7)..].Split('\n')[0].Trim());
 
-        (await _client.PostJsonAsync("/api/auth/reset-password", new CompletePasswordResetRequest(token, "Nowe1234!")))
+        (await _client.PostJsonAsync("/api/auth/reset-password", new CompletePasswordResetRequest(token, "Nowe-haslo-do-testow")))
             .StatusCode.ShouldBe(HttpStatusCode.NoContent);
 
-        (await _client.LoginAsync(worker.Username, "Nowe1234!")).User.Id.ShouldBe(worker.Id);
+        (await _client.LoginAsync(worker.Username, "Nowe-haslo-do-testow")).User.Id.ShouldBe(worker.Id);
     }
 
     private async Task FailLoginsAsync(TestWorker worker, int count)

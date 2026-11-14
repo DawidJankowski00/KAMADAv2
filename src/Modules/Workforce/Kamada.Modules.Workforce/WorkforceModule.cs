@@ -58,6 +58,8 @@ public static class WorkforceModule
         services.AddScoped<AccountSessions>();
         services.AddSingleton<ITwoFactorService, TotpTwoFactorService>();
         services.AddSingleton<TwoFactorPolicy>();
+        services.AddSingleton<PasswordPolicy>();
+        services.AddOptions<PasswordPolicyOptions>().Bind(configuration.GetSection(PasswordPolicyOptions.SectionName));
         services.AddOptions<TwoFactorPolicyOptions>().Bind(configuration.GetSection(TwoFactorPolicyOptions.SectionName));
         services.AddScoped<TwoFactorCodes>();
         services.AddScoped<TwoFactorSetup>();

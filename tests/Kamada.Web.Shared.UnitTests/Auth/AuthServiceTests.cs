@@ -118,7 +118,7 @@ public sealed class AuthServiceTests : IDisposable
         await _auth.LoginAsync("anna", "secret", TestContext.Current.CancellationToken);
         _api.ChangePasswordResponse = StubApi.Tokens(Roles.Courier);
 
-        var result = await _auth.ChangePasswordAsync("secret", "Nowe1234!", TestContext.Current.CancellationToken);
+        var result = await _auth.ChangePasswordAsync("secret", "Nowe-haslo-do-testow", TestContext.Current.CancellationToken);
 
         result.IsSuccess.ShouldBeTrue();
         GetStoredAccessToken().ShouldBe(_api.ChangePasswordResponse.AccessToken);
@@ -130,7 +130,7 @@ public sealed class AuthServiceTests : IDisposable
         _api.LoginResponse = StubApi.Tokens(Roles.Courier);
         await _auth.LoginAsync("anna", "secret", TestContext.Current.CancellationToken);
 
-        var result = await _auth.ChangePasswordAsync("wrong", "Nowe1234!", TestContext.Current.CancellationToken);
+        var result = await _auth.ChangePasswordAsync("wrong", "Nowe-haslo-do-testow", TestContext.Current.CancellationToken);
 
         result.IsSuccess.ShouldBeFalse();
         result.Problem!.Code.ShouldBe("Auth.CurrentPasswordInvalid");

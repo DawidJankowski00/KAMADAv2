@@ -26,6 +26,9 @@ password reset). There is no external identity provider in scope.
   all refresh tokens of the worker (a change returns a new token pair, so only the worker's other sessions end). Already issued access tokens
   remain valid until they expire (≤ 15 min) – an accepted trade-off for stateless validation.
 - Passwords are hashed with ASP.NET Core Identity's `PasswordHasher<T>` (PBKDF2, automatic rehash on login).
+- New passwords (any way they are set): 12–128 characters, no composition rules, not on the list of common passwords
+  (built-in list plus optional `Auth:PasswordPolicy:BlocklistFile`); a new account's password must not contain the
+  username (OWASP ASVS 4 level 2, NIST SP 800-63B).
 - Login and refresh are rate limited per client IP (fixed window, configurable).
 - Login failures return the same error for unknown user, wrong password and deactivated account; a dummy
   hash is verified for unknown users so timing does not reveal valid usernames.

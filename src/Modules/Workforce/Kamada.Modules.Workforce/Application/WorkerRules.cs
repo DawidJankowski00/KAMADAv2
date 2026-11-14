@@ -1,4 +1,5 @@
 using FluentValidation;
+using Kamada.Modules.Workforce.Application.Auth;
 using Kamada.Shared.Contracts.Workforce;
 
 namespace Kamada.Modules.Workforce.Application;
@@ -10,8 +11,7 @@ internal static class WorkerRules
 {
     public const int UsernameMinLength = 3;
     public const int UsernameMaxLength = 50;
-    public const int PasswordMinLength = 8;
-    public const int PasswordMaxLength = 128;
+    public const int PasswordMaxLength = PasswordPolicy.MaxLength;
     public const int NameMaxLength = 100;
     public const int PhoneNumberMaxLength = 20;
     public const int EmailMaxLength = 254;
@@ -22,12 +22,13 @@ internal static class WorkerRules
             .Matches("^[a-zA-Z0-9._-]+$")
             .WithMessage("Username may contain only letters, digits, '.', '_' and '-'.");
 
-    public static IRuleBuilderOptions<T, string> StrongPassword<T>(this IRuleBuilder<T, string> rule) =>
+    /// <summary>A password being set (not one typed to sign in): see <see cref="PasswordPolicy"/>.</summary>
+    public static IRuleBuilderOptions<T, string> NewPassword<T>(this IRuleBuilder<T, string> rule, PasswordPolicy policy) =>
         rule.NotEmpty()
-            .Length(PasswordMinLength, PasswordMaxLength)
-            .Matches("[A-Z]").WithMessage("Password must contain an uppercase letter.")
-            .Matches("[a-z]").WithMessage("Password must contain a lowercase letter.")
-            .Matches("[0-9]").WithMessage("Password must contain a digit.");
+            .Length(PasswordPolicy.MinLength, PasswordPolicy.MaxLength)
+            .Must(password => !policy.IsCommon(password))
+            .WithErrorCode("Password.TooCommon")
+            .WithMessage("This password is one of the most common ones. Choose another.");
 
     public static IRuleBuilderOptions<T, string> WorkerEmail<T>(this IRuleBuilder<T, string> rule) =>
         rule.NotEmpty().EmailAddress().MaximumLength(EmailMaxLength);

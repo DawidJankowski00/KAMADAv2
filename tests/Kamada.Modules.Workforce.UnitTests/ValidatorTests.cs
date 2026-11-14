@@ -2,18 +2,21 @@ using Kamada.Modules.Workforce.Application.Auth;
 using Kamada.Modules.Workforce.Application.Workers;
 using Kamada.Shared.Contracts.Auth;
 using Kamada.Shared.Contracts.Workforce;
+using Microsoft.Extensions.Options;
 
 namespace Kamada.Modules.Workforce.UnitTests;
 
 public sealed class ValidatorTests
 {
+    private static readonly PasswordPolicy Policy = new(Options.Create(new PasswordPolicyOptions()));
+
     private static CreateWorkerRequest ValidRequest() =>
-        new("kurier9", "kurier9@kamada.test", "Secret123", "Jan", "Kowalski", "+48 600 000 000", [WorkerRole.Courier]);
+        new("kurier9", "kurier9@kamada.test", "Secret-pass-2026", "Jan", "Kowalski", "+48 600 000 000", [WorkerRole.Courier]);
 
     [Fact]
     public void CreateWorker_ValidRequest_Passes()
     {
-        new CreateWorkerRequestValidator().Validate(ValidRequest()).IsValid.ShouldBeTrue();
+        new CreateWorkerRequestValidator(Policy).Validate(ValidRequest()).IsValid.ShouldBeTrue();
     }
 
     [Theory]
@@ -21,19 +24,20 @@ public sealed class ValidatorTests
     [InlineData("not-an-email")]
     public void CreateWorker_InvalidEmail_Fails(string email)
     {
-        var result = new CreateWorkerRequestValidator().Validate(ValidRequest() with { Email = email });
+        var result = new CreateWorkerRequestValidator(Policy).Validate(ValidRequest() with { Email = email });
 
         result.Errors.ShouldContain(e => e.PropertyName == nameof(CreateWorkerRequest.Email));
     }
 
     [Theory]
-    [InlineData("Short1A")]
-    [InlineData("alllowercase1")]
-    [InlineData("ALLUPPERCASE1")]
-    [InlineData("NoDigitsHere")]
+    [InlineData("Short-pass1")]
+    [InlineData("password1234")]
+    [InlineData("QWERTY123456")]
+    [InlineData("zzzzzzzzzzzzzz")]
+    [InlineData("my-kurier9-password")]
     public void CreateWorker_WeakPassword_Fails(string password)
     {
-        var result = new CreateWorkerRequestValidator().Validate(ValidRequest() with { Password = password });
+        var result = new CreateWorkerRequestValidator(Policy).Validate(ValidRequest() with { Password = password });
 
         result.Errors.ShouldContain(e => e.PropertyName == nameof(CreateWorkerRequest.Password));
     }
@@ -44,7 +48,7 @@ public sealed class ValidatorTests
     [InlineData("zażółć")]
     public void CreateWorker_InvalidUsername_Fails(string username)
     {
-        var result = new CreateWorkerRequestValidator().Validate(ValidRequest() with { Username = username });
+        var result = new CreateWorkerRequestValidator(Policy).Validate(ValidRequest() with { Username = username });
 
         result.Errors.ShouldContain(e => e.PropertyName == nameof(CreateWorkerRequest.Username));
     }
@@ -54,7 +58,7 @@ public sealed class ValidatorTests
     [InlineData("phone-number")]
     public void CreateWorker_InvalidPhone_Fails(string phone)
     {
-        var result = new CreateWorkerRequestValidator().Validate(ValidRequest() with { PhoneNumber = phone });
+        var result = new CreateWorkerRequestValidator(Policy).Validate(ValidRequest() with { PhoneNumber = phone });
 
         result.Errors.ShouldContain(e => e.PropertyName == nameof(CreateWorkerRequest.PhoneNumber));
     }
@@ -62,7 +66,7 @@ public sealed class ValidatorTests
     [Fact]
     public void CreateWorker_SeveralRoles_Passes()
     {
-        var result = new CreateWorkerRequestValidator().Validate(ValidRequest() with { Roles = [WorkerRole.Admin, WorkerRole.Courier] });
+        var result = new CreateWorkerRequestValidator(Policy).Validate(ValidRequest() with { Roles = [WorkerRole.Admin, WorkerRole.Courier] });
 
         result.IsValid.ShouldBeTrue();
     }
@@ -70,7 +74,7 @@ public sealed class ValidatorTests
     [Fact]
     public void CreateWorker_NoRoles_Fails()
     {
-        var result = new CreateWorkerRequestValidator().Validate(ValidRequest() with { Roles = [] });
+        var result = new CreateWorkerRequestValidator(Policy).Validate(ValidRequest() with { Roles = [] });
 
         result.Errors.ShouldContain(e => e.PropertyName == nameof(CreateWorkerRequest.Roles));
     }
@@ -78,7 +82,7 @@ public sealed class ValidatorTests
     [Fact]
     public void CreateWorker_DuplicateRoles_Fails()
     {
-        var result = new CreateWorkerRequestValidator().Validate(ValidRequest() with { Roles = [WorkerRole.Courier, WorkerRole.Courier] });
+        var result = new CreateWorkerRequestValidator(Policy).Validate(ValidRequest() with { Roles = [WorkerRole.Courier, WorkerRole.Courier] });
 
         result.Errors.ShouldContain(e => e.PropertyName == nameof(CreateWorkerRequest.Roles));
     }
@@ -96,7 +100,7 @@ public sealed class ValidatorTests
     [Fact]
     public void ChangePassword_SameAsCurrent_Fails()
     {
-        var result = new ChangePasswordRequestValidator().Validate(new ChangePasswordRequest("Secret123", "Secret123"));
+        var result = new ChangePasswordRequestValidator(Policy).Validate(new ChangePasswordRequest("Secret-pass-2026", "Secret-pass-2026"));
 
         result.Errors.ShouldContain(e => e.PropertyName == nameof(ChangePasswordRequest.NewPassword));
     }
@@ -104,6 +108,6 @@ public sealed class ValidatorTests
     [Fact]
     public void ChangePassword_StrongNewPassword_Passes()
     {
-        new ChangePasswordRequestValidator().Validate(new ChangePasswordRequest("Secret123", "Nowe1234!")).IsValid.ShouldBeTrue();
+        new ChangePasswordRequestValidator(Policy).Validate(new ChangePasswordRequest("Secret-pass-2026", "Nowe-haslo-do-testow")).IsValid.ShouldBeTrue();
     }
 }

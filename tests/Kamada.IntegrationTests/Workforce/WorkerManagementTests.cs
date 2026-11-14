@@ -14,7 +14,7 @@ public sealed class WorkerManagementTests(KamadaApiFactory factory)
     private static CreateWorkerRequest NewCourierRequest() => new(
         $"courier-{Guid.NewGuid():N}"[..20],
         $"{Guid.NewGuid():N}@kamada.test",
-        "Courier123",
+        "Courier-pass-2026",
         "Adam",
         "Zieliński",
         "+48 700 800 900",
@@ -244,13 +244,13 @@ public sealed class WorkerManagementTests(KamadaApiFactory factory)
         var (admin, _) = await factory.CreateSignedInClientAsync(DomainRole.Admin);
         var courier = await factory.CreateWorkerAsync(DomainRole.Courier);
 
-        var response = await admin.PostJsonAsync($"/api/workers/{courier.Id}/reset-password", new ResetPasswordRequest("Changed123"));
+        var response = await admin.PostJsonAsync($"/api/workers/{courier.Id}/reset-password", new ResetPasswordRequest("Changed-pass-2026"));
 
         response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
         var anonymous = factory.CreateClient();
         (await anonymous.PostJsonAsync("/api/auth/login", new LoginRequest(courier.Username, courier.Password)))
             .StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
-        (await anonymous.LoginAsync(courier.Username, "Changed123")).User.Id.ShouldBe(courier.Id);
+        (await anonymous.LoginAsync(courier.Username, "Changed-pass-2026")).User.Id.ShouldBe(courier.Id);
     }
 
     [Fact]
