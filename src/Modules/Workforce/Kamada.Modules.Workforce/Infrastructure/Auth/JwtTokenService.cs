@@ -19,7 +19,7 @@ internal sealed class JwtTokenService(IOptions<JwtOptions> options, TimeProvider
 
     public TimeSpan RefreshTokenLifetime => _options.RefreshTokenLifetime;
 
-    public AccessToken CreateAccessToken(Worker worker, Guid sessionId)
+    public AccessToken CreateAccessToken(Worker worker, Guid sessionId, bool twoFactorSetupRequired = false)
     {
         var now = clock.GetUtcNow();
         var expiresAt = now + _options.AccessTokenLifetime;
@@ -38,6 +38,7 @@ internal sealed class JwtTokenService(IOptions<JwtOptions> options, TimeProvider
                 new Claim(KamadaClaimTypes.FamilyName, worker.Surname),
                 new Claim(KamadaClaimTypes.SessionId, sessionId.ToString()),
                 .. worker.Roles.Select(role => new Claim(KamadaClaimTypes.Role, role.ToRoleName())),
+                .. (twoFactorSetupRequired ? [new Claim(KamadaClaimTypes.TwoFactorSetupRequired, "true")] : Array.Empty<Claim>()),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             ]),
             SigningCredentials = new SigningCredentials(

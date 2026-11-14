@@ -131,6 +131,23 @@ public sealed class AuthService(IHttpClientFactory httpClientFactory, TokenStore
         }
     }
 
+    /// <summary>
+    /// Gets a new token pair now (not when the access token expires), e.g. after turning 2FA on, so the account data
+    /// and claims in the session match the server; raises <see cref="SessionChanged"/>.
+    /// </summary>
+    public async Task RefreshSessionAsync(CancellationToken cancellationToken = default)
+    {
+        var session = await store.GetAsync();
+        if (session is null)
+        {
+            return;
+        }
+
+        // Passing the current access token as "stale" forces the refresh.
+        await RefreshAsync(session.AccessToken, cancellationToken);
+        SessionChanged?.Invoke();
+    }
+
     /// <summary>Asks for a reset link; the server answers the same whether or not the address belongs to an account.</summary>
     public Task<ApiResult> RequestPasswordResetAsync(string email, CancellationToken cancellationToken = default) =>
         PostAnonymousAsync("api/auth/forgot-password", new ForgotPasswordRequest(email), cancellationToken);

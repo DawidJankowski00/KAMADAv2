@@ -27,6 +27,11 @@ service.
   codes count like wrong passwords, and the correct password does **not** reset the count while a code is pending
   (otherwise the right password between guesses would allow unlimited guessing).
 - Turning 2FA off needs the password **and** a code, so neither a stolen session nor a stolen password alone does it.
+- **Required for administrators** (`Auth:TwoFactor:RequiredForAdmins`, on by default, off in Development so the demo
+  accounts keep working). An administrator without 2FA gets tokens with the `2fa_setup` claim and
+  `AuthenticatedUserDto.TwoFactorSetupRequired`; a middleware answers every `/api` call outside `/api/auth` with
+  `403 Auth.TwoFactorSetupRequired`, and both apps show only the setup page until it is done (then they refresh the
+  session to get tokens without the claim).
 
 ## Alternatives considered
 

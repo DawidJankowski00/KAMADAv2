@@ -8,7 +8,7 @@ namespace Kamada.Modules.Workforce.Application.Auth;
 /// <summary>
 /// Issues access + refresh token pairs. The caller is responsible for saving changes.
 /// </summary>
-internal sealed class AuthSessionFactory(IWorkforceDbContext db, ITokenService tokens, TimeProvider clock)
+internal sealed class AuthSessionFactory(IWorkforceDbContext db, ITokenService tokens, TwoFactorPolicy twoFactorPolicy, TimeProvider clock)
 {
     public TokenResponse Start(Worker worker, SessionClient client)
     {
@@ -28,12 +28,13 @@ internal sealed class AuthSessionFactory(IWorkforceDbContext db, ITokenService t
 
     private TokenResponse CreateResponse(Worker worker, string rawRefreshToken, RefreshToken refreshToken)
     {
-        var accessToken = tokens.CreateAccessToken(worker, refreshToken.FamilyId);
+        var setupRequired = twoFactorPolicy.SetupRequired(worker);
+        var accessToken = tokens.CreateAccessToken(worker, refreshToken.FamilyId, setupRequired);
         return new TokenResponse(
             accessToken.Token,
             accessToken.ExpiresAt,
             rawRefreshToken,
             refreshToken.ExpiresAt,
-            worker.ToAuthenticatedUser());
+            worker.ToAuthenticatedUser(setupRequired));
     }
 }

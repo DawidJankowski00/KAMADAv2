@@ -135,12 +135,12 @@ internal static class AuthEndpoints
             .ProducesValidationProblem()
             .ProducesProblem(StatusCodes.Status409Conflict);
 
-        group.MapGet("/me", async (IWorkforceDbContext db, ICurrentUser user, CancellationToken ct) =>
+        group.MapGet("/me", async (IWorkforceDbContext db, TwoFactorPolicy twoFactorPolicy, ICurrentUser user, CancellationToken ct) =>
             {
                 var worker = await db.Workers.AsNoTracking().SingleOrDefaultAsync(w => w.Id == user.Id, ct);
                 return worker is null
                     ? WorkerErrors.NotFound.ToProblem()
-                    : Results.Ok(worker.ToAuthenticatedUser());
+                    : Results.Ok(worker.ToAuthenticatedUser(twoFactorPolicy.SetupRequired(worker)));
             })
             .WithSummary("Currently signed-in worker")
             .Produces<AuthenticatedUserDto>();

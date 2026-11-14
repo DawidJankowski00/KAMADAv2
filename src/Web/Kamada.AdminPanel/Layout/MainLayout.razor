@@ -29,7 +29,9 @@
         <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="py-6">
             <ErrorBoundary @ref="_errorBoundary">
                 <ChildContent>
-                    @Body
+                    <TwoFactorGate>
+                        @Body
+                    </TwoFactorGate>
                 </ChildContent>
                 <ErrorContent>
                     <MudAlert Severity="Severity.Error" Class="mb-4">

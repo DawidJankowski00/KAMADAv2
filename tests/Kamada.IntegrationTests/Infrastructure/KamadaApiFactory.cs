@@ -47,6 +47,8 @@ public sealed class KamadaApiFactory : WebApplicationFactory<Program>, IAsyncLif
         builder.UseSetting("Geocoding:Provider", "None");
         builder.UseSetting("Email:Smtp:Host", "localhost");
         builder.UseSetting("Auth:PasswordReset:Url", ResetPasswordUrl);
+        // Most tests sign in as admins without 2FA; TwoFactorRequirementTests turns the requirement on in its own host.
+        builder.UseSetting("Auth:TwoFactor:RequiredForAdmins", "false");
         builder.UseSetting("RouteOptimization:MatrixProvider", "Haversine");
         builder.UseSetting("Assistant:Enabled", "true");
         builder.UseSetting("RateLimiting:Assistant:PermitLimit", "100000");

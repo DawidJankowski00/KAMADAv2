@@ -47,9 +47,9 @@
             Pozostałe kody zapasowe: @_status.RecoveryCodesLeft z 10.
         </MudText>
 
-        <MudTextField @bind-Value="_code" Label="Kod z aplikacji albo kod zapasowy" Variant="Variant.Outlined" MaxLength="20" Class="mb-3"
+        <MudTextField @bind-Value="_code" Immediate="true" Label="Kod z aplikacji albo kod zapasowy" Variant="Variant.Outlined" MaxLength="20" Class="mb-3"
                       UserAttributes="@(new Dictionary<string, object?> { ["autocomplete"] = "one-time-code" })" />
-        <MudTextField @bind-Value="_password" Label="Hasło (tylko do wyłączenia)" Variant="Variant.Outlined" InputType="InputType.Password"
+        <MudTextField @bind-Value="_password" Immediate="true" Label="Hasło (tylko do wyłączenia)" Variant="Variant.Outlined" InputType="InputType.Password"
                       MaxLength="128" Class="mb-4" UserAttributes="@(new Dictionary<string, object?> { ["autocomplete"] = "current-password" })" />
         <div class="d-flex flex-wrap gap-2 justify-end">
             <MudButton OnClick="RegenerateAsync" Disabled="@(_busy || string.IsNullOrWhiteSpace(_code))">Nowe kody zapasowe</MudButton>
@@ -69,7 +69,7 @@
         </div>
         <MudText Typo="Typo.subtitle1" Class="mb-2">2. Wpisz kod pokazany w aplikacji</MudText>
         <div class="d-flex flex-wrap gap-2 align-center">
-            <MudTextField @bind-Value="_code" Label="Kod (6 cyfr)" Variant="Variant.Outlined" MaxLength="10" InputMode="InputMode.numeric"
+            <MudTextField @bind-Value="_code" Immediate="true" Label="Kod (6 cyfr)" Variant="Variant.Outlined" MaxLength="10" InputMode="InputMode.numeric"
                           Style="max-width: 200px" UserAttributes="@(new Dictionary<string, object?> { ["autocomplete"] = "one-time-code" })" />
             <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="EnableAsync" Disabled="@(_busy || string.IsNullOrWhiteSpace(_code))">Włącz</MudButton>
             <MudButton OnClick="() => _setup = null" Disabled="_busy">Anuluj</MudButton>

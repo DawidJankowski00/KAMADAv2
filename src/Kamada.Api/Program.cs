@@ -52,6 +52,7 @@ app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseCors(HostingExtensions.FrontendsCorsPolicy);
 app.UseAuthentication();
+app.UseTwoFactorSetupGate();
 app.UseRateLimiter();
 app.UseAuthorization();
 

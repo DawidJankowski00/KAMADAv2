@@ -57,6 +57,8 @@ public static class WorkforceModule
         services.AddScoped<LogoutHandler>();
         services.AddScoped<AccountSessions>();
         services.AddSingleton<ITwoFactorService, TotpTwoFactorService>();
+        services.AddSingleton<TwoFactorPolicy>();
+        services.AddOptions<TwoFactorPolicyOptions>().Bind(configuration.GetSection(TwoFactorPolicyOptions.SectionName));
         services.AddScoped<TwoFactorCodes>();
         services.AddScoped<TwoFactorSetup>();
         services.AddScoped<TwoFactorLoginHandler>();

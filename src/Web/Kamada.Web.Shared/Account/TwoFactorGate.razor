@@ -1,0 +1,57 @@
+@implements IDisposable
+@inject AuthService Auth
+@inject NavigationManager Navigation
+
+@*
+    An administrator without 2FA where it is required sees only the 2FA setup (and the other account pages): the API
+    answers nothing else until it is set up (TwoFactorSetupGate on the server). Wraps the page body in both apps.
+*@
+@if (_setupRequired && !IsAccountPage)
+{
+    <MudAlert Severity="Severity.Warning" Class="mb-4" Style="max-width: 640px">
+        Konto administratora wymaga logowania dwuetapowego. Włącz je, aby korzystać z aplikacji.
+    </MudAlert>
+    <TwoFactor OnEnabled="OnEnabledAsync" />
+}
+else
+{
+    @ChildContent
+}
+
+@code {
+    private bool _setupRequired;
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private bool IsAccountPage => Navigation.ToBaseRelativePath(Navigation.Uri).StartsWith("account/", StringComparison.OrdinalIgnoreCase);
+
+    protected override async Task OnInitializedAsync()
+    {
+        Auth.SessionChanged += OnSessionChanged;
+        Navigation.LocationChanged += OnLocationChanged;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync() => _setupRequired = (await Auth.GetCurrentUserAsync())?.TwoFactorSetupRequired == true;
+
+    private async Task OnEnabledAsync()
+    {
+        await Auth.RefreshSessionAsync();
+        await LoadAsync();
+    }
+
+    private void OnSessionChanged() => _ = InvokeAsync(async () =>
+    {
+        await LoadAsync();
+        StateHasChanged();
+    });
+
+    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e) =>
+        _ = InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        Auth.SessionChanged -= OnSessionChanged;
+        Navigation.LocationChanged -= OnLocationChanged;
+    }
+}

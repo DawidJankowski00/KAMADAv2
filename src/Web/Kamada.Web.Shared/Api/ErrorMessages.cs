@@ -14,6 +14,7 @@ public static class ErrorMessages
         ["Auth.SessionNotFound"] = "Ta sesja już się zakończyła.",
         ["Auth.InvalidTwoFactorCode"] = "Kod jest nieprawidłowy. Sprawdź, czy czas w telefonie jest ustawiony automatycznie.",
         ["Auth.InvalidTwoFactorLogin"] = "Kod jest nieprawidłowy albo logowanie wygasło. Spróbuj ponownie.",
+        ["Auth.TwoFactorSetupRequired"] = "Najpierw włącz logowanie dwuetapowe (menu konta).",
         ["Workers.TwoFactorAlreadyEnabled"] = "Logowanie dwuetapowe jest już włączone.",
         ["Workers.TwoFactorNotSetUp"] = "Najpierw zeskanuj kod QR w aplikacji uwierzytelniającej.",
         ["Workers.TwoFactorNotEnabled"] = "Logowanie dwuetapowe nie jest włączone.",

@@ -115,6 +115,8 @@ Demo accounts (seeded in the Development environment):
 
 Each demo account has the e-mail address `<username>@kamada.test` (`.test` is a reserved domain, nothing is delivered).
 "Nie pamiętam hasła" sends the reset link there; in Development every e-mail lands in Mailpit (http://localhost:8025).
+Outside Development administrators must turn on two-factor authentication before they can use the apps
+(`Auth__TwoFactor__RequiredForAdmins=true` turns this on locally; [ADR 0011](docs/adr/0011-two-factor-authentication.md)).
 
 ### Demo data
 

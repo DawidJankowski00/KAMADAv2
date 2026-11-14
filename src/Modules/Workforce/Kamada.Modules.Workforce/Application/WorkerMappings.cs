@@ -21,8 +21,8 @@ internal static class WorkerMappings
         worker.TwoFactorEnabled,
         worker.CreatedAt);
 
-    public static AuthenticatedUserDto ToAuthenticatedUser(this Worker worker) =>
-        new(worker.Id, worker.Username, worker.Name, worker.Surname, [.. worker.Roles.Select(r => r.ToRoleName())]);
+    public static AuthenticatedUserDto ToAuthenticatedUser(this Worker worker, bool twoFactorSetupRequired) =>
+        new(worker.Id, worker.Username, worker.Name, worker.Surname, [.. worker.Roles.Select(r => r.ToRoleName())], twoFactorSetupRequired);
 
     public static ContractRole ToContract(this DomainRole role) => role switch
     {

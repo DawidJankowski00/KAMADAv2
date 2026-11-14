@@ -51,7 +51,16 @@ public sealed record SessionDto(
 public sealed record CompletePasswordResetRequest(string Token, string NewPassword);
 
 /// <param name="Roles">Every role of the worker (role names from <see cref="Kamada.Shared.Contracts.Auth.Roles"/>).</param>
-public sealed record AuthenticatedUserDto(Guid Id, string Username, string Name, string Surname, IReadOnlyList<string> Roles);
+/// <param name="TwoFactorSetupRequired">
+/// An administrator without 2FA where it is required: the API answers only the account endpoints until it is set up.
+/// </param>
+public sealed record AuthenticatedUserDto(
+    Guid Id,
+    string Username,
+    string Name,
+    string Surname,
+    IReadOnlyList<string> Roles,
+    bool TwoFactorSetupRequired = false);
 
 public sealed record TokenResponse(
     string AccessToken,
