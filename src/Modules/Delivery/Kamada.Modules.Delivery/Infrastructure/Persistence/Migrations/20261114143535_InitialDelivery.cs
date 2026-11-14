@@ -118,16 +118,16 @@ namespace Kamada.Modules.Delivery.Infrastructure.Persistence.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "ix_delivery_run_orders_delivery_run_id",
-                schema: "delivery",
-                table: "delivery_run_orders",
-                column: "delivery_run_id");
-
-            migrationBuilder.CreateIndex(
                 name: "ix_delivery_run_orders_order_id",
                 schema: "delivery",
                 table: "delivery_run_orders",
                 column: "order_id");
+
+            // Unique only at commit: reordering swaps sequences row by row. The model declares this index as a plain
+            // index (see DeliveryRunOrderConfiguration), so it is created here by the constraint, not by CreateIndex.
+            migrationBuilder.Sql(
+                "ALTER TABLE delivery.delivery_run_orders ADD CONSTRAINT ux_delivery_run_orders_run_seq " +
+                "UNIQUE (delivery_run_id, delivery_sequence) DEFERRABLE INITIALLY DEFERRED;");
 
             migrationBuilder.CreateIndex(
                 name: "ix_delivery_runs_courier_id_planned_date",
@@ -159,11 +159,6 @@ namespace Kamada.Modules.Delivery.Infrastructure.Persistence.Migrations
                 table: "route_locations",
                 column: "name",
                 unique: true);
-
-            // Not expressible in the EF model: checked at commit, so stops can swap positions in one save.
-            migrationBuilder.Sql(
-                "ALTER TABLE delivery.delivery_run_orders ADD CONSTRAINT ux_delivery_run_orders_run_sequence " +
-                "UNIQUE (delivery_run_id, delivery_sequence) DEFERRABLE INITIALLY DEFERRED;");
         }
 
         /// <inheritdoc />

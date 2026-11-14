@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Kamada.Modules.Customers.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(CustomersDbContext))]
-    [Migration("20261011154306_RequestIds")]
-    partial class RequestIds
+    [Migration("20261114143503_InitialCustomers")]
+    partial class InitialCustomers
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

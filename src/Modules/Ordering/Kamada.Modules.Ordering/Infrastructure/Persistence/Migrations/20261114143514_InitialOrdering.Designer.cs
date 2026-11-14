@@ -13,7 +13,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Kamada.Modules.Ordering.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(OrderingDbContext))]
-    [Migration("20260928164457_InitialOrdering")]
+    [Migration("20261114143514_InitialOrdering")]
     partial class InitialOrdering
     {
         /// <inheritdoc />
@@ -52,6 +52,14 @@ namespace Kamada.Modules.Ordering.Infrastructure.Persistence.Migrations
                         .HasColumnName("number");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Number"));
+
+                    b.Property<Guid>("PlacedByWorkerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("placed_by_worker_id");
+
+                    b.Property<Guid?>("RequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("request_id");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -148,6 +156,13 @@ namespace Kamada.Modules.Ordering.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_orders_number");
 
+                    b.HasIndex("RequestId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_orders_request_id");
+
+                    b.HasIndex("PlacedByWorkerId", "CreatedAt")
+                        .HasDatabaseName("ix_orders_placed_by_worker_id_created_at");
+
                     b.HasIndex("Status", "CreatedAt")
                         .HasDatabaseName("ix_orders_status_created_at");
 
@@ -215,6 +230,83 @@ namespace Kamada.Modules.Ordering.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Kamada.Modules.Ordering.Domain.Payments.Payment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("FailureReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("failure_reason");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("order_id");
+
+                    b.Property<DateTimeOffset?>("PaidAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("paid_at");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("provider");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("TransactionId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("transaction_id");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_payments");
+
+                    b.HasIndex("TransactionId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_payments_transaction_id");
+
+                    b.HasIndex(new[] { "OrderId" }, "ix_payments_order_id")
+                        .HasDatabaseName("ix_payments_order_id");
+
+                    b.HasIndex(new[] { "OrderId" }, "ux_payments_one_active_per_order")
+                        .IsUnique()
+                        .HasDatabaseName("ux_payments_one_active_per_order")
+                        .HasFilter("status IN ('Pending', 'Completed')");
+
+                    b.ToTable("payments", "ordering", t =>
+                        {
+                            t.HasCheckConstraint("ck_payments_amount_positive", "amount > 0");
+                        });
+                });
+
             modelBuilder.Entity("Kamada.Modules.Ordering.Domain.Orders.OrderItem", b =>
                 {
                     b.HasOne("Kamada.Modules.Ordering.Domain.Orders.Order", null)
@@ -223,6 +315,16 @@ namespace Kamada.Modules.Ordering.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_order_items_orders_order_id");
+                });
+
+            modelBuilder.Entity("Kamada.Modules.Ordering.Domain.Payments.Payment", b =>
+                {
+                    b.HasOne("Kamada.Modules.Ordering.Domain.Orders.Order", null)
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_payments_orders_order_id");
                 });
 
             modelBuilder.Entity("Kamada.Modules.Ordering.Domain.Orders.Order", b =>

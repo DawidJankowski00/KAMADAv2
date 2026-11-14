@@ -219,6 +219,8 @@ dotnet run --project src/Web/Kamada.MobileApp     # http://localhost:5082
 ```
 
 The API applies migrations and seeds demo data on startup (`Database:*` in `appsettings.Development.json`).
+Each module has one `Initial` migration (squashed on 2026-11-14): a database created before that will not migrate,
+reset it with `docker compose down -v`.
 Secrets are never committed. In Development the JWT signing key comes from `appsettings.Development.json`.
 The optional Google API key goes in user secrets or environment variables:
 

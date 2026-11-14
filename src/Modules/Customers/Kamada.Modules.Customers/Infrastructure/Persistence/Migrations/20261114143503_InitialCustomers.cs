@@ -26,6 +26,7 @@ namespace Kamada.Modules.Customers.Infrastructure.Persistence.Migrations
                     surname = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     phone_number = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     is_active = table.Column<bool>(type: "boolean", nullable: false),
+                    request_id = table.Column<Guid>(type: "uuid", nullable: true),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false)
@@ -54,6 +55,7 @@ namespace Kamada.Modules.Customers.Infrastructure.Persistence.Migrations
                     coordinates_source = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
                     geocoded_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     is_archived = table.Column<bool>(type: "boolean", nullable: false),
+                    request_id = table.Column<Guid>(type: "uuid", nullable: true),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false)
@@ -78,10 +80,24 @@ namespace Kamada.Modules.Customers.Infrastructure.Persistence.Migrations
                 column: "client_id");
 
             migrationBuilder.CreateIndex(
+                name: "ix_addresses_request_id",
+                schema: "customers",
+                table: "addresses",
+                column: "request_id",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "ix_clients_email",
                 schema: "customers",
                 table: "clients",
                 column: "email",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ix_clients_request_id",
+                schema: "customers",
+                table: "clients",
+                column: "request_id",
                 unique: true);
 
             migrationBuilder.CreateIndex(

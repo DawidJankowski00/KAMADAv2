@@ -25,7 +25,7 @@ namespace Kamada.Modules.Workforce.Infrastructure.Persistence.Migrations
                     name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     surname = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     phone_number = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    role = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    roles = table.Column<string[]>(type: "text[]", nullable: false),
                     is_active = table.Column<bool>(type: "boolean", nullable: false),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
@@ -34,6 +34,7 @@ namespace Kamada.Modules.Workforce.Infrastructure.Persistence.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_workers", x => x.id);
+                    table.CheckConstraint("ck_workers_roles_not_empty", "cardinality(roles) > 0");
                 });
 
             migrationBuilder.CreateTable(

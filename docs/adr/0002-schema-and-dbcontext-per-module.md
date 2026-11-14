@@ -41,7 +41,7 @@ be atomic – most notably placing an order (Ordering) and decrementing stock (C
 ## Consequences
 
 - Schemas make ownership visible in the database itself (`\dn` in psql).
-- Seven migration histories instead of one; `dotnet ef` commands need `-c <Context>` (see `CLAUDE.md`).
+- One migration history per module context (five) instead of one; `dotnet ef` commands need `-c <Context>` (see `CLAUDE.md`).
 - A module can later move to its own database, but then the operations that use `IUnitOfWork` across it
   would need an outbox / saga instead of a local transaction.
 - Concurrent writes to the same row (e.g. two orders taking the last unit of a product) are resolved by the

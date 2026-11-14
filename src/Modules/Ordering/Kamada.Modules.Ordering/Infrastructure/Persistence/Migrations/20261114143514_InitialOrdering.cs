@@ -24,6 +24,8 @@ namespace Kamada.Modules.Ordering.Infrastructure.Persistence.Migrations
                     number = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityAlwaysColumn),
                     client_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    placed_by_worker_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    request_id = table.Column<Guid>(type: "uuid", nullable: true),
                     status = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
                     total_amount = table.Column<decimal>(type: "numeric(10,2)", precision: 10, scale: 2, nullable: false),
                     notes = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
@@ -76,6 +78,36 @@ namespace Kamada.Modules.Ordering.Infrastructure.Persistence.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "payments",
+                schema: "ordering",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    order_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    provider = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    transaction_id = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    amount = table.Column<decimal>(type: "numeric(10,2)", precision: 10, scale: 2, nullable: false),
+                    status = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    failure_reason = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    paid_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_payments", x => x.id);
+                    table.CheckConstraint("ck_payments_amount_positive", "amount > 0");
+                    table.ForeignKey(
+                        name: "fk_payments_orders_order_id",
+                        column: x => x.order_id,
+                        principalSchema: "ordering",
+                        principalTable: "orders",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
             migrationBuilder.CreateIndex(
                 name: "ix_order_items_order_id",
                 schema: "ordering",
@@ -102,10 +134,44 @@ namespace Kamada.Modules.Ordering.Infrastructure.Persistence.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "ix_orders_placed_by_worker_id_created_at",
+                schema: "ordering",
+                table: "orders",
+                columns: new[] { "placed_by_worker_id", "created_at" });
+
+            migrationBuilder.CreateIndex(
+                name: "ix_orders_request_id",
+                schema: "ordering",
+                table: "orders",
+                column: "request_id",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "ix_orders_status_created_at",
                 schema: "ordering",
                 table: "orders",
                 columns: new[] { "status", "created_at" });
+
+            migrationBuilder.CreateIndex(
+                name: "ix_payments_order_id",
+                schema: "ordering",
+                table: "payments",
+                column: "order_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_payments_transaction_id",
+                schema: "ordering",
+                table: "payments",
+                column: "transaction_id",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ux_payments_one_active_per_order",
+                schema: "ordering",
+                table: "payments",
+                column: "order_id",
+                unique: true,
+                filter: "status IN ('Pending', 'Completed')");
         }
 
         /// <inheritdoc />
@@ -113,6 +179,10 @@ namespace Kamada.Modules.Ordering.Infrastructure.Persistence.Migrations
         {
             migrationBuilder.DropTable(
                 name: "order_items",
+                schema: "ordering");
+
+            migrationBuilder.DropTable(
+                name: "payments",
                 schema: "ordering");
 
             migrationBuilder.DropTable(

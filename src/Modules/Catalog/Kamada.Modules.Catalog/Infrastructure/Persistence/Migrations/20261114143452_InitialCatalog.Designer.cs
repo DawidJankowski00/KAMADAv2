@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Kamada.Modules.Catalog.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(CatalogDbContext))]
-    [Migration("20260928162936_InitialCatalog")]
+    [Migration("20261114143452_InitialCatalog")]
     partial class InitialCatalog
     {
         /// <inheritdoc />
