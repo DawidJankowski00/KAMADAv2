@@ -28,6 +28,9 @@ internal sealed class WorkerConfiguration : IEntityTypeConfiguration<Worker>
             .IsRequired()
             .ElementType(e => e.HasConversion<string>());
         builder.Property(w => w.IsActive).IsRequired();
+        // Data Protection payloads (base64url), a few hundred characters.
+        builder.Property(w => w.TwoFactorSecret).HasMaxLength(1000);
+        builder.Property(w => w.PendingTwoFactorSecret).HasMaxLength(1000);
 
         builder.Ignore(w => w.FullName);
         builder.Ignore(w => w.DomainEvents);

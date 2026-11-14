@@ -18,6 +18,8 @@ internal sealed class WorkforceDbContext(DbContextOptions<WorkforceDbContext> op
 
     public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
 
+    public DbSet<RecoveryCode> RecoveryCodes => Set<RecoveryCode>();
+
     /// <summary>
     /// ASP.NET Core Data Protection key ring (encrypts the 2FA secrets). Kept here because Workforce owns the data it
     /// protects; shared by every API instance, so a restart or a second instance can still decrypt.

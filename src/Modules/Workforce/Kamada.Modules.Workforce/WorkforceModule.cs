@@ -56,6 +56,10 @@ public static class WorkforceModule
         services.AddScoped<RefreshTokenHandler>();
         services.AddScoped<LogoutHandler>();
         services.AddScoped<AccountSessions>();
+        services.AddSingleton<ITwoFactorService, TotpTwoFactorService>();
+        services.AddScoped<TwoFactorCodes>();
+        services.AddScoped<TwoFactorSetup>();
+        services.AddScoped<TwoFactorLoginHandler>();
         services.AddScoped<WorkerQueries>();
         services.AddScoped<WorkerCommands>();
         services.AddScoped<ICourierDirectory, CourierDirectory>();

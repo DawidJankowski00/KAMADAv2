@@ -14,3 +14,4 @@ Short records of decisions that shape the codebase ([format](https://adr.github.
 | [0008](0008-local-ai-assistant-suggests-only.md) | Local AI order assistant: the model extracts, C# resolves, the admin accepts | Accepted |
 | [0009](0009-offline-ordering-on-the-phone.md) | Offline ordering on the phone: local copy, outbox, idempotent creates | Accepted |
 | [0010](0010-on-device-assistant-as-a-fallback.md) | On-device assistant as a fallback: server by default, the phone model when the connection is poor | Superseded |
+| [0011](0011-two-factor-authentication.md) | Two-factor authentication with TOTP, recovery codes and a stateless sign-in challenge | Accepted |

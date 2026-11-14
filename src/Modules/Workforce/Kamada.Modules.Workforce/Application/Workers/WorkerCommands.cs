@@ -91,6 +91,25 @@ internal sealed class WorkerCommands(
         return Result.Success();
     }
 
+    /// <summary>
+    /// Turns 2FA off for a worker who lost both the phone and the recovery codes, and signs them out everywhere; they
+    /// sign in with the password and may set 2FA up again.
+    /// </summary>
+    public async Task<Result> ResetTwoFactorAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var worker = await db.Workers.SingleOrDefaultAsync(w => w.Id == id, cancellationToken);
+        if (worker is null)
+        {
+            return WorkerErrors.NotFound;
+        }
+
+        worker.DisableTwoFactor();
+        db.RecoveryCodes.RemoveRange(await db.RecoveryCodes.Where(c => c.WorkerId == id).ToListAsync(cancellationToken));
+        await db.RevokeAllSessionsAsync(worker.Id, clock.GetUtcNow(), cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
+        return Result.Success();
+    }
+
     /// <summary>Lifts a lockout after repeated wrong passwords (the worker may sign in again at once).</summary>
     public async Task<Result> UnlockAsync(Guid id, CancellationToken cancellationToken)
     {

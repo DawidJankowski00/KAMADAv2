@@ -8,6 +8,32 @@ public sealed record LogoutRequest(string RefreshToken);
 
 public sealed record ChangePasswordRequest(string CurrentPassword, string NewPassword);
 
+/// <summary>
+/// Answer to a sign-in with username and password: either the session (<see cref="Tokens"/>) or, for an account with
+/// two-factor authentication, a challenge to finish with a code (<see cref="TwoFactor"/>). Exactly one is set.
+/// </summary>
+public sealed record LoginResponse(TokenResponse? Tokens, TwoFactorChallengeDto? TwoFactor);
+
+/// <param name="ChallengeToken">Sent back with the code to <c>POST /api/auth/login/two-factor</c>; valid a few minutes.</param>
+public sealed record TwoFactorChallengeDto(string ChallengeToken, DateTimeOffset ExpiresAt);
+
+/// <param name="Code">6 digits from the authenticator app, or a recovery code (<c>xxxxx-xxxxx</c>).</param>
+public sealed record TwoFactorLoginRequest(string ChallengeToken, string Code);
+
+public sealed record TwoFactorStatusDto(bool Enabled, int RecoveryCodesLeft);
+
+/// <param name="SharedKey">For typing into the app by hand (groups of four).</param>
+/// <param name="AuthenticatorUri">The <c>otpauth://</c> URI the QR code encodes.</param>
+public sealed record TwoFactorSetupDto(string SharedKey, string AuthenticatorUri);
+
+public sealed record TwoFactorCodeRequest(string Code);
+
+/// <summary>Shown once; each code signs in once instead of an authenticator code.</summary>
+public sealed record RecoveryCodesDto(IReadOnlyList<string> Codes);
+
+/// <param name="Code">An authenticator or recovery code, so a stolen password alone cannot switch 2FA off.</param>
+public sealed record DisableTwoFactorRequest(string Password, string Code);
+
 public sealed record ForgotPasswordRequest(string Email);
 
 /// <summary>One signed-in device of the worker (a refresh token family).</summary>

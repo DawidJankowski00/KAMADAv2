@@ -23,7 +23,17 @@ internal static class AuthEndpoints
             .AllowAnonymous()
             .RequireRateLimiting(RateLimitPolicies.Login)
             .WithValidation<LoginRequest>()
-            .WithSummary("Sign in with username and password")
+            .WithSummary("Sign in with username and password (an account with 2FA gets a challenge instead of tokens)")
+            .Produces<LoginResponse>()
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status429TooManyRequests);
+
+        group.MapPost("/login/two-factor", async (TwoFactorLoginRequest request, TwoFactorLoginHandler handler, HttpContext http, CancellationToken ct) =>
+                (await handler.HandleAsync(request, http.ToSessionClient(), ct)).ToHttpResult(TypedResults.Ok))
+            .AllowAnonymous()
+            .RequireRateLimiting(RateLimitPolicies.Login)
+            .WithValidation<TwoFactorLoginRequest>()
+            .WithSummary("Finish a sign-in with 2FA: the challenge from /login plus an authenticator or recovery code")
             .Produces<TokenResponse>()
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status429TooManyRequests);
@@ -91,6 +101,39 @@ internal static class AuthEndpoints
                 return TypedResults.NoContent();
             })
             .WithSummary("Sign out every own session except the current one");
+
+        group.MapGet("/two-factor", async (TwoFactorSetup setup, ICurrentUser user, CancellationToken ct) =>
+                (await setup.GetStatusAsync(user.Id, ct)).ToHttpResult(TypedResults.Ok))
+            .WithSummary("Whether 2FA is on and how many recovery codes are left");
+
+        group.MapPost("/two-factor/setup", async (TwoFactorSetup setup, ICurrentUser user, CancellationToken ct) =>
+                (await setup.BeginAsync(user.Id, ct)).ToHttpResult(TypedResults.Ok))
+            .WithSummary("Create a secret for the authenticator app (2FA stays off until enabled with a code)")
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
+        group.MapPost("/two-factor/enable", async (TwoFactorCodeRequest request, TwoFactorSetup setup, ICurrentUser user, CancellationToken ct) =>
+                (await setup.EnableAsync(user.Id, request, ct)).ToHttpResult(TypedResults.Ok))
+            .RequireRateLimiting(RateLimitPolicies.Login)
+            .WithValidation<TwoFactorCodeRequest>()
+            .WithSummary("Turn 2FA on with a code from the app; returns the recovery codes (shown once)")
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
+        group.MapPost("/two-factor/disable", async (DisableTwoFactorRequest request, TwoFactorSetup setup, ICurrentUser user, CancellationToken ct) =>
+                (await setup.DisableAsync(user.Id, request, ct)).ToHttpResult(TypedResults.NoContent))
+            .RequireRateLimiting(RateLimitPolicies.Login)
+            .WithValidation<DisableTwoFactorRequest>()
+            .WithSummary("Turn 2FA off (needs the password and a code)")
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
+        group.MapPost("/two-factor/recovery-codes", async (TwoFactorCodeRequest request, TwoFactorSetup setup, ICurrentUser user, CancellationToken ct) =>
+                (await setup.RegenerateRecoveryCodesAsync(user.Id, request, ct)).ToHttpResult(TypedResults.Ok))
+            .RequireRateLimiting(RateLimitPolicies.Login)
+            .WithValidation<TwoFactorCodeRequest>()
+            .WithSummary("Replace the recovery codes (needs a code)")
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status409Conflict);
 
         group.MapGet("/me", async (IWorkforceDbContext db, ICurrentUser user, CancellationToken ct) =>
             {

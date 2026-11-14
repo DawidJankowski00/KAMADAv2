@@ -19,6 +19,7 @@ public sealed record WorkerDto(
     IReadOnlyList<WorkerRole> Roles,
     bool IsActive,
     DateTimeOffset? LockedUntil,
+    bool TwoFactorEnabled,
     DateTimeOffset CreatedAt);
 
 public sealed record CreateWorkerRequest(

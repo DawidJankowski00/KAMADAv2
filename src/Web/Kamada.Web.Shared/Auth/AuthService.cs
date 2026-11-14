@@ -39,7 +39,13 @@ public sealed class AuthService(IHttpClientFactory httpClientFactory, TokenStore
                 return ApiResult<AuthenticatedUserDto>.Fail(await ApiClient.ReadProblemAsync(response, cancellationToken));
             }
 
-            tokens = (await response.Content.ReadFromJsonAsync<TokenResponse>(KamadaJson.Options, cancellationToken))!;
+            var login = (await response.Content.ReadFromJsonAsync<LoginResponse>(KamadaJson.Options, cancellationToken))!;
+            if (login.Tokens is null)
+            {
+                return ApiResult<AuthenticatedUserDto>.Fail(new ApiProblem(401, "To konto ma logowanie dwuetapowe, którego ta aplikacja jeszcze nie obsługuje."));
+            }
+
+            tokens = login.Tokens;
         }
         catch (HttpRequestException)
         {

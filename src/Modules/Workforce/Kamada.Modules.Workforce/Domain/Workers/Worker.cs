@@ -46,6 +46,18 @@ internal sealed class Worker : Entity, IAuditable
     /// <summary>Sign-in is refused until then (after too many wrong passwords).</summary>
     public DateTimeOffset? LockedUntil { get; private set; }
 
+    /// <summary>Sign-in also needs a code from an authenticator app (TOTP).</summary>
+    public bool TwoFactorEnabled { get; private set; }
+
+    /// <summary>The TOTP secret, encrypted with Data Protection; never stored or logged in plain text.</summary>
+    public string? TwoFactorSecret { get; private set; }
+
+    /// <summary>A secret being set up: becomes <see cref="TwoFactorSecret"/> once the worker confirms a code from it.</summary>
+    public string? PendingTwoFactorSecret { get; private set; }
+
+    /// <summary>Time step of the last accepted code; a code from the same or an earlier step is a replay.</summary>
+    public long? TwoFactorLastStep { get; private set; }
+
     public DateTimeOffset CreatedAt { get; private set; }
 
     public DateTimeOffset? UpdatedAt { get; private set; }
@@ -135,6 +147,61 @@ internal sealed class Worker : Entity, IAuditable
             LockedUntil = now + lockout;
             FailedLoginCount = 0;
         }
+    }
+
+    /// <summary>Starts (or restarts) setting up 2FA with a new encrypted secret; 2FA stays off until confirmed.</summary>
+    public Result BeginTwoFactorSetup(string protectedSecret)
+    {
+        if (TwoFactorEnabled)
+        {
+            return WorkerErrors.TwoFactorAlreadyEnabled;
+        }
+
+        PendingTwoFactorSecret = protectedSecret;
+        return Result.Success();
+    }
+
+    /// <summary>Turns 2FA on with the pending secret, after the worker proved it with a code from step <paramref name="step"/>.</summary>
+    public Result EnableTwoFactor(long step)
+    {
+        if (TwoFactorEnabled)
+        {
+            return WorkerErrors.TwoFactorAlreadyEnabled;
+        }
+
+        if (PendingTwoFactorSecret is null)
+        {
+            return WorkerErrors.TwoFactorNotSetUp;
+        }
+
+        TwoFactorSecret = PendingTwoFactorSecret;
+        PendingTwoFactorSecret = null;
+        TwoFactorEnabled = true;
+        TwoFactorLastStep = step;
+        return Result.Success();
+    }
+
+    public void DisableTwoFactor()
+    {
+        TwoFactorEnabled = false;
+        TwoFactorSecret = null;
+        PendingTwoFactorSecret = null;
+        TwoFactorLastStep = null;
+    }
+
+    /// <summary>
+    /// Accepts a code's time step once: false for the step of an already accepted code or an earlier one (a replay of a
+    /// code seen by someone else, e.g. over the worker's shoulder).
+    /// </summary>
+    public bool AcceptTwoFactorStep(long step)
+    {
+        if (step <= TwoFactorLastStep)
+        {
+            return false;
+        }
+
+        TwoFactorLastStep = step;
+        return true;
     }
 
     /// <summary>After a successful login, an admin unlock or a password reset: no lockout, counting from zero.</summary>

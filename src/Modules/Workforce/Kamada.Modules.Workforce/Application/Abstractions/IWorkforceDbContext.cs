@@ -16,5 +16,7 @@ internal interface IWorkforceDbContext
 
     DbSet<PasswordResetToken> PasswordResetTokens { get; }
 
+    DbSet<RecoveryCode> RecoveryCodes { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }

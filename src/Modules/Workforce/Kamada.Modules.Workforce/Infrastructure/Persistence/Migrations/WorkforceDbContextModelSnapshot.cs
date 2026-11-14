@@ -74,6 +74,50 @@ namespace Kamada.Modules.Workforce.Infrastructure.Persistence.Migrations
                     b.ToTable("password_reset_tokens", "workforce");
                 });
 
+            modelBuilder.Entity("Kamada.Modules.Workforce.Domain.Auth.RecoveryCode", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("CodeHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("code_hash");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<DateTimeOffset?>("UsedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("used_at");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<Guid>("WorkerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("worker_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_recovery_codes");
+
+                    b.HasIndex("WorkerId", "CodeHash")
+                        .IsUnique()
+                        .HasDatabaseName("ix_recovery_codes_worker_id_code_hash");
+
+                    b.ToTable("recovery_codes", "workforce");
+                });
+
             modelBuilder.Entity("Kamada.Modules.Workforce.Domain.Auth.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -186,6 +230,11 @@ namespace Kamada.Modules.Workforce.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(256)")
                         .HasColumnName("password_hash");
 
+                    b.Property<string>("PendingTwoFactorSecret")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("pending_two_factor_secret");
+
                     b.Property<string>("PhoneNumber")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -202,6 +251,19 @@ namespace Kamada.Modules.Workforce.Infrastructure.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
                         .HasColumnName("surname");
+
+                    b.Property<bool>("TwoFactorEnabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("two_factor_enabled");
+
+                    b.Property<long?>("TwoFactorLastStep")
+                        .HasColumnType("bigint")
+                        .HasColumnName("two_factor_last_step");
+
+                    b.Property<string>("TwoFactorSecret")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("two_factor_secret");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -273,6 +335,16 @@ namespace Kamada.Modules.Workforce.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_password_reset_tokens_workers_worker_id");
+                });
+
+            modelBuilder.Entity("Kamada.Modules.Workforce.Domain.Auth.RecoveryCode", b =>
+                {
+                    b.HasOne("Kamada.Modules.Workforce.Domain.Workers.Worker", null)
+                        .WithMany()
+                        .HasForeignKey("WorkerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_recovery_codes_workers_worker_id");
                 });
 
             modelBuilder.Entity("Kamada.Modules.Workforce.Domain.Auth.RefreshToken", b =>

@@ -18,6 +18,7 @@ internal static class WorkerMappings
         [.. worker.Roles.Select(r => r.ToContract())],
         worker.IsActive,
         worker.LockedUntil,
+        worker.TwoFactorEnabled,
         worker.CreatedAt);
 
     public static AuthenticatedUserDto ToAuthenticatedUser(this Worker worker) =>

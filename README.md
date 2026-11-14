@@ -629,6 +629,7 @@ dotnet run -c Release --project benchmarks/Kamada.Assistant.Evals -- --model qwe
 | [0008](docs/adr/0008-local-ai-assistant-suggests-only.md) | Local AI order assistant: the model extracts, C# resolves, the admin accepts |
 | [0009](docs/adr/0009-offline-ordering-on-the-phone.md) | Offline ordering on the phone: local copy, outbox, idempotent creates |
 | [0010](docs/adr/0010-on-device-assistant-as-a-fallback.md) | ~~On-device assistant as a fallback~~ – superseded: removed, the phone uses the server's assistant |
+| [0011](docs/adr/0011-two-factor-authentication.md) | Two-factor authentication with TOTP, recovery codes and a stateless sign-in challenge |
 
 ## Possible improvements
 

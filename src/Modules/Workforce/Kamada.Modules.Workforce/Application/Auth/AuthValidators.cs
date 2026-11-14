@@ -46,3 +46,26 @@ internal sealed class CompletePasswordResetRequestValidator : AbstractValidator<
         RuleFor(r => r.NewPassword).StrongPassword();
     }
 }
+
+internal sealed class TwoFactorLoginRequestValidator : AbstractValidator<TwoFactorLoginRequest>
+{
+    public TwoFactorLoginRequestValidator()
+    {
+        RuleFor(r => r.ChallengeToken).NotEmpty().MaximumLength(2000);
+        RuleFor(r => r.Code).NotEmpty().MaximumLength(20);
+    }
+}
+
+internal sealed class TwoFactorCodeRequestValidator : AbstractValidator<TwoFactorCodeRequest>
+{
+    public TwoFactorCodeRequestValidator() => RuleFor(r => r.Code).NotEmpty().MaximumLength(20);
+}
+
+internal sealed class DisableTwoFactorRequestValidator : AbstractValidator<DisableTwoFactorRequest>
+{
+    public DisableTwoFactorRequestValidator()
+    {
+        RuleFor(r => r.Password).NotEmpty().MaximumLength(WorkerRules.PasswordMaxLength);
+        RuleFor(r => r.Code).NotEmpty().MaximumLength(20);
+    }
+}

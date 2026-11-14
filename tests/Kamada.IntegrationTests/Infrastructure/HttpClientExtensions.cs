@@ -38,7 +38,7 @@ internal static class HttpClientExtensions
     {
         var response = await client.PostJsonAsync("/api/auth/login", new LoginRequest(username, password));
         response.EnsureSuccessStatusCode();
-        return await response.ReadAsAsync<TokenResponse>();
+        return (await response.ReadAsAsync<LoginResponse>()).Tokens ?? throw new InvalidOperationException("The account needs a two-factor code.");
     }
 
     public static HttpClient WithBearer(this HttpClient client, string accessToken)

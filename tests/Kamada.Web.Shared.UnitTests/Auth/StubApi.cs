@@ -43,9 +43,9 @@ internal sealed class StubApi : HttpMessageHandler, IHttpClientFactory
             });
         }
 
-        var body = path switch
+        object? body = path switch
         {
-            "/api/auth/login" => LoginResponse,
+            "/api/auth/login" => LoginResponse is null ? null : new LoginResponse(LoginResponse, null),
             "/api/auth/refresh" => RefreshResponse,
             "/api/auth/change-password" => ChangePasswordResponse,
             _ => null,

@@ -14,6 +14,7 @@ internal sealed partial class LoginHandler(
     IWorkforceDbContext db,
     IPasswordHasher<Worker> passwordHasher,
     AuthSessionFactory sessions,
+    ITwoFactorService twoFactor,
     IOptions<AccountLockoutOptions> lockout,
     TimeProvider clock,
     ILogger<LoginHandler> logger)
@@ -24,7 +25,7 @@ internal sealed partial class LoginHandler(
     private static readonly Lazy<string> DummyHash =
         new(() => new PasswordHasher<Worker>().HashPassword(null!, Guid.NewGuid().ToString()));
 
-    public async Task<Result<TokenResponse>> HandleAsync(LoginRequest request, SessionClient client, CancellationToken cancellationToken)
+    public async Task<Result<LoginResponse>> HandleAsync(LoginRequest request, SessionClient client, CancellationToken cancellationToken)
     {
         var username = Worker.NormalizeUsername(request.Username);
         var worker = await db.Workers.SingleOrDefaultAsync(w => w.Username == username, cancellationToken);
@@ -62,12 +63,21 @@ internal sealed partial class LoginHandler(
             worker.ChangePasswordHash(passwordHasher.HashPassword(worker, request.Password));
         }
 
+        if (worker.TwoFactorEnabled)
+        {
+            // The failed-login counter is not reset here: otherwise the right password between wrong codes would let an
+            // attacker who knows it guess codes forever. It resets after the code (TwoFactorLoginHandler).
+            await db.SaveChangesAsync(cancellationToken);
+            LogTwoFactorRequired(worker.Id);
+            return new LoginResponse(null, new TwoFactorChallengeDto(twoFactor.IssueChallenge(worker.Id), now + twoFactor.ChallengeLifetime));
+        }
+
         worker.ClearFailedLogins();
         var response = sessions.Start(worker, client);
         await db.SaveChangesAsync(cancellationToken);
 
         LogSuccessfulLogin(worker.Id, string.Join(", ", worker.Roles));
-        return response;
+        return new LoginResponse(response, null);
     }
 
     private async Task CountFailureAsync(Worker worker, DateTimeOffset now, CancellationToken cancellationToken)
@@ -95,6 +105,9 @@ internal sealed partial class LoginHandler(
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Worker {WorkerId} locked out until {LockedUntil} after repeated failed logins")]
     private partial void LogLockedOut(Guid workerId, DateTimeOffset lockedUntil);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Worker {WorkerId}: password accepted, waiting for the two-factor code")]
+    private partial void LogTwoFactorRequired(Guid workerId);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Worker {WorkerId} ({Roles}) signed in")]
     private partial void LogSuccessfulLogin(Guid workerId, string roles);
