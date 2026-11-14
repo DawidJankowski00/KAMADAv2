@@ -111,6 +111,32 @@ public sealed class AuthServiceTests : IDisposable
         _api.Dispose();
     }
 
+    [Fact]
+    public async Task ChangePasswordAsync_Success_StoresTheNewSession()
+    {
+        _api.LoginResponse = StubApi.Tokens(Roles.Courier);
+        await _auth.LoginAsync("anna", "secret", TestContext.Current.CancellationToken);
+        _api.ChangePasswordResponse = StubApi.Tokens(Roles.Courier);
+
+        var result = await _auth.ChangePasswordAsync("secret", "Nowe1234!", TestContext.Current.CancellationToken);
+
+        result.IsSuccess.ShouldBeTrue();
+        GetStoredAccessToken().ShouldBe(_api.ChangePasswordResponse.AccessToken);
+    }
+
+    [Fact]
+    public async Task ChangePasswordAsync_WrongCurrentPassword_KeepsSessionAndReturnsProblem()
+    {
+        _api.LoginResponse = StubApi.Tokens(Roles.Courier);
+        await _auth.LoginAsync("anna", "secret", TestContext.Current.CancellationToken);
+
+        var result = await _auth.ChangePasswordAsync("wrong", "Nowe1234!", TestContext.Current.CancellationToken);
+
+        result.IsSuccess.ShouldBeFalse();
+        result.Problem!.Code.ShouldBe("Auth.CurrentPasswordInvalid");
+        GetStoredAccessToken().ShouldBe(_api.LoginResponse.AccessToken);
+    }
+
     private string GetStoredAccessToken() =>
         JsonSerializer.Deserialize<TokenResponse>(_js.LocalStorage[StorageKey], KamadaJson.Options)!.AccessToken;
 }

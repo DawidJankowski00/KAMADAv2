@@ -1,0 +1,21 @@
+@* The signed-in worker's menu in the app bar of both apps: account pages and sign-out. *@
+<MudMenu Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Inherit" AnchorOrigin="Origin.BottomRight"
+         TransformOrigin="Origin.TopRight" aria-label="Konto" Dense="true">
+    @if (!string.IsNullOrEmpty(Name))
+    {
+        <MudText Typo="Typo.body2" Class="px-4 py-2 mud-text-secondary">@Name</MudText>
+        <MudDivider />
+    }
+    <MudMenuItem Href="account/password" Icon="@Icons.Material.Filled.Password">Zmień hasło</MudMenuItem>
+    <MudMenuItem OnClick="OnLogout" Icon="@Icons.Material.Filled.Logout">Wyloguj</MudMenuItem>
+</MudMenu>
+
+@code {
+    [Parameter] public string? Name { get; set; }
+
+    [Parameter] public EventCallback OnLogout { get; set; }
+
+    /// <summary>"Name Surname" from the access token claims.</summary>
+    public static string FullName(System.Security.Claims.ClaimsPrincipal user) =>
+        $"{user.FindFirst("given_name")?.Value} {user.FindFirst("family_name")?.Value}".Trim();
+}

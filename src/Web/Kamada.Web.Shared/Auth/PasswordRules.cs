@@ -1,8 +1,10 @@
-namespace Kamada.Web.Admin.Pages.Workers;
+namespace Kamada.Web.Shared.Auth;
 
 /// <summary>Client-side mirror of the server password policy (the server validates again).</summary>
-internal static class PasswordRules
+public static class PasswordRules
 {
+    public const string Hint = "Min. 8 znaków, mała i wielka litera, cyfra";
+
     public static string? Validate(string? password)
     {
         if (string.IsNullOrEmpty(password))

@@ -12,6 +12,9 @@ internal sealed class StubApi : HttpMessageHandler, IHttpClientFactory
 
     public TokenResponse? RefreshResponse { get; set; }
 
+    /// <summary>Answer to change-password; null means 400 with the code <c>Auth.CurrentPasswordInvalid</c>.</summary>
+    public TokenResponse? ChangePasswordResponse { get; set; }
+
     public List<string> RequestedPaths { get; } = [];
 
     public HttpClient CreateClient(string name) => new(this, disposeHandler: false) { BaseAddress = new Uri("http://api.test/") };
@@ -27,10 +30,19 @@ internal sealed class StubApi : HttpMessageHandler, IHttpClientFactory
     {
         var path = request.RequestUri!.AbsolutePath;
         RequestedPaths.Add(path);
+        if (path == "/api/auth/change-password" && ChangePasswordResponse is null)
+        {
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.BadRequest)
+            {
+                Content = new StringContent("""{"status":400,"title":"Bad Request","code":"Auth.CurrentPasswordInvalid"}""", System.Text.Encoding.UTF8, "application/problem+json"),
+            });
+        }
+
         var body = path switch
         {
             "/api/auth/login" => LoginResponse,
             "/api/auth/refresh" => RefreshResponse,
+            "/api/auth/change-password" => ChangePasswordResponse,
             _ => null,
         };
 

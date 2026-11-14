@@ -69,6 +69,41 @@ public sealed class AuthService(IHttpClientFactory httpClientFactory, TokenStore
         SessionChanged?.Invoke();
     }
 
+    /// <summary>
+    /// Changes the signed-in worker's password. The server signs out every other session and returns a new token pair,
+    /// which replaces the stored one, so this device stays signed in.
+    /// </summary>
+    public async Task<ApiResult> ChangePasswordAsync(string currentPassword, string newPassword, CancellationToken cancellationToken = default)
+    {
+        var accessToken = await GetAccessTokenAsync(cancellationToken);
+        if (accessToken is null)
+        {
+            return ApiResult.Fail(new ApiProblem(401, "Sesja wygasła. Zaloguj się ponownie."));
+        }
+
+        var http = httpClientFactory.CreateClient(AnonymousClientName);
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Post, "api/auth/change-password")
+            {
+                Content = JsonContent.Create(new ChangePasswordRequest(currentPassword, newPassword), options: KamadaJson.Options),
+            };
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            using var response = await http.SendAsync(request, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                return ApiResult.Fail(await ApiClient.ReadProblemAsync(response, cancellationToken));
+            }
+
+            await store.SetAsync((await response.Content.ReadFromJsonAsync<TokenResponse>(KamadaJson.Options, cancellationToken))!);
+            return ApiResult.Ok();
+        }
+        catch (HttpRequestException)
+        {
+            return ApiResult.Fail(ApiProblem.Network);
+        }
+    }
+
     /// <summary>Access token valid for at least a few more seconds, refreshed if needed; null when signed out.</summary>
     public async Task<string?> GetAccessTokenAsync(CancellationToken cancellationToken = default)
     {
