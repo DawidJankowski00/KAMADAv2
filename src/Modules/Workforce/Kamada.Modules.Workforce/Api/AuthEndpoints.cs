@@ -16,7 +16,8 @@ internal static class AuthEndpoints
 {
     public static IEndpointRouteBuilder MapAuthEndpoints(this IEndpointRouteBuilder endpoints)
     {
-        var group = endpoints.MapGroup("/api/auth").WithTags("Auth");
+        // Signed-in workers by default (own account, sessions, 2FA); the sign-in and reset endpoints opt out below.
+        var group = endpoints.MapGroup("/api/auth").WithTags("Auth").RequireAuthorization(AuthorizationPolicies.SignedIn);
 
         group.MapPost("/login", async (LoginRequest request, LoginHandler handler, HttpContext http, CancellationToken ct) =>
                 (await handler.HandleAsync(request, http.ToSessionClient(), ct)).ToHttpResult(TypedResults.Ok))
