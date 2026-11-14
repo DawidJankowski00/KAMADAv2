@@ -11,6 +11,7 @@ public static class ErrorMessages
         ["Auth.InvalidRefreshToken"] = "Sesja wygasła. Zaloguj się ponownie.",
         ["Auth.CurrentPasswordInvalid"] = "Obecne hasło jest nieprawidłowe.",
         ["Auth.InvalidResetToken"] = "Link do ustawienia hasła jest nieprawidłowy albo wygasł. Poproś o nowy.",
+        ["Auth.SessionNotFound"] = "Ta sesja już się zakończyła.",
         ["Concurrency.Conflict"] = "Dane zostały w międzyczasie zmienione przez kogoś innego. Odśwież i spróbuj ponownie.",
         ["Requests.IdReused"] = "Tego identyfikatora żądania użyto już dla innej operacji.",
         ["Workers.UsernameTaken"] = "Pracownik o takim loginie już istnieje.",

@@ -1,0 +1,97 @@
+@page "/account/sessions"
+@attribute [Authorize]
+@using Kamada.Shared.Contracts.Auth
+@inject ApiClient Api
+@inject ISnackbar Snackbar
+@inject IDialogService Dialogs
+
+@* Shared by the web panel and the phone app; no role in [Authorize], so every role of the phone app shows it. *@
+<PageTitle>Moje sesje – KAMADA</PageTitle>
+
+<div class="d-flex flex-wrap align-center gap-2 mb-2">
+    <MudText Typo="Typo.h5" HtmlTag="h1" Class="flex-grow-1">Moje sesje</MudText>
+    @if (_sessions is { Count: > 1 })
+    {
+        <MudButton Variant="Variant.Outlined" Color="Color.Warning" StartIcon="@Icons.Material.Filled.Logout"
+                   OnClick="RevokeOthersAsync" Disabled="_busy">Wyloguj pozostałe</MudButton>
+    }
+</div>
+<MudText Typo="Typo.body2" Class="mud-text-secondary mb-4" Style="max-width: 720px">
+    Urządzenia, na których jesteś zalogowany(-a). Jeśli któregoś nie rozpoznajesz, wyloguj je i zmień hasło.
+    Wylogowane urządzenie może działać jeszcze do 15 minut.
+</MudText>
+
+@if (_sessions is null)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+else
+{
+    <MudStack Spacing="2" Style="max-width: 720px">
+        @foreach (var session in _sessions)
+        {
+            <MudPaper Class="pa-3 d-flex align-center gap-3" Outlined="true">
+                <MudIcon Icon="@(DeviceLabel.IsPhone(session.UserAgent) ? Icons.Material.Filled.PhoneAndroid : Icons.Material.Filled.Computer)"
+                         Color="@(session.IsCurrent ? Color.Primary : Color.Default)" />
+                <div class="flex-grow-1" style="min-width: 0">
+                    <MudText Typo="Typo.subtitle2">
+                        @DeviceLabel.Describe(session.UserAgent)
+                        @if (session.IsCurrent)
+                        {
+                            <MudChip T="string" Size="Size.Small" Color="Color.Primary" Class="ml-2">To urządzenie</MudChip>
+                        }
+                    </MudText>
+                    <MudText Typo="Typo.body2" Class="mud-text-secondary">
+                        Zalogowano @Labels.DateTime(session.StartedAt) · ostatnio aktywne @Labels.DateTime(session.LastUsedAt)
+                        @if (!string.IsNullOrEmpty(session.IpAddress))
+                        {
+                            <span> · IP @session.IpAddress</span>
+                        }
+                    </MudText>
+                </div>
+                @* This device signs out from the account menu (the phone app asks there about orders waiting to be sent). *@
+                @if (!session.IsCurrent)
+                {
+                    <MudButton Size="Size.Small" Color="Color.Warning" OnClick="() => RevokeAsync(session)" Disabled="_busy">Wyloguj</MudButton>
+                }
+            </MudPaper>
+        }
+    </MudStack>
+}
+
+@code {
+    private List<SessionDto>? _sessions;
+    private bool _busy;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        var result = await Api.GetAsync<List<SessionDto>>("api/auth/sessions");
+        _sessions = Snackbar.Report(result) ? result.Value : [];
+    }
+
+    private async Task RevokeAsync(SessionDto session)
+    {
+        _busy = true;
+        var result = await Api.DeleteAsync($"api/auth/sessions/{session.Id}");
+        _busy = false;
+        Snackbar.Report(result, "Urządzenie zostało wylogowane.");
+        await LoadAsync();
+    }
+
+    private async Task RevokeOthersAsync()
+    {
+        if (!await Dialogs.ConfirmAsync("Wylogowanie pozostałych urządzeń", "Wylogować wszystkie urządzenia oprócz tego?", "Wyloguj pozostałe", Color.Warning))
+        {
+            return;
+        }
+
+        _busy = true;
+        var result = await Api.PostAsync("api/auth/sessions/revoke-others");
+        _busy = false;
+        Snackbar.Report(result, "Pozostałe urządzenia zostały wylogowane.");
+        await LoadAsync();
+    }
+
+}

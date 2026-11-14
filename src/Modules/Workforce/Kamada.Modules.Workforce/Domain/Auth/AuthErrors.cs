@@ -16,6 +16,9 @@ internal static class AuthErrors
     public static readonly Error InvalidResetToken =
         Error.Validation("Auth.InvalidResetToken", "The password reset link is invalid or has expired. Ask for a new one.");
 
+    public static readonly Error SessionNotFound =
+        Error.NotFound("Auth.SessionNotFound", "The session was not found or has already ended.");
+
     public static readonly Error InvalidRefreshToken =
         Error.Unauthorized("Auth.InvalidRefreshToken", "The refresh token is invalid or expired. Sign in again.");
 }

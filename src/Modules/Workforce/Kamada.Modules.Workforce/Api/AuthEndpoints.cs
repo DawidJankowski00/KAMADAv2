@@ -76,6 +76,22 @@ internal static class AuthEndpoints
             .ProducesValidationProblem()
             .ProducesProblem(StatusCodes.Status429TooManyRequests);
 
+        group.MapGet("/sessions", async (AccountSessions sessions, ICurrentUser user, CancellationToken ct) =>
+                TypedResults.Ok(await sessions.ListAsync(user.Id, user.SessionId, ct)))
+            .WithSummary("Own sessions (signed-in devices), the current one first");
+
+        group.MapDelete("/sessions/{id:guid}", async (Guid id, AccountSessions sessions, ICurrentUser user, CancellationToken ct) =>
+                (await sessions.RevokeAsync(user.Id, id, ct)).ToHttpResult(TypedResults.NoContent))
+            .WithSummary("Sign out one of the own sessions")
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
+        group.MapPost("/sessions/revoke-others", async (AccountSessions sessions, ICurrentUser user, CancellationToken ct) =>
+            {
+                await sessions.RevokeOthersAsync(user.Id, user.SessionId, ct);
+                return TypedResults.NoContent();
+            })
+            .WithSummary("Sign out every own session except the current one");
+
         group.MapGet("/me", async (IWorkforceDbContext db, ICurrentUser user, CancellationToken ct) =>
             {
                 var worker = await db.Workers.AsNoTracking().SingleOrDefaultAsync(w => w.Id == user.Id, ct);

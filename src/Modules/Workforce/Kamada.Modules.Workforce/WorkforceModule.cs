@@ -51,6 +51,7 @@ public static class WorkforceModule
             .ValidateOnStart();
         services.AddScoped<RefreshTokenHandler>();
         services.AddScoped<LogoutHandler>();
+        services.AddScoped<AccountSessions>();
         services.AddScoped<WorkerQueries>();
         services.AddScoped<WorkerCommands>();
         services.AddScoped<ICourierDirectory, CourierDirectory>();

@@ -10,6 +10,17 @@ public sealed record ChangePasswordRequest(string CurrentPassword, string NewPas
 
 public sealed record ForgotPasswordRequest(string Email);
 
+/// <summary>One signed-in device of the worker (a refresh token family).</summary>
+/// <param name="LastUsedAt">When the session last refreshed its access token (every ≤ 15 min while the app is open).</param>
+/// <param name="IsCurrent">The session of the request that listed the sessions.</param>
+public sealed record SessionDto(
+    Guid Id,
+    DateTimeOffset StartedAt,
+    DateTimeOffset LastUsedAt,
+    string? UserAgent,
+    string? IpAddress,
+    bool IsCurrent);
+
 /// <param name="Token">The token from the reset link in the e-mail.</param>
 public sealed record CompletePasswordResetRequest(string Token, string NewPassword);
 
