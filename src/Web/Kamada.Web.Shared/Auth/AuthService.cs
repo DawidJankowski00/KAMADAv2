@@ -104,6 +104,14 @@ public sealed class AuthService(IHttpClientFactory httpClientFactory, TokenStore
         }
     }
 
+    /// <summary>Asks for a reset link; the server answers the same whether or not the address belongs to an account.</summary>
+    public Task<ApiResult> RequestPasswordResetAsync(string email, CancellationToken cancellationToken = default) =>
+        PostAnonymousAsync("api/auth/forgot-password", new ForgotPasswordRequest(email), cancellationToken);
+
+    /// <summary>Sets a new password with the token from the reset e-mail (every session of the worker ends).</summary>
+    public Task<ApiResult> ResetPasswordAsync(string token, string newPassword, CancellationToken cancellationToken = default) =>
+        PostAnonymousAsync("api/auth/reset-password", new CompletePasswordResetRequest(token, newPassword), cancellationToken);
+
     /// <summary>Access token valid for at least a few more seconds, refreshed if needed; null when signed out.</summary>
     public async Task<string?> GetAccessTokenAsync(CancellationToken cancellationToken = default)
     {
@@ -180,6 +188,22 @@ public sealed class AuthService(IHttpClientFactory httpClientFactory, TokenStore
     }
 
     public void Dispose() => _refreshLock.Dispose();
+
+    private async Task<ApiResult> PostAnonymousAsync<TRequest>(string path, TRequest body, CancellationToken cancellationToken)
+    {
+        var http = httpClientFactory.CreateClient(AnonymousClientName);
+        try
+        {
+            using var response = await http.PostAsJsonAsync(path, body, KamadaJson.Options, cancellationToken);
+            return response.IsSuccessStatusCode
+                ? ApiResult.Ok()
+                : ApiResult.Fail(await ApiClient.ReadProblemAsync(response, cancellationToken));
+        }
+        catch (HttpRequestException)
+        {
+            return ApiResult.Fail(ApiProblem.Network);
+        }
+    }
 
     private bool HasAccess(AuthenticatedUserDto user) => user.Roles.Any(options.AllowedRoles.Contains);
 

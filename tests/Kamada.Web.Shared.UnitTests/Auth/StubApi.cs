@@ -30,6 +30,11 @@ internal sealed class StubApi : HttpMessageHandler, IHttpClientFactory
     {
         var path = request.RequestUri!.AbsolutePath;
         RequestedPaths.Add(path);
+        if (path == "/api/auth/forgot-password")
+        {
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted));
+        }
+
         if (path == "/api/auth/change-password" && ChangePasswordResponse is null)
         {
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.BadRequest)

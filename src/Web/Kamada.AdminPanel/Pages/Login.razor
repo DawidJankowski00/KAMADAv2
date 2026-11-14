@@ -20,6 +20,9 @@
                       Required="true" RequiredError="Podaj login." autocomplete="username" AutoFocus="true" />
         <MudTextField @bind-Value="_model.Password" Label="Hasło" Variant="Variant.Outlined" InputType="InputType.Password"
                       Required="true" RequiredError="Podaj hasło." autocomplete="current-password" />
+        <div class="d-flex justify-end mt-1">
+            <MudLink Href="forgot-password" Typo="Typo.body2">Nie pamiętam hasła</MudLink>
+        </div>
 
         @if (_error is not null)
         {

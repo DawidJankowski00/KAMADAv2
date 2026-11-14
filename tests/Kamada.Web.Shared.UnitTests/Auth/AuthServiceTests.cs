@@ -137,6 +137,15 @@ public sealed class AuthServiceTests : IDisposable
         GetStoredAccessToken().ShouldBe(_api.LoginResponse.AccessToken);
     }
 
+    [Fact]
+    public async Task RequestPasswordResetAsync_Accepted_SucceedsWithoutSession()
+    {
+        var result = await _auth.RequestPasswordResetAsync("anna@kamada.test", TestContext.Current.CancellationToken);
+
+        result.IsSuccess.ShouldBeTrue();
+        _api.RequestedPaths.ShouldBe(["/api/auth/forgot-password"]);
+    }
+
     private string GetStoredAccessToken() =>
         JsonSerializer.Deserialize<TokenResponse>(_js.LocalStorage[StorageKey], KamadaJson.Options)!.AccessToken;
 }
