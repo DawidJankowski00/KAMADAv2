@@ -5,16 +5,8 @@
 const TARGET_RATE = 16000;
 const LEVEL_INTERVAL_MS = 100;
 
-const WORKLET = `
-class KamadaCapture extends AudioWorkletProcessor {
-  process(inputs) {
-    const channel = inputs[0] && inputs[0][0];
-    if (channel) this.port.postMessage(channel.slice(0));
-    return true;
-  }
-}
-registerProcessor("kamada-capture", KamadaCapture);
-`;
+// Next to this module; resolved against it, so it works under any base path.
+const WORKLET_URL = new URL("./voice-recorder-worklet.js", import.meta.url);
 
 let session = null;
 
@@ -44,9 +36,7 @@ export async function start(dotnet, maxSeconds) {
 
   try {
     const context = new AudioContext();
-    const moduleUrl = URL.createObjectURL(new Blob([WORKLET], { type: "application/javascript" }));
-    await context.audioWorklet.addModule(moduleUrl);
-    URL.revokeObjectURL(moduleUrl);
+    await context.audioWorklet.addModule(WORKLET_URL);
 
     const source = context.createMediaStreamSource(stream);
     const node = new AudioWorkletNode(context, "kamada-capture");

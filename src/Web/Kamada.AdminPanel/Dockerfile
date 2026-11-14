@@ -11,6 +11,7 @@ RUN dotnet publish src/Web/Kamada.AdminPanel/Kamada.AdminPanel.csproj -c Release
 
 FROM nginx:1.29-alpine AS runtime
 COPY deploy/nginx/spa.conf /etc/nginx/conf.d/default.conf
+COPY deploy/nginx/security-headers.conf /etc/nginx/kamada/security-headers.conf
 COPY deploy/nginx/40-kamada-config.sh /docker-entrypoint.d/40-kamada-config.sh
 RUN chmod +x /docker-entrypoint.d/40-kamada-config.sh
 COPY --from=build /app/publish/wwwroot /usr/share/nginx/html
