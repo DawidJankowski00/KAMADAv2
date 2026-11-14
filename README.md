@@ -101,6 +101,7 @@ docker compose up --build
 | Phone app (PWA; use a phone or a narrow window) | http://localhost:5082 |
 | API docs (Scalar) | http://localhost:5080/scalar |
 | API health | http://localhost:5080/health |
+| Mailpit: e-mails sent by the API (password resets) | http://localhost:8025 |
 | Ollama (profile `ai` only) | http://localhost:11434 |
 
 Demo accounts (seeded in the Development environment):
@@ -214,7 +215,7 @@ because Chrome would send the audio to Google.
 Requirements: .NET SDK 10.0.401+ and Docker (for PostgreSQL and the integration tests).
 
 ```bash
-docker compose up -d postgres
+docker compose up -d postgres mailpit             # database + e-mail catcher (http://localhost:8025)
 dotnet run --project src/Kamada.Api               # http://localhost:5080
 dotnet run --project src/Web/Kamada.AdminPanel    # http://localhost:5081
 dotnet run --project src/Web/Kamada.MobileApp     # http://localhost:5082

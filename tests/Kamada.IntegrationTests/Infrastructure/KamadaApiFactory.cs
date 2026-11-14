@@ -1,4 +1,5 @@
 using Kamada.Modules.Assistant.Application.Abstractions;
+using Kamada.Shared.Infrastructure.Email;
 using Kamada.Shared.Infrastructure.Geocoding;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -13,11 +14,14 @@ namespace Kamada.IntegrationTests.Infrastructure;
 /// <summary>
 /// Boots the whole API against a throwaway PostgreSQL container. Shared by all tests in the assembly,
 /// so tests must not depend on global row counts – each test creates the data it needs.
-/// External services (geocoding, the language and speech models) are replaced with deterministic fakes.
+/// External services (geocoding, e-mail, the language and speech models) are replaced with deterministic fakes.
 /// </summary>
 public sealed class KamadaApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:17-alpine").Build();
+
+    /// <summary>E-mails the API sent instead of delivering them (shared by all tests: filter by recipient).</summary>
+    public FakeEmailSender Emails { get; } = new();
 
     public async ValueTask InitializeAsync()
     {
@@ -39,6 +43,7 @@ public sealed class KamadaApiFactory : WebApplicationFactory<Program>, IAsyncLif
         builder.UseSetting("Jwt:SigningKey", "integration-tests-signing-key-0123456789");
         builder.UseSetting("RateLimiting:Login:PermitLimit", "100000");
         builder.UseSetting("Geocoding:Provider", "None");
+        builder.UseSetting("Email:Smtp:Host", "localhost");
         builder.UseSetting("RouteOptimization:MatrixProvider", "Haversine");
         builder.UseSetting("Assistant:Enabled", "true");
         builder.UseSetting("RateLimiting:Assistant:PermitLimit", "100000");
@@ -46,6 +51,7 @@ public sealed class KamadaApiFactory : WebApplicationFactory<Program>, IAsyncLif
         builder.ConfigureTestServices(services =>
         {
             services.Replace(ServiceDescriptor.Singleton<IGeocodingService, FakeGeocodingService>());
+            services.Replace(ServiceDescriptor.Singleton<IEmailSender>(Emails));
             services.Replace(ServiceDescriptor.Singleton<IOrderExtractor>(OrderExtractor));
             services.Replace(ServiceDescriptor.Singleton<ILanguageModelProbe, FakeLanguageModelProbe>());
             services.Replace(ServiceDescriptor.Singleton<ISpeechToText, FakeSpeechToText>());

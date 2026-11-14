@@ -34,6 +34,13 @@ services:
       Assistant__Ollama__Model: ${OLLAMA_MODEL:-gemma3:4b}
       Assistant__Whisper__Model: ${WHISPER_MODEL:-small}
       Assistant__Whisper__ModelPath: /app/models/ggml-${WHISPER_MODEL:-small}.bin
+      # E-mail (password reset links). Default: the Mailpit container below catches everything (UI on port 8025).
+      Email__FromAddress: ${EMAIL_FROM_ADDRESS:-no-reply@kamada.test}
+      Email__Smtp__Host: ${SMTP_HOST:-mailpit}
+      Email__Smtp__Port: ${SMTP_PORT:-1025}
+      Email__Smtp__Security: ${SMTP_SECURITY:-None}
+      Email__Smtp__Username: ${SMTP_USERNAME:-}
+      Email__Smtp__Password: ${SMTP_PASSWORD:-}
     ports:
       - "5080:8080"
     volumes:
@@ -42,6 +49,15 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      mailpit:
+        condition: service_started
+
+  # Catches every e-mail the API sends (development only): web UI http://localhost:8025, SMTP on port 1025.
+  mailpit:
+    image: axllent/mailpit:v1.32.0
+    ports:
+      - "8025:8025"
+      - "1025:1025"
 
   admin:
     build:

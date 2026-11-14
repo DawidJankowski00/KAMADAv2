@@ -7,6 +7,7 @@ using Kamada.Modules.Ordering;
 using Kamada.Modules.RouteOptimization;
 using Kamada.Modules.Workforce;
 using Kamada.Shared.Infrastructure.Auth;
+using Kamada.Shared.Infrastructure.Email;
 using Kamada.Shared.Infrastructure.Geocoding;
 using Kamada.Shared.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -24,7 +25,8 @@ builder.Services
     .AddKamadaRateLimiting(builder.Configuration)
     .AddKamadaAuthentication(builder.Configuration)
     .AddKamadaPersistence(builder.Configuration)
-    .AddKamadaGeocoding(builder.Configuration);
+    .AddKamadaGeocoding(builder.Configuration)
+    .AddKamadaEmail(builder.Configuration);
 
 builder.Services
     .AddWorkforceModule(builder.Configuration)
