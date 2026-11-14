@@ -16,7 +16,7 @@ internal sealed partial class RefreshTokenHandler(
 {
     public async Task<Result<TokenResponse>> HandleAsync(RefreshTokenRequest request, CancellationToken cancellationToken)
     {
-        var hash = tokens.HashRefreshToken(request.RefreshToken);
+        var hash = tokens.HashOpaqueToken(request.RefreshToken);
         var current = await db.RefreshTokens.SingleOrDefaultAsync(t => t.TokenHash == hash, cancellationToken);
         if (current is null)
         {

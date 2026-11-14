@@ -23,6 +23,57 @@ namespace Kamada.Modules.Workforce.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Kamada.Modules.Workforce.Domain.Auth.PasswordResetToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("token_hash");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<DateTimeOffset?>("UsedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("used_at");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<Guid>("WorkerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("worker_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_password_reset_tokens");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique()
+                        .HasDatabaseName("ix_password_reset_tokens_token_hash");
+
+                    b.HasIndex("WorkerId")
+                        .HasDatabaseName("ix_password_reset_tokens_worker_id");
+
+                    b.ToTable("password_reset_tokens", "workforce");
+                });
+
             modelBuilder.Entity("Kamada.Modules.Workforce.Domain.Auth.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -165,6 +216,16 @@ namespace Kamada.Modules.Workforce.Infrastructure.Persistence.Migrations
                         {
                             t.HasCheckConstraint("ck_workers_roles_not_empty", "cardinality(roles) > 0");
                         });
+                });
+
+            modelBuilder.Entity("Kamada.Modules.Workforce.Domain.Auth.PasswordResetToken", b =>
+                {
+                    b.HasOne("Kamada.Modules.Workforce.Domain.Workers.Worker", null)
+                        .WithMany()
+                        .HasForeignKey("WorkerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_password_reset_tokens_workers_worker_id");
                 });
 
             modelBuilder.Entity("Kamada.Modules.Workforce.Domain.Auth.RefreshToken", b =>

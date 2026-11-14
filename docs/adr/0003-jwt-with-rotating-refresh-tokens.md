@@ -20,8 +20,8 @@ password reset). There is no external identity provider in scope.
 - **Rotation**: every refresh revokes the presented token and issues a successor in the same *family*.
   Presenting an already rotated token is treated as theft: the entire family is revoked
   ([OAuth 2.0 Security BCP](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-security-topics) pattern).
-- Deactivation, a password reset by an admin and a password change by the worker revoke all refresh tokens of the
-  worker (a change returns a new token pair, so only the worker's other sessions end). Already issued access tokens
+- Deactivation, a password reset (by an admin or through the e-mail link) and a password change by the worker revoke
+  all refresh tokens of the worker (a change returns a new token pair, so only the worker's other sessions end). Already issued access tokens
   remain valid until they expire (≤ 15 min) – an accepted trade-off for stateless validation.
 - Passwords are hashed with ASP.NET Core Identity's `PasswordHasher<T>` (PBKDF2, automatic rehash on login).
 - Login and refresh are rate limited per client IP (fixed window, configurable).

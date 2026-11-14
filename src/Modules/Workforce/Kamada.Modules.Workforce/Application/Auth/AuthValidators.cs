@@ -32,3 +32,17 @@ internal sealed class ChangePasswordRequestValidator : AbstractValidator<ChangeP
             .NotEqual(r => r.CurrentPassword).WithMessage("The new password must differ from the current one.");
     }
 }
+
+internal sealed class ForgotPasswordRequestValidator : AbstractValidator<ForgotPasswordRequest>
+{
+    public ForgotPasswordRequestValidator() => RuleFor(r => r.Email).WorkerEmail();
+}
+
+internal sealed class CompletePasswordResetRequestValidator : AbstractValidator<CompletePasswordResetRequest>
+{
+    public CompletePasswordResetRequestValidator()
+    {
+        RuleFor(r => r.Token).NotEmpty().MaximumLength(200);
+        RuleFor(r => r.NewPassword).StrongPassword();
+    }
+}

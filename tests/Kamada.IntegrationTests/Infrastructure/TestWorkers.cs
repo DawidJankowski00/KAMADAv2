@@ -5,7 +5,10 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Kamada.IntegrationTests.Infrastructure;
 
-internal sealed record TestWorker(Guid Id, string Username, string Password);
+internal sealed record TestWorker(Guid Id, string Username, string Password)
+{
+    public string Email => $"{Username}@kamada.test";
+}
 
 /// <summary>
 /// Arranges worker accounts directly in the database (demo seeding is disabled in tests).
@@ -33,7 +36,7 @@ internal static class TestWorkers
 
         var roleNames = string.Join("-", roles).ToLowerInvariant();
         var username = $"{roleNames}-{Guid.NewGuid():N}"[..24];
-        var worker = Worker.Create(username, $"{username}@kamada.test", string.Empty, "Test", string.Join(" ", roles), "+48 600 000 000", roles).Value;
+        var worker = Worker.Create(username, new TestWorker(Guid.Empty, username, password).Email, string.Empty, "Test", string.Join(" ", roles), "+48 600 000 000", roles).Value;
         worker.ChangePasswordHash(hasher.HashPassword(worker, password));
         if (!isActive)
         {

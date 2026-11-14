@@ -50,15 +50,15 @@ public sealed class JwtTokenServiceTests
     }
 
     [Fact]
-    public void GenerateRefreshToken_ReturnsUniqueTokenWithMatchingHash()
+    public void GenerateOpaqueToken_ReturnsUniqueTokenWithMatchingHash()
     {
         var service = CreateService();
 
-        var first = service.GenerateRefreshToken();
-        var second = service.GenerateRefreshToken();
+        var first = service.GenerateOpaqueToken();
+        var second = service.GenerateOpaqueToken();
 
         first.Token.ShouldNotBe(second.Token);
-        service.HashRefreshToken(first.Token).ShouldBe(first.Hash);
+        service.HashOpaqueToken(first.Token).ShouldBe(first.Hash);
         first.Hash.ShouldNotBe(first.Token);
         first.Hash.Length.ShouldBe(64);
     }

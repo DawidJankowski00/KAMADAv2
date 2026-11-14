@@ -54,6 +54,28 @@ internal static class AuthEndpoints
             .ProducesValidationProblem()
             .ProducesProblem(StatusCodes.Status429TooManyRequests);
 
+        group.MapPost("/forgot-password", async (ForgotPasswordRequest request, ForgotPasswordHandler handler, CancellationToken ct) =>
+            {
+                await handler.HandleAsync(request, ct);
+                return TypedResults.Accepted((string?)null);
+            })
+            .AllowAnonymous()
+            .RequireRateLimiting(RateLimitPolicies.Login)
+            .WithValidation<ForgotPasswordRequest>()
+            .WithSummary("Send a password reset link (always 202, whether or not the account exists)")
+            .Produces(StatusCodes.Status202Accepted)
+            .ProducesProblem(StatusCodes.Status429TooManyRequests);
+
+        group.MapPost("/reset-password", async (CompletePasswordResetRequest request, ResetPasswordHandler handler, CancellationToken ct) =>
+                (await handler.HandleAsync(request, ct)).ToHttpResult(TypedResults.NoContent))
+            .AllowAnonymous()
+            .RequireRateLimiting(RateLimitPolicies.Login)
+            .WithValidation<CompletePasswordResetRequest>()
+            .WithSummary("Set a new password with the token from the reset e-mail (signs out every session)")
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status429TooManyRequests);
+
         group.MapGet("/me", async (IWorkforceDbContext db, ICurrentUser user, CancellationToken ct) =>
             {
                 var worker = await db.Workers.AsNoTracking().SingleOrDefaultAsync(w => w.Id == user.Id, ct);

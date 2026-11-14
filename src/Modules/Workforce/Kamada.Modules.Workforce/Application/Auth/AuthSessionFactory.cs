@@ -12,7 +12,7 @@ internal sealed class AuthSessionFactory(IWorkforceDbContext db, ITokenService t
 {
     public TokenResponse Start(Worker worker)
     {
-        var generated = tokens.GenerateRefreshToken();
+        var generated = tokens.GenerateOpaqueToken();
         var refreshToken = RefreshToken.Issue(worker.Id, generated.Hash, clock.GetUtcNow(), tokens.RefreshTokenLifetime);
         db.RefreshTokens.Add(refreshToken);
         return CreateResponse(worker, generated.Token, refreshToken);
@@ -20,7 +20,7 @@ internal sealed class AuthSessionFactory(IWorkforceDbContext db, ITokenService t
 
     public TokenResponse Rotate(Worker worker, RefreshToken current)
     {
-        var generated = tokens.GenerateRefreshToken();
+        var generated = tokens.GenerateOpaqueToken();
         var successor = current.Rotate(generated.Hash, clock.GetUtcNow(), tokens.RefreshTokenLifetime);
         db.RefreshTokens.Add(successor);
         return CreateResponse(worker, generated.Token, successor);

@@ -23,6 +23,8 @@ public sealed class KamadaApiFactory : WebApplicationFactory<Program>, IAsyncLif
     /// <summary>E-mails the API sent instead of delivering them (shared by all tests: filter by recipient).</summary>
     public FakeEmailSender Emails { get; } = new();
 
+    public const string ResetPasswordUrl = "http://admin.test/reset-password";
+
     public async ValueTask InitializeAsync()
     {
         await _postgres.StartAsync();
@@ -44,6 +46,7 @@ public sealed class KamadaApiFactory : WebApplicationFactory<Program>, IAsyncLif
         builder.UseSetting("RateLimiting:Login:PermitLimit", "100000");
         builder.UseSetting("Geocoding:Provider", "None");
         builder.UseSetting("Email:Smtp:Host", "localhost");
+        builder.UseSetting("Auth:PasswordReset:Url", ResetPasswordUrl);
         builder.UseSetting("RouteOptimization:MatrixProvider", "Haversine");
         builder.UseSetting("Assistant:Enabled", "true");
         builder.UseSetting("RateLimiting:Assistant:PermitLimit", "100000");

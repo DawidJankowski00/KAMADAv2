@@ -47,15 +47,15 @@ internal sealed class JwtTokenService(IOptions<JwtOptions> options, TimeProvider
         return new AccessToken(_handler.CreateToken(descriptor), expiresAt);
     }
 
-    public GeneratedRefreshToken GenerateRefreshToken()
+    public GeneratedToken GenerateOpaqueToken()
     {
         var token = Base64Url.EncodeToString(RandomNumberGenerator.GetBytes(64));
-        return new GeneratedRefreshToken(token, HashRefreshToken(token));
+        return new GeneratedToken(token, HashOpaqueToken(token));
     }
 
     /// <summary>
     /// SHA-256 is sufficient here (unlike for passwords): the token has 512 bits of entropy, so it cannot be brute-forced.
     /// </summary>
-    public string HashRefreshToken(string token) =>
+    public string HashOpaqueToken(string token) =>
         Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
 }

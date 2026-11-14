@@ -12,6 +12,10 @@ internal static class AuthErrors
     public static readonly Error CurrentPasswordInvalid =
         Error.Validation("Auth.CurrentPasswordInvalid", "The current password is not correct.");
 
+    /// <summary>One answer for unknown, expired and spent links.</summary>
+    public static readonly Error InvalidResetToken =
+        Error.Validation("Auth.InvalidResetToken", "The password reset link is invalid or has expired. Ask for a new one.");
+
     public static readonly Error InvalidRefreshToken =
         Error.Unauthorized("Auth.InvalidRefreshToken", "The refresh token is invalid or expired. Sign in again.");
 }

@@ -21,6 +21,7 @@ internal sealed class EvalHost(EvalOptions options) : WebApplicationFactory<Prog
         builder.UseSetting("Database:SeedDemoData", "true");
         builder.UseSetting("Jwt:SigningKey", "assistant-evals-only-signing-key-0123456789");
         builder.UseSetting("Email:Smtp:Host", "localhost"); // never used: evals send no e-mail
+        builder.UseSetting("Auth:PasswordReset:Url", "http://localhost/reset-password"); // never used either
         builder.UseSetting("Geocoding:Provider", options.Geocode ? "Nominatim" : "None");
         builder.UseSetting("RouteOptimization:MatrixProvider", "Haversine");
         builder.UseSetting("RateLimiting:Login:PermitLimit", "100000");

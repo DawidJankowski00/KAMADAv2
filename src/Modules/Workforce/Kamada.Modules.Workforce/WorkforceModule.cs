@@ -39,6 +39,12 @@ public static class WorkforceModule
         services.AddScoped<AuthSessionFactory>();
         services.AddScoped<LoginHandler>();
         services.AddScoped<ChangePasswordHandler>();
+        services.AddScoped<ForgotPasswordHandler>();
+        services.AddScoped<ResetPasswordHandler>();
+        services.AddOptions<PasswordResetOptions>()
+            .Bind(configuration.GetSection(PasswordResetOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
         services.AddScoped<RefreshTokenHandler>();
         services.AddScoped<LogoutHandler>();
         services.AddScoped<WorkerQueries>();
