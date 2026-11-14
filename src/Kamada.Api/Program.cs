@@ -48,6 +48,12 @@ app.UseSerilogRequestLogging(options => options.GetLevel = (context, _, exceptio
     exception is not null || context.Response.StatusCode >= 500 ? LogEventLevel.Error
     : context.Request.Path.StartsWithSegments("/health/ping") ? LogEventLevel.Verbose
     : LogEventLevel.Information);
+app.UseKamadaSecurityHeaders();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHsts();
+}
+
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseCors(HostingExtensions.FrontendsCorsPolicy);
