@@ -21,8 +21,8 @@ internal static class OrderMappings
         order.CreatedAt,
         order.UpdatedAt);
 
-    public static PlacedByDto? PlacedBy(Guid? workerId, IReadOnlyDictionary<Guid, string> workerNames) =>
-        workerId is { } id ? new PlacedByDto(id, workerNames.GetValueOrDefault(id, string.Empty)) : null;
+    public static PlacedByDto PlacedBy(Guid workerId, IReadOnlyDictionary<Guid, string> workerNames) =>
+        new(workerId, workerNames.GetValueOrDefault(workerId, string.Empty));
 
     public static ShippingAddressDto ToDto(this ShippingAddress address) => new(
         address.AddressId,

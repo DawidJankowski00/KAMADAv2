@@ -49,7 +49,7 @@ The project is a .NET system, so the frontends should show C# end to end and sha
 ## Update (2026-10-11): one phone app for every role
 
 The courier PWA became the KAMADA phone app (`Kamada.MobileApp`), because workers now hold several roles and
-switch between them on one phone (see `docs/plans/mobile-app-roles.md`). The split above still holds along a
+switch between them on one phone. The split above still holds along a
 different line: **desktop vs. phone**, not courier vs. admin. The web admin panel stays a separate app; the phone
 app has one area per role (`/courier/...`, `/admin`), and the active role is a client-side choice of views
 (`RoleContext`) while the API keeps checking roles per endpoint. Admin pages will be shared through a Razor class

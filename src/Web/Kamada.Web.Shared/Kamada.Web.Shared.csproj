@@ -13,7 +13,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Shared\Kamada.Shared.Contracts\Kamada.Shared.Contracts.csproj" />
-    <ProjectReference Include="..\..\Shared\Kamada.Shared.Matching\Kamada.Shared.Matching.csproj" />
   </ItemGroup>
 
 </Project>

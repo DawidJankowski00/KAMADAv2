@@ -5,8 +5,8 @@ using Kamada.Web.Shared.Audio;
 namespace Kamada.Web.Shared.Assistant;
 
 /// <summary>
-/// Turns dictated or typed notes into order drafts. The form talks only to this interface: the server's assistant
-/// (Whisper + Ollama) today, the model running on the phone as a fallback.
+/// Turns dictated or typed notes into order drafts. The form talks only to this interface; both apps use the server's
+/// assistant (<see cref="ServerOrderAssistant"/>).
 /// </summary>
 public interface IOrderAssistant
 {

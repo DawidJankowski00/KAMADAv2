@@ -77,7 +77,7 @@ internal sealed class OrderQueries(IOrderingDbContext db, IWorkerDirectory worke
             })
             .ToListAsync(cancellationToken);
 
-        var names = await workers.GetNamesAsync([.. rows.Where(r => r.PlacedByWorkerId is not null).Select(r => r.PlacedByWorkerId!.Value)], cancellationToken);
+        var names = await workers.GetNamesAsync([.. rows.Select(r => r.PlacedByWorkerId).Distinct()], cancellationToken);
         var items = rows
             .Select(r => new OrderSummaryDto(r.Id, r.Number, r.ClientId, OrderMappings.PlacedBy(r.PlacedByWorkerId, names), r.RecipientName, r.City, r.Status.ToContract(), r.TotalAmount, r.ItemCount, r.CreatedAt))
             .ToList();
@@ -95,7 +95,7 @@ internal sealed class OrderQueries(IOrderingDbContext db, IWorkerDirectory worke
             return OrderErrors.NotFound;
         }
 
-        var names = order.PlacedByWorkerId is { } workerId ? await workers.GetNamesAsync([workerId], cancellationToken) : new Dictionary<Guid, string>();
+        var names = await workers.GetNamesAsync([order.PlacedByWorkerId], cancellationToken);
         return order.ToDto(names);
     }
 

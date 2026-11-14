@@ -27,10 +27,6 @@
     <Project Path="src/Modules/Ordering/Kamada.Modules.Ordering.Contracts/Kamada.Modules.Ordering.Contracts.csproj" />
     <Project Path="src/Modules/Ordering/Kamada.Modules.Ordering/Kamada.Modules.Ordering.csproj" />
   </Folder>
-  <Folder Name="/src/Modules/Payments/">
-    <Project Path="src/Modules/Payments/Kamada.Modules.Payments.Contracts/Kamada.Modules.Payments.Contracts.csproj" />
-    <Project Path="src/Modules/Payments/Kamada.Modules.Payments/Kamada.Modules.Payments.csproj" />
-  </Folder>
   <Folder Name="/src/Modules/RouteOptimization/">
     <Project Path="src/Modules/RouteOptimization/Kamada.Modules.RouteOptimization.Contracts/Kamada.Modules.RouteOptimization.Contracts.csproj" />
     <Project Path="src/Modules/RouteOptimization/Kamada.Modules.RouteOptimization/Kamada.Modules.RouteOptimization.csproj" />
@@ -59,7 +55,6 @@
     <Project Path="tests/Kamada.Modules.Customers.UnitTests/Kamada.Modules.Customers.UnitTests.csproj" />
     <Project Path="tests/Kamada.Modules.Delivery.UnitTests/Kamada.Modules.Delivery.UnitTests.csproj" />
     <Project Path="tests/Kamada.Modules.Ordering.UnitTests/Kamada.Modules.Ordering.UnitTests.csproj" />
-    <Project Path="tests/Kamada.Modules.Payments.UnitTests/Kamada.Modules.Payments.UnitTests.csproj" />
     <Project Path="tests/Kamada.Modules.RouteOptimization.UnitTests/Kamada.Modules.RouteOptimization.UnitTests.csproj" />
     <Project Path="tests/Kamada.Modules.Workforce.UnitTests/Kamada.Modules.Workforce.UnitTests.csproj" />
     <Project Path="tests/Kamada.Shared.Matching.UnitTests/Kamada.Shared.Matching.UnitTests.csproj" />

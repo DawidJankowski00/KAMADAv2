@@ -1,5 +1,6 @@
 using Kamada.Modules.Ordering.Application.Abstractions;
 using Kamada.Modules.Ordering.Domain.Orders;
+using Kamada.Modules.Ordering.Domain.Payments;
 using Kamada.Shared.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,6 +12,8 @@ internal sealed class OrderingDbContext(DbContextOptions<OrderingDbContext> opti
     public const string Schema = "ordering";
 
     public DbSet<Order> Orders => Set<Order>();
+
+    public DbSet<Payment> Payments => Set<Payment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

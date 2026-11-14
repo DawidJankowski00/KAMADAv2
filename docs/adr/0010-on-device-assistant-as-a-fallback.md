@@ -1,6 +1,6 @@
 # 0010. On-device assistant as a fallback
 
-- **Status:** Accepted (default models chosen from desktop measurements; phone measurements pending, see [on-device-assistant.md](../on-device-assistant.md))
+- **Status:** Superseded (2026-11-09) – the on-device assistant was removed, see the update at the end
 - **Date:** 2026-10-11
 
 ## Context
@@ -50,3 +50,13 @@ that can run in WebAssembly too.
 - Two more moving parts (WebLLM and transformers.js, pinned) have to be bumped deliberately; the service worker cache for
   them is named by version.
 - Accuracy and speed differ per phone; the settings page links to a test that runs the server's `cases.json` on the device.
+
+## Update (2026-11-09): removed
+
+The on-device assistant was removed to simplify the project. It was the largest single source of complexity (a second ML
+runtime in JavaScript, model downloads and their hosting, service-worker caching, WebGPU constraints), the measured accuracy
+of the small models was low (about half of the evaluation notes fully right on a desktop GPU), and the planned move of the
+phone app to .NET MAUI would run it in a WebView where WebGPU is not reliable. The phone app now uses the server's
+assistant only: the panel is hidden while the server cannot be reached, and the offline order form
+([ADR 0009](0009-offline-ordering-on-the-phone.md)) still works without it. `Kamada.Shared.Matching` stays, because the
+server modules use it.

@@ -12,7 +12,7 @@ be atomic – most notably placing an order (Ordering) and decrementing stock (C
 ## Decision
 
 - One PostgreSQL database; **each module owns a schema** (`workforce`, `catalog`, `customers`, `ordering`,
-  `payments`, `delivery`).
+  `delivery`; until 2026-11-09 also `payments`, now part of `ordering`, see [ADR 0001](0001-modular-monolith.md)).
 - **Each module has its own `DbContext`** that maps only its own tables, has its own migrations
   (`Infrastructure/Persistence/Migrations`) and its own `__ef_migrations_history` table inside its schema.
   Registration goes through `AddModuleDbContext<T>(schema)` (snake_case naming, auditing interceptor,
@@ -41,7 +41,7 @@ be atomic – most notably placing an order (Ordering) and decrementing stock (C
 ## Consequences
 
 - Schemas make ownership visible in the database itself (`\dn` in psql).
-- Seven migration histories instead of one; `dotnet ef` commands need `-c <Context>` (see `CLAUDE.md`).
+- One migration history per module context (five) instead of one; `dotnet ef` commands need `-c <Context>` (see `CLAUDE.md`).
 - A module can later move to its own database, but then the operations that use `IUnitOfWork` across it
   would need an outbox / saga instead of a local transaction.
 - Concurrent writes to the same row (e.g. two orders taking the last unit of a product) are resolved by the

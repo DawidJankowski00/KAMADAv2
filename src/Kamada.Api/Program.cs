@@ -4,7 +4,6 @@ using Kamada.Modules.Catalog;
 using Kamada.Modules.Customers;
 using Kamada.Modules.Delivery;
 using Kamada.Modules.Ordering;
-using Kamada.Modules.Payments;
 using Kamada.Modules.RouteOptimization;
 using Kamada.Modules.Workforce;
 using Kamada.Shared.Infrastructure.Auth;
@@ -32,7 +31,6 @@ builder.Services
     .AddCatalogModule(builder.Configuration)
     .AddCustomersModule(builder.Configuration)
     .AddOrderingModule(builder.Configuration)
-    .AddPaymentsModule(builder.Configuration)
     .AddRouteOptimizationModule(builder.Configuration)
     .AddDeliveryModule(builder.Configuration)
     .AddAssistantModule(builder.Configuration);
@@ -70,7 +68,6 @@ app.MapWorkforceEndpoints()
     .MapCatalogEndpoints()
     .MapCustomersEndpoints()
     .MapOrderingEndpoints()
-    .MapPaymentsEndpoints()
     .MapRouteOptimizationEndpoints()
     .MapDeliveryEndpoints()
     .MapAssistantEndpoints();

@@ -3,7 +3,9 @@ using Kamada.Modules.Ordering.Api;
 using Kamada.Modules.Ordering.Application;
 using Kamada.Modules.Ordering.Application.Abstractions;
 using Kamada.Modules.Ordering.Application.Orders;
+using Kamada.Modules.Ordering.Application.Payments;
 using Kamada.Modules.Ordering.Contracts;
+using Kamada.Modules.Ordering.Infrastructure.Payments;
 using Kamada.Modules.Ordering.Infrastructure.Persistence;
 using Kamada.Modules.Ordering.Infrastructure.Seeding;
 using Kamada.Shared.Infrastructure.Persistence;
@@ -15,7 +17,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Kamada.Modules.Ordering;
 
 /// <summary>
-/// Entry point of the Ordering module (orders, order lines, order lifecycle):
+/// Entry point of the Ordering module (orders, order lines, order lifecycle, payments with a simulated provider):
 /// the only public type of the implementation assembly.
 /// </summary>
 public static class OrderingModule
@@ -32,15 +34,20 @@ public static class OrderingModule
         services.AddScoped<PlaceOrderHandler>();
         services.AddScoped<OrderQueries>();
         services.AddScoped<OrderCommands>();
-        services.AddScoped<IOrderPayments, OrderPayments>();
         services.AddScoped<IOrderFulfillment, OrderFulfillment>();
         services.AddScoped<IDataSeeder, OrderingSeeder>();
         services.AddScoped<IDataSeeder, OrderPackingSeeder>();
+
+        // Payments with a simulated provider (a separate module until 2026-11-09).
+        services.AddSingleton<IPaymentGateway, SimulatedPaymentGateway>();
+        services.AddScoped<OrderPayments>();
+        services.AddScoped<PaymentService>();
+        services.AddScoped<IDataSeeder, PaymentsSeeder>();
         services.AddValidatorsFromAssemblyContaining<OrderQueries>(includeInternalTypes: true);
 
         return services;
     }
 
     public static IEndpointRouteBuilder MapOrderingEndpoints(this IEndpointRouteBuilder endpoints) =>
-        endpoints.MapOrderEndpoints();
+        endpoints.MapOrderEndpoints().MapPaymentEndpoints();
 }

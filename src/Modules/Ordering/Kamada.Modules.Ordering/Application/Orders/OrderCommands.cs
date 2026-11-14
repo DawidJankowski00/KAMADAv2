@@ -29,7 +29,7 @@ internal sealed class OrderCommands(IOrderingDbContext db, ICatalogInventory inv
 
     /// <summary>
     /// Cancels the order and returns its items to stock atomically. Refunding a completed payment is a
-    /// separate action in the Payments module.
+    /// separate action (<c>PaymentService.RefundAsync</c>).
     /// </summary>
     public async Task<Result> CancelAsync(Guid id, CancellationToken cancellationToken)
     {

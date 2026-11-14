@@ -32,7 +32,7 @@ there is a network, not whether the API is reachable.
   enough stock, deactivated product, deleted client or address) becomes "Wymaga uwagi" with the server's message; the
   seller edits it (the entry keeps its request id and is sent again) or discards it. Nothing is changed silently.
 - **Not in this stage.** The AI assistant needs the server and is hidden while the form works locally; an on-device
-  assistant is stage 6. Totals shown offline are estimates; the server computes the real total from current prices.
+  assistant was added in stage 6 ([ADR 0010](0010-on-device-assistant-as-a-fallback.md)) and later removed. Totals shown offline are estimates; the server computes the real total from current prices.
 
 ## Consequences
 

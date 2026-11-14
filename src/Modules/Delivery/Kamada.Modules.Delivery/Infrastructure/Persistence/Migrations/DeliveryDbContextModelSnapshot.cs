@@ -282,11 +282,11 @@ namespace Kamada.Modules.Delivery.Infrastructure.Persistence.Migrations
                     b.HasKey("Id")
                         .HasName("pk_delivery_run_orders");
 
-                    b.HasIndex("DeliveryRunId")
-                        .HasDatabaseName("ix_delivery_run_orders_delivery_run_id");
-
                     b.HasIndex("OrderId")
                         .HasDatabaseName("ix_delivery_run_orders_order_id");
+
+                    b.HasIndex(new[] { "DeliveryRunId", "DeliverySequence" }, "ux_delivery_run_orders_run_seq")
+                        .HasDatabaseName("ux_delivery_run_orders_run_seq");
 
                     b.ToTable("delivery_run_orders", "delivery", t =>
                         {

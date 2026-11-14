@@ -30,7 +30,7 @@ public static class ExtractionPrompt
           null. Never put client, address or product data in notes.
         """;
 
-    /// <summary>Structured output schema (Ollama <c>format</c>, WebLLM <c>response_format</c>): the model can only produce this shape.</summary>
+    /// <summary>Structured output schema (Ollama <c>format</c>): the model can only produce this shape.</summary>
     public const string JsonSchema = """
         {
           "type": "object",

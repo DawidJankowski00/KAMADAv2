@@ -45,3 +45,10 @@ Rules, enforced by `tests/Kamada.ArchitectureTests` (NetArchTest + project file 
   its in-process contracts with HTTP/messaging.
 - Unit tests of module internals need `InternalsVisibleTo` (configured in each module project).
 - Layering *inside* a module is enforced by tests, not by the compiler.
+
+## Update (2026-11-09): payments merged into Ordering
+
+Payments were a module of their own with a simulated provider and one contract (`IOrderPayments`) back to Ordering.
+That boundary cost two projects, a schema, a `DbContext` and a contract without separating anything real: a payment
+exists only for an order and every completed payment changes the order. Payments are now part of the Ordering module
+(`Domain/Payments`, `Application/Payments`, same routes `/api/payments/...`), which leaves seven modules.

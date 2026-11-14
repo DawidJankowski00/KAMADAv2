@@ -19,11 +19,11 @@ public sealed class FrontendTests
     }
 
     [Fact]
-    public void SharedUiLibrary_ReferencesOnlyHttpContractsAndPureMatching()
+    public void SharedUiLibrary_ReferencesOnlyHttpContracts()
     {
         var path = Path.Combine(RepositoryPaths.Root, "src", "Web", "Kamada.Web.Shared", "Kamada.Web.Shared.csproj");
 
-        ProjectReferences.Of(path).ShouldBe(["Kamada.Shared.Contracts", "Kamada.Shared.Matching"], ignoreOrder: true);
+        ProjectReferences.Of(path).ShouldBe(["Kamada.Shared.Contracts"]);
     }
 
     [Fact]

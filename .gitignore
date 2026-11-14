@@ -485,8 +485,5 @@ $RECYCLE.BIN/
 src/Kamada.Api/models/
 *.bin.download
 
-# On-device assistant: downloaded by deploy/assistant/fetch-runtime.sh
-src/Web/Kamada.MobileApp/wwwroot/assistant/vendor/
-
 # Local assistant notes
 CLAUDE.md

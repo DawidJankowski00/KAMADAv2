@@ -43,12 +43,12 @@ public sealed record PlacedByDto(Guid WorkerId, string Name);
 
 public sealed record OrderItemDto(Guid ProductId, string ProductName, string Sku, int Quantity, decimal UnitPrice, decimal LineTotal);
 
-/// <param name="PlacedBy">Who placed the order; <c>null</c> for orders placed before this was recorded.</param>
+/// <param name="PlacedBy">Who placed the order; <c>Name</c> is empty when the worker is not found.</param>
 public sealed record OrderDto(
     Guid Id,
     long Number,
     Guid ClientId,
-    PlacedByDto? PlacedBy,
+    PlacedByDto PlacedBy,
     OrderStatus Status,
     decimal TotalAmount,
     string? Notes,
@@ -61,7 +61,7 @@ public sealed record OrderSummaryDto(
     Guid Id,
     long Number,
     Guid ClientId,
-    PlacedByDto? PlacedBy,
+    PlacedByDto PlacedBy,
     string RecipientName,
     string City,
     OrderStatus Status,
