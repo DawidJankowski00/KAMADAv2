@@ -1,0 +1,50 @@
+@* Version line under the admin menu. Developers open the hidden developer menu by tapping it seven times in a row
+   (like Android's build number); for everybody else it is just text. *@
+@using System.Reflection
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<AuthorizeView Roles="@Roles.Developer">
+    <Authorized>
+        <MudText Typo="Typo.caption" Class="mud-text-secondary px-4 py-3 kamada-app-version" @onclick="OnTap"
+                 title="Wersja aplikacji">@Text</MudText>
+    </Authorized>
+    <NotAuthorized>
+        <MudText Typo="Typo.caption" Class="mud-text-secondary px-4 py-3 kamada-app-version">@Text</MudText>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    /// <summary>Taps in a row that open the developer menu; a pause longer than <see cref="TapWindow"/> starts again.</summary>
+    internal const int TapsToOpen = 7;
+
+    private static readonly TimeSpan TapWindow = TimeSpan.FromSeconds(2);
+
+    private static readonly string Text = $"KAMADA · wersja {Version}";
+
+    private int _taps;
+    private DateTimeOffset _lastTap;
+
+    /// <summary>Informational version of the app without the build metadata ("1.0.0+3f2a…" → "1.0.0").</summary>
+    internal static string Version =>
+        (Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "?")
+        .Split('+')[0];
+
+    private void OnTap()
+    {
+        var now = DateTimeOffset.UtcNow;
+        _taps = now - _lastTap > TapWindow ? 1 : _taps + 1;
+        _lastTap = now;
+
+        var left = TapsToOpen - _taps;
+        if (left <= 0)
+        {
+            _taps = 0;
+            Navigation.NavigateTo(DeveloperRoutes.Assistant);
+        }
+        else if (left <= 3)
+        {
+            Snackbar.Add($"Jeszcze {left} – menu dewelopera", Severity.Normal, options => options.VisibleStateDuration = 800);
+        }
+    }
+}

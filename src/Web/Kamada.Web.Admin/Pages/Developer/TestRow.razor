@@ -1,0 +1,37 @@
+@* One provider in the connection test result. *@
+<tr>
+    <td>@Label</td>
+    <td>
+        @Result.Provider
+        @if (Result.Model is not null)
+        {
+            <MudText Typo="Typo.caption" Class="mud-text-secondary d-block">@Result.Model</MudText>
+        }
+    </td>
+    <td>
+        @if (Result.Success)
+        {
+            <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Text">OK</MudChip>
+        }
+        else
+        {
+            <MudChip T="string" Size="Size.Small" Color="Color.Error" Variant="Variant.Text">Błąd</MudChip>
+            <MudText Typo="Typo.caption" Class="d-block">@Message</MudText>
+        }
+    </td>
+    <td class="text-right">@($"{Result.ElapsedMs / 1000.0:0.0} s")</td>
+</tr>
+
+@code {
+    [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired] public ProviderTestResultDto Result { get; set; } = null!;
+
+    private string Message => Result.ErrorCode switch
+    {
+        null => string.Empty,
+        // The sample note is fixed; an unusable answer means the model is there but did not follow the schema.
+        "Assistant.ExtractionFailed" => "Model odpowiedział, ale nie zwrócił poprawnego zamówienia.",
+        { } code => ErrorMessages.TryTranslate(code) ?? code,
+    };
+}

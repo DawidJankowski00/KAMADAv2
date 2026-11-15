@@ -1,0 +1,208 @@
+@page "/dev/assistant"
+@* Hidden developer menu (not in AdminNavigation; seven taps on the version under the menu). The page is in the admin
+   area like every page of this library; the Developer role is checked here and, for the data, by the API. *@
+@inject ApiClient Api
+@inject ISnackbar Snackbar
+
+<PageTitle>Menu dewelopera – KAMADA</PageTitle>
+
+<PageHeader Title="Menu dewelopera" Subtitle="Asystent zamówień AI: dostawca, modele i test połączenia" />
+
+<AuthorizeView Roles="@Roles.Developer">
+    <Authorized>
+        @if (_settings is null)
+        {
+            <MudProgressLinear Indeterminate="true" />
+        }
+        else
+        {
+            <MudGrid Spacing="3">
+                <MudItem xs="12" md="7">
+                    <MudPaper Class="pa-4" Elevation="1">
+                        <MudSwitch T="bool" @bind-Value="_enabled" Color="Color.Primary" Label="Asystent włączony" Disabled="_busy" />
+                        @if (!_settings.Availability.AssistantEnabled)
+                        {
+                            <MudText Typo="Typo.body2" Class="mud-text-secondary mb-2">
+                                Serwer ma asystenta wyłączonego w konfiguracji (Assistant:Enabled) – ustawienia zadziałają po jego włączeniu.
+                            </MudText>
+                        }
+
+                        <MudText Typo="Typo.subtitle1" Class="mt-4">Odczyt notatek</MudText>
+                        <MudRadioGroup T="AssistantTextProvider" @bind-Value="_textProvider" Disabled="_busy">
+                            <MudRadio Value="AssistantTextProvider.Ollama" Color="Color.Primary">Lokalny model (Ollama) – dane nie opuszczają serwerów firmy</MudRadio>
+                            <MudRadio Value="AssistantTextProvider.Gemini" Color="Color.Primary" Disabled="!_settings.Availability.GeminiConfigured">
+                                Google Gemini – szybciej i dokładniej, płatne API
+                            </MudRadio>
+                        </MudRadioGroup>
+
+                        <MudGrid Spacing="2" Class="mt-1">
+                            <MudItem xs="12" sm="6">
+                                <MudTextField @bind-Value="_ollamaModel" Label="Model Ollama" MaxLength="100" Disabled="_busy" Immediate="true"
+                                              HelperText="np. gemma3:4b, qwen3:4b (musi być pobrany: ollama pull)" />
+                            </MudItem>
+                            <MudItem xs="12" sm="6">
+                                <MudTextField @bind-Value="_geminiModel" Label="Model Gemini" MaxLength="100" Disabled="_busy" Immediate="true"
+                                              HelperText="np. gemini-3.5-flash-lite (używany też do dyktowania)" />
+                            </MudItem>
+                        </MudGrid>
+
+                        <MudText Typo="Typo.subtitle1" Class="mt-4">Dyktowanie</MudText>
+                        <MudRadioGroup T="AssistantSpeechProvider" @bind-Value="_speechProvider" Disabled="_busy">
+                            <MudRadio Value="AssistantSpeechProvider.Off" Color="Color.Primary">Wyłączone – tylko wpisywanie</MudRadio>
+                            <MudRadio Value="AssistantSpeechProvider.Whisper" Color="Color.Primary" Disabled="!_settings.Availability.WhisperEnabled">
+                                Lokalny Whisper – model pobierany przy pierwszym użyciu (kilkaset MB)
+                            </MudRadio>
+                            <MudRadio Value="AssistantSpeechProvider.Gemini" Color="Color.Primary" Disabled="!_settings.Availability.GeminiConfigured">
+                                Google Gemini – nagranie wysyłane do Google
+                            </MudRadio>
+                        </MudRadioGroup>
+
+                        @if (!_settings.Availability.GeminiConfigured)
+                        {
+                            <MudText Typo="Typo.body2" Class="mud-text-secondary mt-2">
+                                Gemini jest niedostępne: serwer nie ma klucza API (Assistant__Gemini__ApiKey / GEMINI_API_KEY).
+                                Klucza nie podaje się tutaj – nie jest zapisywany w bazie.
+                            </MudText>
+                        }
+
+                        @if (UsesGemini)
+                        {
+                            <MudAlert Severity="Severity.Warning" Class="mt-4" Dense="true">
+                                Z Gemini treść notatek – imiona, nazwiska, telefony i adresy klientów@(_speechProvider == AssistantSpeechProvider.Gemini ? " – oraz nagrania" : string.Empty)
+                                trafiają do Google. Używaj klucza z włączonymi płatnościami: na płatnym poziomie Google nie
+                                wykorzystuje tych danych do trenowania modeli. Klienci powinni być o tym poinformowani.
+                            </MudAlert>
+                        }
+
+                        <div class="d-flex flex-wrap justify-end gap-2 mt-4">
+                            <MudButton OnClick="Reset" Disabled="_busy || !Changed">Cofnij zmiany</MudButton>
+                            <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="SaveAsync" Disabled="_busy || !Changed">Zapisz</MudButton>
+                        </div>
+                        @if (_settings.UpdatedAt is { } updated)
+                        {
+                            <MudText Typo="Typo.caption" Class="mud-text-secondary d-block mt-2">Ostatnia zmiana: @Labels.DateTime(updated)</MudText>
+                        }
+                    </MudPaper>
+                </MudItem>
+
+                <MudItem xs="12" md="5">
+                    <MudPaper Class="pa-4" Elevation="1">
+                        <MudText Typo="Typo.subtitle1">Test połączenia</MudText>
+                        <MudText Typo="Typo.body2" Class="mud-text-secondary mb-3">
+                            Wysyła przykładową notatkę (bez danych klientów) do zapisanego dostawcy@(SpeechTestText).
+                            Działa też przy wyłączonym asystencie.
+                        </MudText>
+                        <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.NetworkCheck"
+                                   OnClick="TestAsync" Disabled="_busy || Changed">Testuj</MudButton>
+                        @if (Changed)
+                        {
+                            <MudText Typo="Typo.caption" Class="mud-text-secondary d-block mt-1">Zapisz zmiany, aby je przetestować.</MudText>
+                        }
+                        @if (_testing)
+                        {
+                            <MudProgressLinear Indeterminate="true" Class="mt-3" />
+                        }
+                        @if (_test is not null)
+                        {
+                            <MudSimpleTable Dense="true" Elevation="0" Class="mt-3">
+                                <tbody>
+                                    <TestRow Label="Notatki" Result="_test.Text" />
+                                    @if (_test.Speech is not null)
+                                    {
+                                        <TestRow Label="Dyktowanie" Result="_test.Speech" />
+                                    }
+                                </tbody>
+                            </MudSimpleTable>
+                        }
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+        }
+    </Authorized>
+    <NotAuthorized>
+        <MudAlert Severity="Severity.Info">Ta strona jest dostępna tylko dla roli Deweloper.</MudAlert>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private const string Url = "api/assistant/settings";
+
+    private AssistantSettingsDto? _settings;
+    private AssistantProviderTestDto? _test;
+    private bool _busy;
+    private bool _testing;
+    private bool _enabled;
+    private AssistantTextProvider _textProvider;
+    private AssistantSpeechProvider _speechProvider;
+    private string _ollamaModel = string.Empty;
+    private string _geminiModel = string.Empty;
+
+    [CascadingParameter] private Task<AuthenticationState>? AuthenticationState { get; set; }
+
+    private bool UsesGemini => _textProvider == AssistantTextProvider.Gemini || _speechProvider == AssistantSpeechProvider.Gemini;
+
+    private string SpeechTestText => _settings?.SpeechProvider switch
+    {
+        AssistantSpeechProvider.Whisper => " i sprawdza, czy Whisper jest gotowy",
+        AssistantSpeechProvider.Gemini => " oraz sekundę ciszy jako nagranie",
+        _ => string.Empty,
+    };
+
+    private bool Changed => _settings is not null && Request() != new UpdateAssistantSettingsRequest(
+        _settings.Enabled, _settings.TextProvider, _settings.OllamaModel, _settings.GeminiModel, _settings.SpeechProvider);
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Only developers load the settings (the API would answer 403 to anybody else).
+        if (AuthenticationState is not null && (await AuthenticationState).User.IsInRole(Roles.Developer))
+        {
+            var result = await Api.GetAsync<AssistantSettingsDto>(Url);
+            if (Snackbar.Report(result))
+            {
+                Show(result.Value);
+            }
+        }
+    }
+
+    private UpdateAssistantSettingsRequest Request() =>
+        new(_enabled, _textProvider, _ollamaModel.Trim(), _geminiModel.Trim(), _speechProvider);
+
+    private void Show(AssistantSettingsDto settings)
+    {
+        _settings = settings;
+        Reset();
+    }
+
+    private void Reset()
+    {
+        _enabled = _settings!.Enabled;
+        _textProvider = _settings.TextProvider;
+        _speechProvider = _settings.SpeechProvider;
+        _ollamaModel = _settings.OllamaModel;
+        _geminiModel = _settings.GeminiModel;
+    }
+
+    private async Task SaveAsync()
+    {
+        _busy = true;
+        var result = await Api.PutAsync<AssistantSettingsDto>(Url, Request());
+        _busy = false;
+        if (Snackbar.Report(result, "Ustawienia asystenta zapisane – działają od razu."))
+        {
+            _test = null;
+            Show(result.Value);
+        }
+    }
+
+    private async Task TestAsync()
+    {
+        _busy = _testing = true;
+        _test = null;
+        var result = await Api.PostAsync<AssistantProviderTestDto>($"{Url}/test");
+        _busy = _testing = false;
+        if (Snackbar.Report(result))
+        {
+            _test = result.Value;
+        }
+    }
+}
