@@ -3,6 +3,7 @@ using Kamada.Modules.Assistant.Api;
 using Kamada.Modules.Assistant.Application;
 using Kamada.Modules.Assistant.Application.Abstractions;
 using Kamada.Modules.Assistant.Application.Drafts;
+using Kamada.Modules.Assistant.Application.Settings;
 using Kamada.Modules.Assistant.Application.Transcriptions;
 using Kamada.Modules.Assistant.Infrastructure;
 using Kamada.Modules.Assistant.Infrastructure.Ollama;
@@ -68,7 +69,8 @@ public static class AssistantModule
         services.AddScoped<IOrderDraftSource, ModuleOrderDraftSource>();
         services.AddScoped<OrderDraftResolver>();
         services.AddScoped<OrderDraftHandler>();
-        services.AddSingleton<AssistantStatusQuery>();
+        services.AddScoped<AssistantStatusQuery>();
+        services.AddScoped<AssistantSettingsCommands>();
         services.AddValidatorsFromAssemblyContaining<OrderDraftHandler>(includeInternalTypes: true);
 
         if (configuration.GetValue<bool>($"{AssistantOptions.SectionName}:{nameof(AssistantOptions.Enabled)}"))
@@ -81,5 +83,5 @@ public static class AssistantModule
     }
 
     public static IEndpointRouteBuilder MapAssistantEndpoints(this IEndpointRouteBuilder endpoints) =>
-        endpoints.MapOrderAssistantEndpoints();
+        endpoints.MapOrderAssistantEndpoints().MapAssistantSettingsEndpoints();
 }
