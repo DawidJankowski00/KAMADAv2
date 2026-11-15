@@ -100,7 +100,7 @@ public sealed class TranscriptionTests(KamadaApiFactory factory)
         response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
     }
 
-    private static MultipartFormDataContent Upload(byte[] audio, string? language = null)
+    internal static MultipartFormDataContent Upload(byte[] audio, string? language = null)
     {
         var file = new ByteArrayContent(audio);
         file.Headers.ContentType = new MediaTypeHeaderValue("audio/wav");
@@ -114,7 +114,7 @@ public sealed class TranscriptionTests(KamadaApiFactory factory)
     }
 
     /// <summary>16-bit PCM mono WAV with a square wave (amplitude 0 = digital silence).</summary>
-    private static byte[] Wav(double seconds, int sampleRate = 16_000, int amplitude = 8000)
+    internal static byte[] Wav(double seconds, int sampleRate = 16_000, int amplitude = 8000)
     {
         var dataLength = (int)(seconds * sampleRate) * 2;
         var wav = new byte[44 + dataLength];

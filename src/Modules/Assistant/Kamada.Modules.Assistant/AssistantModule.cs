@@ -9,6 +9,7 @@ using Kamada.Modules.Assistant.Infrastructure;
 using Kamada.Modules.Assistant.Infrastructure.Gemini;
 using Kamada.Modules.Assistant.Infrastructure.Ollama;
 using Kamada.Modules.Assistant.Infrastructure.Persistence;
+using Kamada.Modules.Assistant.Infrastructure.Providers;
 using Kamada.Modules.Assistant.Infrastructure.Settings;
 using Kamada.Modules.Assistant.Infrastructure.Whisper;
 using Kamada.Shared.Infrastructure.Persistence;
@@ -82,12 +83,12 @@ public static class AssistantModule
             });
 
         services.AddHttpClient(WhisperSpeechToText.DownloadHttpClient, http => http.Timeout = TimeSpan.FromHours(1));
-        services.AddSingleton<ISpeechToText, WhisperSpeechToText>();
+        SelectedSpeechToText.Register(services);
         services.AddHostedService<SpeechModelWarmUp>();
         services.AddScoped<TranscriptionHandler>();
 
-        services.AddScoped<IOrderExtractor, OllamaOrderExtractor>();
-        services.AddSingleton<ILanguageModelProbe, OllamaModelProbe>();
+        SelectedOrderExtractor.Register(services);
+        SelectedModelProbe.Register(services);
         services.AddScoped<IOrderDraftSource, ModuleOrderDraftSource>();
         services.AddScoped<OrderDraftResolver>();
         services.AddScoped<OrderDraftHandler>();

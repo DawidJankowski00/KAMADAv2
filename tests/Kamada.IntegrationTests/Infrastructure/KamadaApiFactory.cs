@@ -1,4 +1,5 @@
 using Kamada.Modules.Assistant.Application.Abstractions;
+using Kamada.Modules.Assistant.Domain.Settings;
 using Kamada.Shared.Infrastructure.Email;
 using Kamada.Shared.Infrastructure.Geocoding;
 using Microsoft.AspNetCore.Hosting;
@@ -57,9 +58,14 @@ public sealed class KamadaApiFactory : WebApplicationFactory<Program>, IAsyncLif
         {
             services.Replace(ServiceDescriptor.Singleton<IGeocodingService, FakeGeocodingService>());
             services.Replace(ServiceDescriptor.Singleton<IEmailSender>(Emails));
-            services.Replace(ServiceDescriptor.Singleton<IOrderExtractor>(OrderExtractor));
-            services.Replace(ServiceDescriptor.Singleton<ILanguageModelProbe, FakeLanguageModelProbe>());
-            services.Replace(ServiceDescriptor.Singleton<ISpeechToText, FakeSpeechToText>());
+            // The local providers (the defaults of the developer settings) are faked; selecting them still goes through
+            // the real provider selection.
+            services.RemoveAllKeyed<IOrderExtractor>(TextProvider.Ollama);
+            services.AddKeyedSingleton<IOrderExtractor>(TextProvider.Ollama, OrderExtractor);
+            services.RemoveAllKeyed<ILanguageModelProbe>(TextProvider.Ollama);
+            services.AddKeyedSingleton<ILanguageModelProbe, FakeLanguageModelProbe>(TextProvider.Ollama);
+            services.RemoveAllKeyed<ISpeechToText>(SpeechProvider.Whisper);
+            services.AddKeyedSingleton<ISpeechToText, FakeSpeechToText>(SpeechProvider.Whisper);
         });
     }
 

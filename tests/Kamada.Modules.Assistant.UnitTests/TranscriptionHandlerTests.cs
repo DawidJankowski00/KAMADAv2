@@ -200,7 +200,7 @@ public sealed class TranscriptionHandlerTests
 
         public AssistantLanguage? LastLanguage { get; private set; }
 
-        public Task PrepareAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+        public ValueTask<bool> IsReadyAsync(CancellationToken cancellationToken) => ValueTask.FromResult(IsReady);
 
         public Task<Result<Transcription>> TranscribeAsync(ReadOnlyMemory<byte> wav, AssistantLanguage language, CancellationToken cancellationToken)
         {

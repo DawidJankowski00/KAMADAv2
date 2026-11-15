@@ -33,7 +33,7 @@ public sealed class GeminiSpeechToTextTests
         var audio = parts[0].GetProperty("inlineData");
         audio.GetProperty("mimeType").GetString().ShouldBe("audio/wav");
         Convert.FromBase64String(audio.GetProperty("data").GetString()!).ShouldBe(Wav);
-        parts[1].GetProperty("text").GetString().ShouldContain("English");
+        parts[1].GetProperty("text").GetString()!.ShouldContain("English");
         handler.RequestBody.RootElement.GetProperty("generationConfig").GetProperty("responseJsonSchema")
             .GetProperty("required").GetArrayLength().ShouldBe(2);
     }
@@ -58,13 +58,14 @@ public sealed class GeminiSpeechToTextTests
     }
 
     [Fact]
-    public void IsReady_DependsOnTheApiKey()
+    public async Task IsReady_DependsOnTheApiKey()
     {
         var handler = StubGeminiHandler.Answering("{}");
+        var ct = TestContext.Current.CancellationToken;
 
-        Speech(handler).IsReady.ShouldBeTrue();
-        new GeminiSpeechToText(StubGeminiHandler.Client(handler, apiKey: null), Settings(), NullLogger<GeminiSpeechToText>.Instance)
-            .IsReady.ShouldBeFalse();
+        (await Speech(handler).IsReadyAsync(ct)).ShouldBeTrue();
+        (await new GeminiSpeechToText(StubGeminiHandler.Client(handler, apiKey: null), Settings(), NullLogger<GeminiSpeechToText>.Instance)
+            .IsReadyAsync(ct)).ShouldBeFalse();
     }
 
     private static StaticAssistantSettings Settings() => new(geminiModel: "gemini-test");

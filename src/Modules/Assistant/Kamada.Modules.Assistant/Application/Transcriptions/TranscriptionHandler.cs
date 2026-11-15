@@ -1,6 +1,5 @@
 using Kamada.Modules.Assistant.Application.Abstractions;
 using Kamada.Modules.Assistant.Domain;
-using Kamada.Modules.Assistant.Domain.Settings;
 using Kamada.Shared.Matching.Drafts;
 using Kamada.Shared.Contracts.Assistant;
 using Kamada.Shared.Kernel.Results;
@@ -26,7 +25,7 @@ internal sealed partial class TranscriptionHandler(
     {
         var settings = options.Value;
         var selected = await assistantSettings.GetAsync(cancellationToken);
-        if (selected.SpeechProvider != SpeechProvider.Whisper || !settings.Whisper.Enabled)
+        if (!AssistantProviders.IsSpeechAllowed(settings, selected))
         {
             return AssistantErrors.SpeechToTextDisabled;
         }
@@ -63,7 +62,7 @@ internal sealed partial class TranscriptionHandler(
             return AssistantErrors.AudioTooLong(settings.MaxAudioDuration);
         }
 
-        if (!speechToText.IsReady)
+        if (!await speechToText.IsReadyAsync(cancellationToken))
         {
             return AssistantErrors.SpeechToTextNotReady;
         }

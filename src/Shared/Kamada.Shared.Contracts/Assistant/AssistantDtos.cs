@@ -1,9 +1,16 @@
 namespace Kamada.Shared.Contracts.Assistant;
 
 /// <param name="Enabled">Whether the admin panel shows the assistant at all.</param>
-/// <param name="SpeechToText">Whether dictation is available (speech model loaded).</param>
+/// <param name="SpeechToText">Whether dictation is available (speech model loaded or cloud provider configured).</param>
 /// <param name="Model">Language model used for extraction (e.g. <c>gemma3:4b</c>).</param>
-public sealed record AssistantStatusDto(bool Enabled, bool SpeechToText, string? Model);
+/// <param name="Provider">Who reads notes; <see cref="AssistantTextProvider.Gemini"/> means notes go to Google.</param>
+/// <param name="SpeechProvider">Who recognizes dictation; <see cref="AssistantSpeechProvider.Gemini"/> means recordings go to Google.</param>
+public sealed record AssistantStatusDto(
+    bool Enabled,
+    bool SpeechToText,
+    string? Model,
+    AssistantTextProvider? Provider = null,
+    AssistantSpeechProvider? SpeechProvider = null);
 
 /// <param name="Language"><c>pl</c>, <c>en</c> or <c>auto</c> (default).</param>
 public sealed record OrderDraftRequest(string Text, string? Language = null);

@@ -1,5 +1,5 @@
 using Kamada.Modules.Assistant.Application.Abstractions;
-using Kamada.Modules.Assistant.Domain.Settings;
+using Kamada.Modules.Assistant.Application.Settings;
 using Kamada.Shared.Contracts.Assistant;
 using Microsoft.Extensions.Options;
 
@@ -12,10 +12,18 @@ internal sealed class AssistantStatusQuery(IOptions<AssistantOptions> options, I
     {
         var config = options.Value;
         var settings = await assistantSettings.GetAsync(cancellationToken);
-        var enabled = config.Enabled && settings.Enabled;
+        if (!AssistantProviders.IsEnabled(config, settings))
+        {
+            return new AssistantStatusDto(false, false, null);
+        }
+
+        // Asking a selected Whisper starts its download; the panel polls the status until dictation is ready.
+        var speech = AssistantProviders.IsSpeechAllowed(config, settings) && await speechToText.IsReadyAsync(cancellationToken);
         return new AssistantStatusDto(
-            enabled,
-            SpeechToText: enabled && settings.SpeechProvider == SpeechProvider.Whisper && config.Whisper.Enabled && speechToText.IsReady,
-            enabled ? settings.TextModel : null);
+            true,
+            speech,
+            settings.TextModel,
+            settings.TextProvider.ToContract(),
+            speech ? settings.SpeechProvider.ToContract() : null);
     }
 }

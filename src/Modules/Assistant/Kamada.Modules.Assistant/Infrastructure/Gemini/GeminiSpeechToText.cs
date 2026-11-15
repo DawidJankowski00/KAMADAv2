@@ -39,9 +39,7 @@ internal sealed partial class GeminiSpeechToText(
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
     /// <summary>No local model to prepare: ready whenever an API key is configured.</summary>
-    public bool IsReady => gemini.IsConfigured;
-
-    public Task PrepareAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+    public ValueTask<bool> IsReadyAsync(CancellationToken cancellationToken) => ValueTask.FromResult(gemini.IsConfigured);
 
     public async Task<Result<Transcription>> TranscribeAsync(ReadOnlyMemory<byte> wav, AssistantLanguage language, CancellationToken cancellationToken)
     {

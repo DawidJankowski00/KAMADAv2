@@ -14,11 +14,11 @@ internal sealed class AssistantHealthCheck(ILanguageModelProbe probe) : IHealthC
         var result = await probe.ProbeAsync(cancellationToken);
         if (!result.Reachable)
         {
-            return new HealthCheckResult(context.Registration.FailureStatus, "Language model server is not reachable.");
+            return new HealthCheckResult(context.Registration.FailureStatus, $"{result.Provider} is not reachable or refused the request.");
         }
 
         return result.ModelPresent
-            ? HealthCheckResult.Healthy(result.Model)
-            : new HealthCheckResult(context.Registration.FailureStatus, $"Model '{result.Model}' is not downloaded (ollama pull {result.Model}).");
+            ? HealthCheckResult.Healthy($"{result.Provider} {result.Model}")
+            : new HealthCheckResult(context.Registration.FailureStatus, $"{result.Provider} has no model '{result.Model}'.");
     }
 }

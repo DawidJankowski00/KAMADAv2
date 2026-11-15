@@ -37,7 +37,7 @@ public sealed class GeminiOrderExtractorTests
         var contents = body.GetProperty("contents");
         contents.GetArrayLength().ShouldBe(ExtractionPrompt.Examples.Count * 2 + 1);
         contents[1].GetProperty("role").GetString().ShouldBe("model");
-        contents[contents.GetArrayLength() - 1].GetProperty("parts")[0].GetProperty("text").GetString().ShouldContain("dwie kawy");
+        contents[contents.GetArrayLength() - 1].GetProperty("parts")[0].GetProperty("text").GetString()!.ShouldContain("dwie kawy");
         var config = body.GetProperty("generationConfig");
         config.GetProperty("temperature").GetDouble().ShouldBe(0);
         config.GetProperty("responseMimeType").GetString().ShouldBe("application/json");
