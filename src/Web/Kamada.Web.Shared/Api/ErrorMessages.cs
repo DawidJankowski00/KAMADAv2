@@ -75,6 +75,7 @@ public static class ErrorMessages
         ["Assistant.NothingRecognized"] = "Nie rozpoznano klienta, adresu ani produktów. Uzupełnij tekst.",
         ["Assistant.SpeechToTextDisabled"] = "Dyktowanie jest wyłączone. Wpisz zamówienie ręcznie.",
         ["Assistant.SpeechToTextNotReady"] = "Model rozpoznawania mowy jest jeszcze pobierany. Spróbuj za chwilę albo wpisz tekst.",
+        ["Assistant.SpeechToTextUnavailable"] = "Usługa rozpoznawania mowy jest niedostępna. Spróbuj za chwilę albo wpisz tekst.",
         ["Assistant.AudioMissing"] = "Nie przesłano nagrania.",
         ["Assistant.InvalidAudio"] = "Nieobsługiwany format nagrania.",
         ["Assistant.AudioTooLarge"] = "Nagranie jest za duże.",

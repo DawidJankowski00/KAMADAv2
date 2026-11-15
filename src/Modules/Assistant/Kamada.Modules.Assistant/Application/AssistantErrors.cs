@@ -25,6 +25,9 @@ internal static class AssistantErrors
     public static readonly Error SpeechToTextNotReady = Error.Unavailable(
         "Assistant.SpeechToTextNotReady", "The speech model is still being downloaded or loaded. Try again in a moment.");
 
+    public static readonly Error SpeechToTextUnavailable = Error.Unavailable(
+        "Assistant.SpeechToTextUnavailable", "The speech recognition service is not reachable. Try again in a moment or type the note.");
+
     public static readonly Error AudioMissing = Error.Validation(
         "Assistant.AudioMissing", "Send the recording as the multipart field 'audio'.");
 
