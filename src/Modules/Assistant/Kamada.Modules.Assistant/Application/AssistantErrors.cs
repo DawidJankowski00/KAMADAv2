@@ -8,7 +8,10 @@ internal static class AssistantErrors
         "Assistant.Disabled", "The order assistant is switched off (Assistant:Enabled or the developer settings).");
 
     public static readonly Error ModelUnavailable = Error.Unavailable(
-        "Assistant.ModelUnavailable", "The local language model is not reachable or not loaded. Try again in a moment.");
+        "Assistant.ModelUnavailable", "The language model is not reachable or not loaded. Try again in a moment.");
+
+    public static readonly Error GeminiNotConfigured = Error.Validation(
+        "Assistant.GeminiNotConfigured", "Gemini needs an API key in the server configuration (Assistant:Gemini:ApiKey).");
 
     public static readonly Error ExtractionFailed = Error.Validation(
         "Assistant.ExtractionFailed", "The language model returned an answer that is not a valid order.");

@@ -46,6 +46,12 @@ internal sealed class AssistantOptions : IValidatableObject
             yield return new ValidationResult("Assistant:Gemini:Model is required.", [nameof(Gemini)]);
         }
 
+        if (Gemini.AttemptTimeout <= TimeSpan.Zero || Gemini.TotalTimeout < Gemini.AttemptTimeout)
+        {
+            yield return new ValidationResult(
+                "Assistant:Gemini needs a positive AttemptTimeout and a TotalTimeout at least as long.", [nameof(Gemini)]);
+        }
+
         if (Ollama.RequestTimeout <= TimeSpan.Zero)
         {
             yield return new ValidationResult("Assistant:Ollama:RequestTimeout must be positive.", [nameof(Ollama)]);
@@ -119,6 +125,22 @@ internal sealed class WhisperOptions
 
 internal sealed class GeminiOptions
 {
+    /// <summary>
+    /// Google AI Studio API key (paid tier: prompts and audio are not used to train Google's models). Only from user
+    /// secrets or the environment (<c>Assistant__Gemini__ApiKey</c>) – never stored in the database, shown in the
+    /// panel or logged. Without it Gemini cannot be selected.
+    /// </summary>
+    public string? ApiKey { get; init; }
+
+    public Uri BaseUrl { get; init; } = new("https://generativelanguage.googleapis.com/");
+
     /// <summary>Starting model of the developer settings; a stable, inexpensive model with audio input.</summary>
     public string Model { get; init; } = "gemini-3.5-flash-lite";
+
+    /// <summary>One attempt; transient failures (429, 5xx) are retried twice within <see cref="TotalTimeout"/>.</summary>
+    public TimeSpan AttemptTimeout { get; init; } = TimeSpan.FromSeconds(30);
+
+    public TimeSpan TotalTimeout { get; init; } = TimeSpan.FromSeconds(75);
+
+    public bool IsConfigured => !string.IsNullOrWhiteSpace(ApiKey);
 }

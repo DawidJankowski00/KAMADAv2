@@ -19,6 +19,12 @@ internal sealed class AssistantSettingsCommands(
 
     public async Task<Result<AssistantSettingsDto>> UpdateAsync(UpdateAssistantSettingsRequest request, CancellationToken cancellationToken)
     {
+        if (!options.Value.Gemini.IsConfigured
+            && (request.TextProvider == AssistantTextProvider.Gemini || request.SpeechProvider == AssistantSpeechProvider.Gemini))
+        {
+            return AssistantErrors.GeminiNotConfigured;
+        }
+
         // Creates the row from the configuration if nobody has read the settings yet.
         await settings.GetAsync(cancellationToken);
         var stored = await db.Settings.SingleAsync(cancellationToken);

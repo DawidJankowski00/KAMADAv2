@@ -29,7 +29,8 @@ public sealed record AssistantSettingsDto(
 
 /// <param name="AssistantEnabled">Hard switch <c>Assistant:Enabled</c>.</param>
 /// <param name="WhisperEnabled">Hard switch <c>Assistant:Whisper:Enabled</c> (local speech model allowed on this server).</param>
-public sealed record AssistantAvailabilityDto(bool AssistantEnabled, bool WhisperEnabled);
+/// <param name="GeminiConfigured">An API key is configured (<c>Assistant:Gemini:ApiKey</c>); the key itself is never sent.</param>
+public sealed record AssistantAvailabilityDto(bool AssistantEnabled, bool WhisperEnabled, bool GeminiConfigured);
 
 public sealed record UpdateAssistantSettingsRequest(
     bool Enabled,

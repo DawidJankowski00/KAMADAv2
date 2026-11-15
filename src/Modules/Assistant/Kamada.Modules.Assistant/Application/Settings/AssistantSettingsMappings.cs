@@ -13,7 +13,7 @@ internal static class AssistantSettingsMappings
         s.GeminiModel,
         s.SpeechProvider.ToContract(),
         s.UpdatedAt,
-        new AssistantAvailabilityDto(options.Enabled, options.Whisper.Enabled));
+        new AssistantAvailabilityDto(options.Enabled, options.Whisper.Enabled, options.Gemini.IsConfigured));
 
     public static AssistantTextProvider ToContract(this TextProvider provider) => provider switch
     {

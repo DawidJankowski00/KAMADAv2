@@ -6,6 +6,7 @@ using Kamada.Modules.Assistant.Application.Drafts;
 using Kamada.Modules.Assistant.Application.Settings;
 using Kamada.Modules.Assistant.Application.Transcriptions;
 using Kamada.Modules.Assistant.Infrastructure;
+using Kamada.Modules.Assistant.Infrastructure.Gemini;
 using Kamada.Modules.Assistant.Infrastructure.Ollama;
 using Kamada.Modules.Assistant.Infrastructure.Persistence;
 using Kamada.Modules.Assistant.Infrastructure.Settings;
@@ -18,8 +19,10 @@ using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Extensions.Options;
 using OllamaSharp;
+using Polly;
 
 namespace Kamada.Modules.Assistant;
 
@@ -58,6 +61,25 @@ public static class AssistantModule
             sp.GetRequiredService<IOptions<AssistantOptions>>().Value.Ollama.Model));
         services.AddSingleton<IOllamaApiClient>(sp => sp.GetRequiredService<OllamaApiClient>());
         services.AddKeyedSingleton<IChatClient>(AssistantServiceKeys.ChatClient, (sp, _) => sp.GetRequiredService<OllamaApiClient>());
+
+        services.AddHttpClient<GeminiClient>(GeminiClient.HttpClientName, (sp, http) =>
+            {
+                http.BaseAddress = sp.GetRequiredService<IOptions<AssistantOptions>>().Value.Gemini.BaseUrl;
+                http.Timeout = Timeout.InfiniteTimeSpan; // the resilience pipeline below owns the timeouts
+            })
+            .AddResilienceHandler("gemini", (pipeline, context) =>
+            {
+                var gemini = context.ServiceProvider.GetRequiredService<IOptions<AssistantOptions>>().Value.Gemini;
+                pipeline
+                    .AddTimeout(gemini.TotalTimeout)
+                    .AddRetry(new HttpRetryStrategyOptions
+                    {
+                        MaxRetryAttempts = 2,
+                        Delay = TimeSpan.FromSeconds(1),
+                        BackoffType = DelayBackoffType.Exponential,
+                    })
+                    .AddTimeout(gemini.AttemptTimeout);
+            });
 
         services.AddHttpClient(WhisperSpeechToText.DownloadHttpClient, http => http.Timeout = TimeSpan.FromHours(1));
         services.AddSingleton<ISpeechToText, WhisperSpeechToText>();

@@ -84,6 +84,23 @@ public sealed class AssistantSettingsEndpointTests(KamadaApiFactory factory) : I
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
 
+    [Theory]
+    [InlineData(nameof(AssistantTextProvider.Gemini), nameof(AssistantSpeechProvider.Whisper))]
+    [InlineData(nameof(AssistantTextProvider.Ollama), nameof(AssistantSpeechProvider.Gemini))]
+    public async Task Put_GeminiWithoutApiKey_Returns400(string text, string speech)
+    {
+        var developer = await SignInAsync(WorkerRole.Developer);
+        var request = new UpdateAssistantSettingsRequest(
+            true, Enum.Parse<AssistantTextProvider>(text), "gemma3:4b", "gemini-3.5-flash-lite", Enum.Parse<AssistantSpeechProvider>(speech));
+
+        var settings = await (await developer.GetAsync(Url, TestContext.Current.CancellationToken)).ReadAsAsync<AssistantSettingsDto>();
+        var response = await developer.PutJsonAsync(Url, request);
+
+        settings.Availability.GeminiConfigured.ShouldBeFalse();
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await response.ReadProblemCodeAsync()).ShouldBe("Assistant.GeminiNotConfigured");
+    }
+
     public ValueTask DisposeAsync() => _host.DisposeAsync();
 
     private static UpdateAssistantSettingsRequest Request(
