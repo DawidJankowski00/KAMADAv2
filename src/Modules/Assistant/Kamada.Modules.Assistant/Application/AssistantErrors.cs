@@ -5,7 +5,7 @@ namespace Kamada.Modules.Assistant.Application;
 internal static class AssistantErrors
 {
     public static readonly Error Disabled = Error.Unavailable(
-        "Assistant.Disabled", "The order assistant is switched off (Assistant:Enabled).");
+        "Assistant.Disabled", "The order assistant is switched off (Assistant:Enabled or the developer settings).");
 
     public static readonly Error ModelUnavailable = Error.Unavailable(
         "Assistant.ModelUnavailable", "The local language model is not reachable or not loaded. Try again in a moment.");
@@ -17,7 +17,7 @@ internal static class AssistantErrors
         "Assistant.NothingRecognized", "No client, address or product was recognized in the text.");
 
     public static readonly Error SpeechToTextDisabled = Error.Unavailable(
-        "Assistant.SpeechToTextDisabled", "Dictation is switched off (Assistant:Whisper:Enabled).");
+        "Assistant.SpeechToTextDisabled", "Dictation is switched off (developer settings or Assistant:Whisper:Enabled).");
 
     public static readonly Error SpeechToTextNotReady = Error.Unavailable(
         "Assistant.SpeechToTextNotReady", "The speech model is still being downloaded or loaded. Try again in a moment.");

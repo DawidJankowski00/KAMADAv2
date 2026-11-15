@@ -7,6 +7,7 @@ using Kamada.Modules.Assistant.Application.Transcriptions;
 using Kamada.Modules.Assistant.Infrastructure;
 using Kamada.Modules.Assistant.Infrastructure.Ollama;
 using Kamada.Modules.Assistant.Infrastructure.Persistence;
+using Kamada.Modules.Assistant.Infrastructure.Settings;
 using Kamada.Modules.Assistant.Infrastructure.Whisper;
 using Kamada.Shared.Infrastructure.Persistence;
 using Kamada.Shared.Matching.Drafts;
@@ -43,6 +44,7 @@ public static class AssistantModule
 
         services.AddModuleDbContext<AssistantDbContext>(AssistantDbContext.Schema);
         services.AddScoped<IAssistantDbContext>(sp => sp.GetRequiredService<AssistantDbContext>());
+        services.AddSingleton<IAssistantSettings, CachedAssistantSettings>();
 
         services.AddHttpClient(OllamaHttpClient, (sp, http) =>
         {

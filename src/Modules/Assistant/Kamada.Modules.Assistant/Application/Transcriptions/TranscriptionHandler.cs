@@ -1,5 +1,6 @@
 using Kamada.Modules.Assistant.Application.Abstractions;
 using Kamada.Modules.Assistant.Domain;
+using Kamada.Modules.Assistant.Domain.Settings;
 using Kamada.Shared.Matching.Drafts;
 using Kamada.Shared.Contracts.Assistant;
 using Kamada.Shared.Kernel.Results;
@@ -16,6 +17,7 @@ namespace Kamada.Modules.Assistant.Application.Transcriptions;
 internal sealed partial class TranscriptionHandler(
     ISpeechToText speechToText,
     IOptions<AssistantOptions> options,
+    IAssistantSettings assistantSettings,
     ILogger<TranscriptionHandler> logger)
 {
     /// <param name="audio">Uploaded file content, <c>null</c> when the request has no <c>audio</c> field.</param>
@@ -23,7 +25,8 @@ internal sealed partial class TranscriptionHandler(
     public async Task<Result<TranscriptionDto>> TranscribeAsync(Stream? audio, long length, string? language, CancellationToken cancellationToken)
     {
         var settings = options.Value;
-        if (!settings.Whisper.Enabled)
+        var selected = await assistantSettings.GetAsync(cancellationToken);
+        if (selected.SpeechProvider != SpeechProvider.Whisper || !settings.Whisper.Enabled)
         {
             return AssistantErrors.SpeechToTextDisabled;
         }

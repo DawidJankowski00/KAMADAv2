@@ -1,4 +1,5 @@
 using Kamada.Modules.Assistant.Application;
+using Kamada.Modules.Assistant.Application.Abstractions;
 using Kamada.Modules.Assistant.Application.Drafts;
 using Kamada.Modules.Assistant.Application.Transcriptions;
 using Kamada.Shared.Contracts.Assistant;
@@ -24,7 +25,7 @@ internal static class AssistantEndpoints
             .WithTags("Assistant")
             .RequireAuthorization(AuthorizationPolicies.SalesAccess);
 
-        group.MapGet("/status", (AssistantStatusQuery query) => TypedResults.Ok(query.Get()))
+        group.MapGet("/status", async (AssistantStatusQuery query, CancellationToken ct) => TypedResults.Ok(await query.GetAsync(ct)))
             .WithSummary("Whether the order assistant (and dictation) is available and which model it uses")
             .Produces<AssistantStatusDto>();
 
@@ -32,9 +33,13 @@ internal static class AssistantEndpoints
         var inference = group.MapGroup("/")
             .RequireRateLimiting(RateLimitPolicies.Assistant)
             .AddEndpointFilter(async (context, next) =>
-                context.HttpContext.RequestServices.GetRequiredService<IOptions<AssistantOptions>>().Value.Enabled
+            {
+                var services = context.HttpContext.RequestServices;
+                var settings = await services.GetRequiredService<IAssistantSettings>().GetAsync(context.HttpContext.RequestAborted);
+                return services.GetRequiredService<IOptions<AssistantOptions>>().Value.Enabled && settings.Enabled
                     ? await next(context)
-                    : AssistantErrors.Disabled.ToProblem())
+                    : AssistantErrors.Disabled.ToProblem();
+            })
             .ProducesProblem(StatusCodes.Status429TooManyRequests)
             .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
 

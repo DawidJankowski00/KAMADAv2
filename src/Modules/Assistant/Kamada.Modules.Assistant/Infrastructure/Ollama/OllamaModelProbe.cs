@@ -1,17 +1,15 @@
-using Kamada.Modules.Assistant.Application;
 using Kamada.Modules.Assistant.Application.Abstractions;
-using Microsoft.Extensions.Options;
 using OllamaSharp;
 using OllamaSharp.Models.Exceptions;
 
 namespace Kamada.Modules.Assistant.Infrastructure.Ollama;
 
 /// <summary>Lists the models downloaded on the Ollama server (<c>GET /api/tags</c>) – no inference.</summary>
-internal sealed class OllamaModelProbe(IOllamaApiClient ollama, IOptions<AssistantOptions> options) : ILanguageModelProbe
+internal sealed class OllamaModelProbe(IOllamaApiClient ollama, IAssistantSettings settings) : ILanguageModelProbe
 {
     public async Task<LanguageModelProbeResult> ProbeAsync(CancellationToken cancellationToken)
     {
-        var model = options.Value.Ollama.Model;
+        var model = (await settings.GetAsync(cancellationToken)).OllamaModel;
         try
         {
             var models = await ollama.ListLocalModelsAsync(cancellationToken);

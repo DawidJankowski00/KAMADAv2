@@ -75,6 +75,14 @@ public sealed class KamadaApiFactory : WebApplicationFactory<Program>, IAsyncLif
             .UseSetting("ConnectionStrings:Kamada", new NpgsqlConnectionStringBuilder(_postgres.GetConnectionString()) { Database = database }.ConnectionString)
             .UseSetting("Database:SeedDemoData", "true"));
 
+    /// <summary>
+    /// A second host on its own (new, empty) database in the same container, for tests that change global state such as
+    /// the assistant's developer settings.
+    /// </summary>
+    public WebApplicationFactory<Program> WithOwnDatabase(string database) =>
+        WithWebHostBuilder(builder => builder
+            .UseSetting("ConnectionStrings:Kamada", AdminConnectionString(database)));
+
     /// <summary>Superuser connection string of the test container, optionally for another database in it.</summary>
     public string AdminConnectionString(string? database = null) =>
         database is null
