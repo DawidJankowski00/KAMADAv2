@@ -619,6 +619,16 @@ docker compose --profile ai exec ollama ollama pull qwen3:4b   # any model to co
 dotnet run -c Release --project benchmarks/Kamada.Assistant.Evals -- --model qwen3:4b --out results.md
 ```
 
+The same suite runs against Gemini with `--provider gemini` (default model `gemini-3.5-flash-lite`, any other with
+`--model`). The key is read only from the environment, never from the command line; the notes of the demo data go to
+Google. The evals select the provider and model in the developer settings of their own database on every run.
+
+```bash
+GEMINI_API_KEY=... dotnet run -c Release --project benchmarks/Kamada.Assistant.Evals -- --provider gemini --out results.md
+```
+
+Gemini has not been measured yet: its row goes into the table above after the first run with a paid key.
+
 ## Design decisions
 
 | ADR | Decision |
