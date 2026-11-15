@@ -28,6 +28,13 @@ internal static class AssistantSettingsEndpoints
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status409Conflict);
 
+        // Real (possibly paid) calls of the providers: rate-limited like the assistant itself.
+        group.MapPost("/test", async (ProviderConnectionTest test, CancellationToken ct) => TypedResults.Ok(await test.RunAsync(ct)))
+            .RequireRateLimiting(RateLimitPolicies.Assistant)
+            .WithSummary("Try the saved providers with a sample note (and dictation): success and response time of each")
+            .Produces<AssistantProviderTestDto>()
+            .ProducesProblem(StatusCodes.Status429TooManyRequests);
+
         return endpoints;
     }
 }

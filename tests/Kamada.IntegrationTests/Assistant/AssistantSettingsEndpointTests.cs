@@ -101,6 +101,32 @@ public sealed class AssistantSettingsEndpointTests(KamadaApiFactory factory) : I
         (await response.ReadProblemCodeAsync()).ShouldBe("Assistant.GeminiNotConfigured");
     }
 
+    [Fact]
+    public async Task TestConnection_LocalProviders_ReportsEachWithItsModel()
+    {
+        var developer = await SignInAsync(WorkerRole.Developer);
+
+        var response = await developer.PostAsync($"{Url}/test", null, TestContext.Current.CancellationToken);
+        var result = await response.ReadAsAsync<AssistantProviderTestDto>();
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        result.Text.Provider.ShouldBe("Ollama");
+        result.Text.Model.ShouldBe("gemma3:4b");
+        // The fake extraction knows only the notes tests register: the sample note reaches it and is "not understood".
+        result.Text.ErrorCode.ShouldBe("Assistant.ExtractionFailed");
+        result.Speech.ShouldBe(result.Speech! with { Provider = "Whisper", Success = true, ErrorCode = null });
+    }
+
+    [Fact]
+    public async Task TestConnection_WithoutDeveloperRole_Returns403()
+    {
+        var admin = await SignInAsync(WorkerRole.Admin);
+
+        var response = await admin.PostAsync($"{Url}/test", null, TestContext.Current.CancellationToken);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+    }
+
     public ValueTask DisposeAsync() => _host.DisposeAsync();
 
     private static UpdateAssistantSettingsRequest Request(

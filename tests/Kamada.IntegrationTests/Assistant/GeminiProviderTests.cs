@@ -73,6 +73,21 @@ public sealed class GeminiProviderTests : IAsyncDisposable
         _gemini.Paths.ShouldContain($"/v1beta/models/{GeminiModel}");
     }
 
+    [Fact]
+    public async Task TestConnection_GeminiForNotesAndDictation_CallsBothAndReportsSuccess()
+    {
+        var developer = await SignInAsync();
+        await developer.PutJsonAsync("/api/assistant/settings", new UpdateAssistantSettingsRequest(
+            false, AssistantTextProvider.Gemini, "gemma3:4b", GeminiModel, AssistantSpeechProvider.Gemini));
+
+        var response = await developer.PostAsync("/api/assistant/settings/test", null, TestContext.Current.CancellationToken);
+        var result = await response.ReadAsAsync<AssistantProviderTestDto>();
+
+        result.Text.ShouldBe(result.Text with { Provider = "Gemini", Model = GeminiModel, Success = true, ErrorCode = null });
+        result.Speech.ShouldNotBeNull().Success.ShouldBeTrue();
+        _gemini.Paths.Count(path => path.EndsWith(":generateContent", StringComparison.Ordinal)).ShouldBe(2);
+    }
+
     public async ValueTask DisposeAsync()
     {
         await _host.DisposeAsync();

@@ -94,6 +94,7 @@ public static class AssistantModule
         services.AddScoped<OrderDraftHandler>();
         services.AddScoped<AssistantStatusQuery>();
         services.AddScoped<AssistantSettingsCommands>();
+        services.AddScoped<ProviderConnectionTest>();
         services.AddValidatorsFromAssemblyContaining<OrderDraftHandler>(includeInternalTypes: true);
 
         if (configuration.GetValue<bool>($"{AssistantOptions.SectionName}:{nameof(AssistantOptions.Enabled)}"))
