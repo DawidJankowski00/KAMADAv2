@@ -17,3 +17,4 @@ Short records of decisions that shape the codebase ([format](https://adr.github.
 | [0011](0011-two-factor-authentication.md) | Two-factor authentication with TOTP, recovery codes and a stateless sign-in challenge | Accepted |
 | [0012](0012-least-privilege-database-role.md) | The API connects with a data-only database role; migrations run as the schema owner | Accepted |
 | [0013](0013-security-baseline-asvs-level-2.md) | Security baseline: OWASP ASVS 4.0.3 level 2, reviewed in docs/security.md | Accepted |
+| [0014](0014-gemini-provider-and-developer-settings.md) | Gemini as an optional assistant provider, chosen in developer settings stored in the database | Accepted |

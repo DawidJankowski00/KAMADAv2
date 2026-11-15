@@ -1,6 +1,6 @@
 # 0008. Local AI order assistant that only suggests
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by [0014](0014-gemini-provider-and-developer-settings.md) (Gemini as an optional provider; local stays the default)
 - **Date:** 2026-10-10
 
 ## Context
