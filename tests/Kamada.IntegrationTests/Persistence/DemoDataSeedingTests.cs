@@ -63,6 +63,9 @@ public sealed class DemoDataSeedingTests(KamadaApiFactory factory)
             var manager = await host.CreateClient().LoginAsync("kierownik", WorkforceSeeder.ManagerPassword);
             manager.User.Roles.ShouldBe([Roles.Admin, Roles.Courier, Roles.Seller], ignoreOrder: true);
 
+            var developer = await host.CreateClient().LoginAsync("developer", WorkforceSeeder.DeveloperPassword);
+            developer.User.Roles.ShouldBe([Roles.Admin, Roles.Developer], ignoreOrder: true);
+
             var seller = await SignInAsync(host, "sprzedawca1", WorkforceSeeder.SellerPassword);
             (await CountAsync<OrderSummaryDto>(seller, "/api/orders/mine")).ShouldBe(12);
 

@@ -82,6 +82,7 @@ public static class Labels
         WorkerRole.Admin => "Administrator",
         WorkerRole.Courier => "Kurier",
         WorkerRole.Seller => "Sprzedawca",
+        WorkerRole.Developer => "Deweloper",
         _ => role.ToString(),
     };
 
@@ -89,6 +90,7 @@ public static class Labels
     {
         WorkerRole.Admin => Color.Secondary,
         WorkerRole.Seller => Color.Tertiary,
+        WorkerRole.Developer => Color.Dark,
         _ => Color.Primary,
     };
 

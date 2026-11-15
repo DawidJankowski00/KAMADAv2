@@ -112,7 +112,8 @@ Demo accounts (seeded in the Development environment):
 | Administrator | `admin` | `Admin123!` |
 | Courier | `kurier1`, `kurier2`, `kurier3` | `Kurier123!` |
 | Seller | `sprzedawca1` | `Sprzedawca123!` |
-| All roles: administrator, courier and seller (switches roles in the phone app) | `kierownik` | `Kierownik123!` |
+| Administrator, courier and seller (switches roles in the phone app) | `kierownik` | `Kierownik123!` |
+| Administrator and developer (hidden developer menu for the assistant) | `developer` | `Deweloper123!` |
 
 Each demo account has the e-mail address `<username>@kamada.test` (`.test` is a reserved domain, nothing is delivered).
 "Nie pamiętam hasła" sends the reset link there; in Development every e-mail lands in Mailpit (http://localhost:8025).
