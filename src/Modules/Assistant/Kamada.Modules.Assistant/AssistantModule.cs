@@ -6,7 +6,9 @@ using Kamada.Modules.Assistant.Application.Drafts;
 using Kamada.Modules.Assistant.Application.Transcriptions;
 using Kamada.Modules.Assistant.Infrastructure;
 using Kamada.Modules.Assistant.Infrastructure.Ollama;
+using Kamada.Modules.Assistant.Infrastructure.Persistence;
 using Kamada.Modules.Assistant.Infrastructure.Whisper;
+using Kamada.Shared.Infrastructure.Persistence;
 using Kamada.Shared.Matching.Drafts;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
@@ -20,9 +22,9 @@ using OllamaSharp;
 namespace Kamada.Modules.Assistant;
 
 /// <summary>
-/// Entry point of the Assistant module (order drafts from dictated or typed notes, local AI only):
-/// the only public type of the implementation assembly. Stateless – no database schema; it reads clients and
-/// products through <c>ICustomerDirectory</c> and <c>ICatalogLookup</c> and never writes.
+/// Entry point of the Assistant module (order drafts from dictated or typed notes): the only public type of the
+/// implementation assembly. Its schema <c>assistant</c> holds only the developer settings; it reads clients and
+/// products through <c>ICustomerDirectory</c> and <c>ICatalogLookup</c> and never writes them.
 /// </summary>
 public static class AssistantModule
 {
@@ -38,6 +40,9 @@ public static class AssistantModule
             .Bind(configuration.GetSection(AssistantOptions.SectionName))
             .ValidateDataAnnotations()
             .ValidateOnStart();
+
+        services.AddModuleDbContext<AssistantDbContext>(AssistantDbContext.Schema);
+        services.AddScoped<IAssistantDbContext>(sp => sp.GetRequiredService<AssistantDbContext>());
 
         services.AddHttpClient(OllamaHttpClient, (sp, http) =>
         {
