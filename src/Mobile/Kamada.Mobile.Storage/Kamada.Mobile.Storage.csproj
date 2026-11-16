@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Device storage of the native phone app, as plain .NET so it is unit tested without Android. -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Web\Kamada.Web.Shared\Kamada.Web.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

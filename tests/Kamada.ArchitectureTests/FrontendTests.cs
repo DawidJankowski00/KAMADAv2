@@ -43,6 +43,14 @@ public sealed class FrontendTests
     }
 
     [Fact]
+    public void PhoneStorage_ReferencesOnlySharedUi()
+    {
+        var path = Path.Combine(RepositoryPaths.Root, "src", "Mobile", "Kamada.Mobile.Storage", "Kamada.Mobile.Storage.csproj");
+
+        ProjectReferences.Of(path).ShouldBe(["Kamada.Web.Shared"]);
+    }
+
+    [Fact]
     public void MatchingLibrary_IsPure_ReferencesOnlyHttpContractsAndNoFramework()
     {
         var path = Path.Combine(RepositoryPaths.Root, "src", "Shared", "Kamada.Shared.Matching", "Kamada.Shared.Matching.csproj");

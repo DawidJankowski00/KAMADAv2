@@ -44,6 +44,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Kamada.Mobile.Storage\Kamada.Mobile.Storage.csproj" />
     <ProjectReference Include="..\..\Web\Kamada.Web.Mobile\Kamada.Web.Mobile.csproj" />
     <ProjectReference Include="..\..\Web\Kamada.Web.Shared\Kamada.Web.Shared.csproj" />
   </ItemGroup>

@@ -41,6 +41,10 @@
     <Project Path="src/Shared/Kamada.Shared.Kernel/Kamada.Shared.Kernel.csproj" />
     <Project Path="src/Shared/Kamada.Shared.Matching/Kamada.Shared.Matching.csproj" />
   </Folder>
+  <Folder Name="/src/Mobile/">
+    <!-- Plain .NET parts of the phone app; the MAUI app itself is in Kamada.Mobile.slnx (needs the android workload). -->
+    <Project Path="src/Mobile/Kamada.Mobile.Storage/Kamada.Mobile.Storage.csproj" />
+  </Folder>
   <Folder Name="/src/Web/">
     <Project Path="src/Web/Kamada.AdminPanel/Kamada.AdminPanel.csproj" />
     <Project Path="src/Web/Kamada.MobileApp/Kamada.MobileApp.csproj" />
@@ -51,6 +55,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/Kamada.ArchitectureTests/Kamada.ArchitectureTests.csproj" />
     <Project Path="tests/Kamada.IntegrationTests/Kamada.IntegrationTests.csproj" />
+    <Project Path="tests/Kamada.Mobile.UnitTests/Kamada.Mobile.UnitTests.csproj" />
     <Project Path="tests/Kamada.Modules.Assistant.UnitTests/Kamada.Modules.Assistant.UnitTests.csproj" />
     <Project Path="tests/Kamada.Modules.Catalog.UnitTests/Kamada.Modules.Catalog.UnitTests.csproj" />
     <Project Path="tests/Kamada.Modules.Customers.UnitTests/Kamada.Modules.Customers.UnitTests.csproj" />
