@@ -1,9 +1,12 @@
+@* Sends anonymous visitors of a protected page to the login page, which returns them there after signing in (an expired
+   session continues where it was). Not after the worker signed out: the next sign-in starts at the app's home. *@
 @inject NavigationManager Navigation
+@inject AuthService Auth
 
 @code {
     protected override void OnInitialized()
     {
-        var returnUrl = Navigation.ToBaseRelativePath(Navigation.Uri);
+        var returnUrl = Auth.SignedOutByUser ? string.Empty : Navigation.ToBaseRelativePath(Navigation.Uri);
         Navigation.NavigateTo(string.IsNullOrEmpty(returnUrl) ? "login" : $"login?returnUrl={Uri.EscapeDataString(returnUrl)}", replace: true);
     }
 }

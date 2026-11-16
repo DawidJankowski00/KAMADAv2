@@ -51,6 +51,20 @@ public sealed class AuthServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task LogoutAsync_ByTheWorker_IsRememberedUntilTheNextSignIn()
+    {
+        _api.LoginResponse = StubApi.Tokens(Roles.Courier);
+        await _auth.LoginAsync("anna", "secret", TestContext.Current.CancellationToken);
+        _auth.SignedOutByUser.ShouldBeFalse();
+
+        await _auth.LogoutAsync(TestContext.Current.CancellationToken);
+        _auth.SignedOutByUser.ShouldBeTrue();
+
+        await _auth.LoginAsync("anna", "secret", TestContext.Current.CancellationToken);
+        _auth.SignedOutByUser.ShouldBeFalse();
+    }
+
+    [Fact]
     public async Task RefreshAsync_RolesNoLongerAllowed_SignsOut()
     {
         _api.LoginResponse = StubApi.Tokens(Roles.Courier);
