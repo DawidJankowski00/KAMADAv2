@@ -1,3 +1,4 @@
+using Kamada.Web.Shared.Platform;
 using Kamada.Shared.Contracts.Auth;
 using Kamada.Web.Shared.Api;
 using Kamada.Web.Shared.Auth;
@@ -29,7 +30,7 @@ public sealed class OfflineLookupTests : IDisposable
 
     public OfflineLookupTests()
     {
-        _auth = new AuthService(_authApi, new TokenStore(_js, _options), _options, _clock);
+        _auth = new AuthService(_authApi, new TokenStore(new BrowserSessionStorage(_js), _options), _options, _clock);
         _roles = new RoleContext(_auth, _js, _options);
         _monitor = new ConnectionMonitor(_authApi, _clock);
     }

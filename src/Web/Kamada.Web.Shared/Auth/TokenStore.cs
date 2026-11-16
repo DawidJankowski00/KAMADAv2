@@ -1,15 +1,15 @@
 using System.Text.Json;
 using Kamada.Shared.Contracts.Auth;
 using Kamada.Web.Shared.Api;
-using Microsoft.JSInterop;
+using Kamada.Web.Shared.Platform;
 
 namespace Kamada.Web.Shared.Auth;
 
 /// <summary>
-/// Persists the token pair in <c>localStorage</c> so the session survives page reloads (the courier stays signed in).
-/// Storage failures (private mode, blocked storage) degrade to an in-memory session.
+/// Persists the token pair (<see cref="ISessionStorage"/>) so the session survives app restarts (the courier stays
+/// signed in). Storage failures degrade to an in-memory session.
 /// </summary>
-public sealed class TokenStore(IJSRuntime js, KamadaClientOptions options)
+public sealed class TokenStore(ISessionStorage storage, KamadaClientOptions options)
 {
     private TokenResponse? _session;
     private bool _loaded;
@@ -23,7 +23,7 @@ public sealed class TokenStore(IJSRuntime js, KamadaClientOptions options)
 
         try
         {
-            var json = await js.InvokeAsync<string?>("localStorage.getItem", options.StorageKey);
+            var json = await storage.GetAsync(options.StorageKey);
             if (string.IsNullOrEmpty(json) && options.PreviousStorageKey is { } previousKey)
             {
                 json = await MoveFromPreviousKeyAsync(previousKey);
@@ -37,7 +37,7 @@ public sealed class TokenStore(IJSRuntime js, KamadaClientOptions options)
                 _session = null;
             }
         }
-        catch (Exception ex) when (ex is JSException or JsonException)
+        catch (JsonException)
         {
             _session = null;
         }
@@ -50,38 +50,24 @@ public sealed class TokenStore(IJSRuntime js, KamadaClientOptions options)
     {
         _session = session;
         _loaded = true;
-        try
-        {
-            await js.InvokeVoidAsync("localStorage.setItem", options.StorageKey, JsonSerializer.Serialize(session, KamadaJson.Options));
-        }
-        catch (JSException)
-        {
-            // In-memory session only.
-        }
+        await storage.SetAsync(options.StorageKey, JsonSerializer.Serialize(session, KamadaJson.Options));
     }
 
     public async ValueTask ClearAsync()
     {
         _session = null;
         _loaded = true;
-        try
-        {
-            await js.InvokeVoidAsync("localStorage.removeItem", options.StorageKey);
-        }
-        catch (JSException)
-        {
-            // Nothing persisted.
-        }
+        await storage.RemoveAsync(options.StorageKey);
     }
 
     /// <summary>Keeps users signed in when an app changes its storage key (e.g. the courier app became the phone app).</summary>
     private async ValueTask<string?> MoveFromPreviousKeyAsync(string previousKey)
     {
-        var json = await js.InvokeAsync<string?>("localStorage.getItem", previousKey);
+        var json = await storage.GetAsync(previousKey);
         if (!string.IsNullOrEmpty(json))
         {
-            await js.InvokeVoidAsync("localStorage.setItem", options.StorageKey, json);
-            await js.InvokeVoidAsync("localStorage.removeItem", previousKey);
+            await storage.SetAsync(options.StorageKey, json);
+            await storage.RemoveAsync(previousKey);
         }
 
         return json;

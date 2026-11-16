@@ -1,3 +1,4 @@
+using Kamada.Web.Shared.Platform;
 using System.Text.Json;
 using Kamada.Shared.Contracts.Auth;
 using Kamada.Web.Shared.Api;
@@ -21,7 +22,7 @@ public sealed class AuthServiceTests : IDisposable
             AllowedRoles = [Roles.Courier],
             StorageKey = StorageKey,
         };
-        _auth = new AuthService(_api, new TokenStore(_js, options), options, TimeProvider.System);
+        _auth = new AuthService(_api, new TokenStore(new BrowserSessionStorage(_js), options), options, TimeProvider.System);
     }
 
     [Fact]

@@ -1,7 +1,9 @@
-@* Dictation: records the microphone in the browser and hands over a 16 kHz mono WAV. Language toggle PL / EN / Auto. *@
+@* Dictation: records the microphone (IAudioRecorder: browser or native) and hands over a 16 kHz mono WAV. Language toggle PL / EN / Auto. *@
 @using Kamada.Web.Shared.Audio
+@using Kamada.Web.Shared.Platform
+@implements IAudioRecorderListener
 @implements IAsyncDisposable
-@inject IJSRuntime JS
+@inject IAudioRecorder Recorder
 
 <div class="d-flex flex-wrap align-center gap-3">
     <MudToggleGroup T="string" Value="Language" ValueChanged="LanguageChanged" Size="Size.Small" Color="Color.Info" Outlined="true"
@@ -37,8 +39,6 @@
 }
 
 @code {
-    private IJSObjectReference? _module;
-    private DotNetObjectReference<VoiceRecorder>? _self;
     private bool _recording;
     private bool _starting;
     private bool _stopping;
@@ -68,9 +68,7 @@
         _starting = true;
         try
         {
-            _module ??= await JS.InvokeAsync<IJSObjectReference>("import", "./_content/Kamada.Web.Shared/voice-recorder.js");
-            _self ??= DotNetObjectReference.Create(this);
-            var result = await _module.InvokeAsync<string>("start", _self, MaxDuration.TotalSeconds);
+            var result = await Recorder.StartAsync(MaxDuration, this);
             if (result == "ok")
             {
                 (_recording, _level, _elapsed) = (true, 0, TimeSpan.Zero);
@@ -80,10 +78,6 @@
                 _error = RecorderMessages.For(result);
             }
         }
-        catch (JSException)
-        {
-            _error = RecorderMessages.For("error");
-        }
         finally
         {
             _starting = false;
@@ -92,7 +86,7 @@
 
     private async Task StopAsync()
     {
-        if (!_recording || _stopping || _module is null)
+        if (!_recording || _stopping)
         {
             return;
         }
@@ -100,7 +94,7 @@
         _stopping = true;
         try
         {
-            var pcm = await _module.InvokeAsync<byte[]?>("stop");
+            var pcm = await Recorder.StopAsync();
             _recording = false;
             if (pcm is null || pcm.Length == 0)
             {
@@ -126,37 +120,23 @@
     private async Task CancelAsync()
     {
         _recording = false;
-        if (_module is not null)
-        {
-            await _module.InvokeVoidAsync("discard");
-        }
+        await Recorder.DiscardAsync();
     }
 
-    [JSInvokable]
-    public Task OnLevel(double level, double seconds)
+    public Task OnLevel(double level, double seconds) => InvokeAsync(() =>
     {
         (_level, _elapsed) = (level, TimeSpan.FromSeconds(seconds));
         StateHasChanged();
-        return Task.CompletedTask;
-    }
+    });
 
-    [JSInvokable]
     public Task OnLimitReached() => InvokeAsync(StopAsync);
 
+    /// <summary>The recorder is shared by the app (one recording at a time): leaving the page only drops the recording.</summary>
     public async ValueTask DisposeAsync()
     {
-        if (_module is not null)
+        if (_recording)
         {
-            try
-            {
-                await _module.InvokeVoidAsync("discard");
-                await _module.DisposeAsync();
-            }
-            catch (JSDisconnectedException)
-            {
-            }
+            await Recorder.DiscardAsync();
         }
-
-        _self?.Dispose();
     }
 }

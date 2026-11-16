@@ -1,3 +1,4 @@
+using Kamada.Web.Shared.Platform;
 using Kamada.Shared.Contracts.Auth;
 using Kamada.Web.Shared.Auth;
 
@@ -21,7 +22,7 @@ public sealed class RoleContextTests : IDisposable
             AllowedRoles = [Seller, Roles.Courier, Roles.Admin],
             StorageKey = "kamada.test.session",
         };
-        _auth = new AuthService(_api, new TokenStore(_js, _options), _options, TimeProvider.System);
+        _auth = new AuthService(_api, new TokenStore(new BrowserSessionStorage(_js), _options), _options, TimeProvider.System);
     }
 
     [Fact]

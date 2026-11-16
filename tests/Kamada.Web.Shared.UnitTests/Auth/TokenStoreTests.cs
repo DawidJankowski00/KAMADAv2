@@ -1,3 +1,4 @@
+using Kamada.Web.Shared.Platform;
 using System.Text.Json;
 using Kamada.Shared.Contracts.Auth;
 using Kamada.Web.Shared.Api;
@@ -15,7 +16,7 @@ public sealed class TokenStoreTests
 
     public TokenStoreTests()
     {
-        _store = new TokenStore(_js, new KamadaClientOptions
+        _store = new TokenStore(new BrowserSessionStorage(_js), new KamadaClientOptions
         {
             ApiBaseUrl = new Uri("http://api.test/"),
             AllowedRoles = [Roles.Courier],

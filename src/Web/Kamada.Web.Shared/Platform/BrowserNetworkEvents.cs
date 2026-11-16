@@ -1,12 +1,13 @@
+using Kamada.Web.Shared.Connectivity;
 using Microsoft.JSInterop;
 
-namespace Kamada.Web.Shared.Connectivity;
+namespace Kamada.Web.Shared.Platform;
 
 /// <summary>
 /// Forwards the browser's <c>online</c>/<c>offline</c> events (and the app becoming visible again) to
 /// <see cref="ConnectionMonitor"/> and starts its pings. Started once by the app's layout.
 /// </summary>
-public sealed class BrowserNetworkEvents(IJSRuntime js, ConnectionMonitor monitor) : IAsyncDisposable
+public sealed class BrowserNetworkEvents(IJSRuntime js, ConnectionMonitor monitor) : INetworkEvents, IAsyncDisposable
 {
     private IJSObjectReference? _module;
     private DotNetObjectReference<BrowserNetworkEvents>? _self;

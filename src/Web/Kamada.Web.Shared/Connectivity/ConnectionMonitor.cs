@@ -4,7 +4,7 @@ namespace Kamada.Web.Shared.Connectivity;
 
 /// <summary>
 /// Tells the app how usable the connection to the API is. Combines the browser's online/offline events
-/// (<see cref="SetBrowserOnline"/>, wired by <see cref="BrowserNetworkEvents"/>) with a periodic ping of
+/// (<see cref="SetBrowserOnline"/>, wired by an <see cref="Platform.INetworkEvents"/>) with a periodic ping of
 /// <c>/health/ping</c>: its latency and the number of consecutive failures decide between
 /// <see cref="ConnectionQuality.Good"/>, <see cref="ConnectionQuality.Poor"/> and <see cref="ConnectionQuality.Offline"/>.
 /// </summary>
