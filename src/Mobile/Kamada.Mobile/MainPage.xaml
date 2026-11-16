@@ -2,16 +2,16 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:mobile="clr-namespace:Kamada.Web.Mobile;assembly=Kamada.Web.Mobile"
-             xmlns:web="clr-namespace:Microsoft.AspNetCore.Components.Web;assembly=Microsoft.AspNetCore.Components.Web"
              x:Class="Kamada.Mobile.MainPage"
              SafeAreaEdges="All">
 
-    <!-- The whole UI is the phone app of Kamada.Web.Mobile SafeAreaEdges="All":
+    <!-- The whole UI is the phone app of Kamada.Web.Mobile. SafeAreaEdges="All":
          Android 15+ draws apps edge to edge; keep the pages clear of the status bar, navigation bar and keyboard. -->
     <BlazorWebView x:Name="blazorWebView" HostPage="wwwroot/index.html">
         <BlazorWebView.RootComponents>
+            <!-- No HeadOutlet: a native app shows no page title, and the trimmer removes the constructor of a framework
+                 component referenced only from XAML (Release builds failed with CtorNotLocated). -->
             <RootComponent Selector="#app" ComponentType="{x:Type mobile:App}" />
-            <RootComponent Selector="head::after" ComponentType="{x:Type web:HeadOutlet}" />
         </BlazorWebView.RootComponents>
     </BlazorWebView>
 
