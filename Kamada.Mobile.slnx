@@ -1,0 +1,15 @@
+<Solution>
+  <!-- The .NET MAUI phone app and what it builds on; needs the "android" workload (dotnet workload install maui-android).
+       Kamada.slnx stays buildable without it. -->
+  <Folder Name="/src/Mobile/">
+    <Project Path="src/Mobile/Kamada.Mobile/Kamada.Mobile.csproj" />
+  </Folder>
+  <Folder Name="/src/Shared/">
+    <Project Path="src/Shared/Kamada.Shared.Contracts/Kamada.Shared.Contracts.csproj" />
+  </Folder>
+  <Folder Name="/src/Web/">
+    <Project Path="src/Web/Kamada.Web.Admin/Kamada.Web.Admin.csproj" />
+    <Project Path="src/Web/Kamada.Web.Mobile/Kamada.Web.Mobile.csproj" />
+    <Project Path="src/Web/Kamada.Web.Shared/Kamada.Web.Shared.csproj" />
+  </Folder>
+</Solution>
