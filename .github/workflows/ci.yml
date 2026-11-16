@@ -77,12 +77,12 @@ jobs:
 
       # --pull: scan what a fresh build ships, not a cached base image.
       - name: Build images
-        run: docker compose build --pull api admin mobile
+        run: docker compose build --pull api admin
 
       # Grype CLI image (pinned). Fails on high or critical vulnerabilities that already have a fix.
       - name: Scan images
         run: |
-          for image in kamada-api kamada-admin kamada-mobile; do
+          for image in kamada-api kamada-admin; do
             echo "::group::$image"
             docker run --rm -v /var/run/docker.sock:/var/run/docker.sock anchore/grype:v0.121.0 \
               "$image:latest" --only-fixed --fail-on high

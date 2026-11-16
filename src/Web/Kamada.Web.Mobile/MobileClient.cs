@@ -12,7 +12,6 @@ public static class MobileClient
         // Order = default role for a worker with several roles who has not picked one yet (most common daily work first).
         AllowedRoles = [Roles.Seller, Roles.Courier, Roles.Admin],
         StorageKey = "kamada.mobile.session",
-        PreviousStorageKey = "kamada.courier.session",
         SnackbarPosition = MudBlazor.Defaults.Classes.Position.TopCenter,
     };
 }

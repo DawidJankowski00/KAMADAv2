@@ -6,7 +6,7 @@
              x:Class="Kamada.Mobile.MainPage"
              SafeAreaEdges="All">
 
-    <!-- The whole UI is the phone app of Kamada.Web.Mobile (the same Razor pages the PWA hosts). SafeAreaEdges="All":
+    <!-- The whole UI is the phone app of Kamada.Web.Mobile SafeAreaEdges="All":
          Android 15+ draws apps edge to edge; keep the pages clear of the status bar, navigation bar and keyboard. -->
     <BlazorWebView x:Name="blazorWebView" HostPage="wwwroot/index.html">
         <BlazorWebView.RootComponents>

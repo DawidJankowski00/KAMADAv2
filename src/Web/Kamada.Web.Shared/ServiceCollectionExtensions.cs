@@ -25,9 +25,9 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<RoleContext>();
         services.AddTransient<AuthorizingHandler>();
         services.AddSingleton<ConnectionMonitor>();
-        // Browser implementations of the platform services; a native host registers its own first.
+        // Browser implementations of the platform services; a native host registers its own first. INetworkEvents has no
+        // browser implementation: only the native phone app watches the network.
         services.TryAddSingleton<ISessionStorage, BrowserSessionStorage>();
-        services.TryAddSingleton<INetworkEvents, BrowserNetworkEvents>();
         services.TryAddSingleton<IAudioRecorder, BrowserAudioRecorder>();
         services.AddTransient<IOrderAssistant, ServerOrderAssistant>();
 

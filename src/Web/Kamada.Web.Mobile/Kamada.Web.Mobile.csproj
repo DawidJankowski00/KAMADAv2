@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk.Razor">
 
-  <!-- The phone app's pages, layout and navigation, hosted by the .NET MAUI app (and, until it is removed, the PWA). -->
+  <!-- The phone app's pages, layout and navigation, hosted by the .NET MAUI app (src/Mobile/Kamada.Mobile). -->
   <ItemGroup>
     <SupportedPlatform Include="browser" />
   </ItemGroup>
