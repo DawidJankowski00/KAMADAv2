@@ -27,6 +27,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<ISessionStorage, SecureSessionStorage>();
         builder.Services.AddSingleton<ConnectivityNetworkEvents>();
         builder.Services.AddSingleton<INetworkEvents>(sp => sp.GetRequiredService<ConnectivityNetworkEvents>());
+        builder.Services.AddSingleton<IAudioRecorder, AndroidAudioRecorder>();
         builder.Services.AddSingleton<ILocalStore>(_ => new SqliteLocalStore(Path.Combine(FileSystem.AppDataDirectory, "kamada-local.db")));
 
         builder.Services.AddKamadaClient(MobileClient.Options(ApiBaseUrl()));

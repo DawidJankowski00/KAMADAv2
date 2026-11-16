@@ -3,4 +3,6 @@
     <application android:allowBackup="false" android:icon="@mipmap/appicon" android:roundIcon="@mipmap/appicon_round" android:supportsRtl="true" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Dictation of orders; asked for the first time the seller taps "Dyktuj". -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
 </manifest>
