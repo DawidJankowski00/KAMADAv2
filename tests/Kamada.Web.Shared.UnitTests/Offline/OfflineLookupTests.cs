@@ -31,7 +31,7 @@ public sealed class OfflineLookupTests : IDisposable
     public OfflineLookupTests()
     {
         _auth = new AuthService(_authApi, new TokenStore(new BrowserSessionStorage(_js), _options), _options, _clock);
-        _roles = new RoleContext(_auth, _js, _options);
+        _roles = new RoleContext(_auth, new BrowserSessionStorage(_js), _options);
         _monitor = new ConnectionMonitor(_authApi, _clock);
     }
 

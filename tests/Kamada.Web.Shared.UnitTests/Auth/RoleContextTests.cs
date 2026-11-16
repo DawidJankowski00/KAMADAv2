@@ -186,7 +186,7 @@ public sealed class RoleContextTests : IDisposable
         _api.Dispose();
     }
 
-    private RoleContext NewRoleContext() => new(_auth, _js, _options);
+    private RoleContext NewRoleContext() => new(_auth, new BrowserSessionStorage(_js), _options);
 
     private async Task<AuthenticatedUserDto> SignInAsync(params string[] roles)
     {

@@ -1,4 +1,6 @@
 using System.Reflection;
+using Kamada.Mobile.Platform;
+using Kamada.Web.Shared.Platform;
 using Kamada.Web.Mobile;
 using Kamada.Web.Shared;
 using Kamada.Web.Shared.Offline;
@@ -15,6 +17,11 @@ public static class MauiProgram
 #if DEBUG
         builder.Services.AddBlazorWebViewDeveloperTools();
 #endif
+
+        // Native platform services first: AddKamadaClient / AddKamadaOffline only add the browser ones when none is registered.
+        // (The browser ones cannot work here anyway: as singletons they would hold the root IJSRuntime, which has no WebView.)
+        builder.Services.AddSingleton(SecureStorage.Default);
+        builder.Services.AddSingleton<ISessionStorage, SecureSessionStorage>();
 
         builder.Services.AddKamadaClient(MobileClient.Options(ApiBaseUrl()));
         builder.Services.AddKamadaOffline();

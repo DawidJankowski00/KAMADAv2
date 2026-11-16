@@ -36,7 +36,7 @@ public sealed class OrderOutboxTests : IDisposable
             StorageKey = "kamada.test.session",
         };
         _auth = new AuthService(_authApi, new TokenStore(new BrowserSessionStorage(_js), options), options, _clock);
-        _roles = new RoleContext(_auth, _js, options);
+        _roles = new RoleContext(_auth, new BrowserSessionStorage(_js), options);
         _monitor = new ConnectionMonitor(_authApi, _clock);
         _lookup = new OfflineLookup(_store, new ApiClient(new LookupServer().CreateClient()), _auth, _roles, _monitor, _clock);
     }
