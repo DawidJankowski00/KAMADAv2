@@ -23,7 +23,10 @@ public static class MauiProgram
         // registered. The browser ones cannot work here anyway: as singletons they would hold the root IJSRuntime,
         // which has no WebView.
         builder.Services.AddSingleton(SecureStorage.Default);
+        builder.Services.AddSingleton(Connectivity.Current);
         builder.Services.AddSingleton<ISessionStorage, SecureSessionStorage>();
+        builder.Services.AddSingleton<ConnectivityNetworkEvents>();
+        builder.Services.AddSingleton<INetworkEvents>(sp => sp.GetRequiredService<ConnectivityNetworkEvents>());
         builder.Services.AddSingleton<ILocalStore>(_ => new SqliteLocalStore(Path.Combine(FileSystem.AppDataDirectory, "kamada-local.db")));
 
         builder.Services.AddKamadaClient(MobileClient.Options(ApiBaseUrl()));
