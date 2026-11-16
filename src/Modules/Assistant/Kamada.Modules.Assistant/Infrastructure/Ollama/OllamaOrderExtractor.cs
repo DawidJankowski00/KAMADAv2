@@ -19,21 +19,24 @@ namespace Kamada.Modules.Assistant.Infrastructure.Ollama;
 /// </summary>
 internal sealed partial class OllamaOrderExtractor(
     [FromKeyedServices(AssistantServiceKeys.ChatClient)] IChatClient chat,
-    IOptions<AssistantOptions> settings,
+    IOptions<AssistantOptions> assistantOptions,
+    IAssistantSettings settings,
     ILogger<OllamaOrderExtractor> logger) : IOrderExtractor
 {
     public async Task<Result<ExtractedOrder>> ExtractAsync(string text, AssistantLanguage language, CancellationToken cancellationToken)
     {
+        var model = (await settings.GetAsync(cancellationToken)).OllamaModel;
         var stopwatch = Stopwatch.StartNew();
         ChatResponse response;
         try
         {
             var options = new ChatOptions
             {
+                ModelId = model,
                 Temperature = 0,
                 ResponseFormat = OllamaPrompt.ResponseFormat,
                 // Ollama-specific switch without an IChatClient equivalent: start from a native request.
-                RawRepresentationFactory = settings.Value.Ollama.Think is { } think ? _ => new ChatRequest { Think = think } : null,
+                RawRepresentationFactory = assistantOptions.Value.Ollama.Think is { } think ? _ => new ChatRequest { Think = think } : null,
             };
             response = await chat.GetResponseAsync(OllamaPrompt.Messages(text, language), options, cancellationToken);
         }

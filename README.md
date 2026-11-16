@@ -16,7 +16,7 @@ This is not a portfolio piece: it is a close copy of a system I built to improve
 - **Orders.** New order in a few steps: client → shipping address → products with autocomplete. Stock is
   checked and reserved in one transaction and the total is computed on the server. Every order records who took
   it (an admin or a seller); the list can be filtered by that worker.
-- **AI order assistant** (optional, fully local). Dictate or type *"Nowe zamówienie dla Jana Kowalskiego,
+- **AI order assistant** (optional; local by default, Google Gemini selectable by developers). Dictate or type *"Nowe zamówienie dla Jana Kowalskiego,
   Grunwaldzka 15 m. 4, Gdańsk: sześć wód niegazowanych i dwa chleby razowe"*, and the form fills itself in. It
   matches existing clients, addresses and products or proposes new ones. The admin reviews and accepts; nothing
   is saved before that.
@@ -63,9 +63,9 @@ This is not a portfolio piece: it is a close copy of a system I built to improve
   per module.
 - **Stack:** Minimal APIs, EF Core 10, JWT with rotating refresh tokens, FluentValidation, ProblemDetails,
   Serilog, OpenAPI + Scalar.
-- **Local AI:** Whisper.net speech recognition and an Ollama model behind `Microsoft.Extensions.AI`. The model
-  only extracts what was said; matching to the database is deterministic C#. Accuracy is measured by an
-  evaluation suite.
+- **AI:** Whisper.net speech recognition and an Ollama model behind `Microsoft.Extensions.AI`, or Google Gemini
+  (REST, JSON schema) chosen at run time in a hidden developer menu. The model only extracts what was said; matching
+  to the database is deterministic C#. Accuracy is measured by an evaluation suite.
 - **Tests:** unit, integration (Testcontainers) and architecture tests, plus BenchmarkDotNet for the solvers.
   CI runs on GitHub Actions and also checks NuGet packages for known vulnerabilities, the git history for secrets
   (gitleaks) and the Docker images for fixable vulnerabilities (Grype), on every push and weekly.
@@ -112,7 +112,8 @@ Demo accounts (seeded in the Development environment):
 | Administrator | `admin` | `Admin123!` |
 | Courier | `kurier1`, `kurier2`, `kurier3` | `Kurier123!` |
 | Seller | `sprzedawca1` | `Sprzedawca123!` |
-| All roles: administrator, courier and seller (switches roles in the phone app) | `kierownik` | `Kierownik123!` |
+| Administrator, courier and seller (switches roles in the phone app) | `kierownik` | `Kierownik123!` |
+| Administrator and developer (hidden developer menu for the assistant) | `developer` | `Deweloper123!` |
 
 Each demo account has the e-mail address `<username>@kamada.test` (`.test` is a reserved domain, nothing is delivered).
 "Nie pamiętam hasła" sends the reset link there; in Development every e-mail lands in Mailpit (http://localhost:8025).
@@ -180,8 +181,9 @@ prepared again on the next start.
 
 ### AI order assistant (optional)
 
-Everything runs locally: speech recognition inside the API (Whisper.net, model `small`), the language model in an
-`ollama` container (default `gemma3:4b`). No audio, transcript or client data leaves the machine.
+By default everything runs locally: speech recognition inside the API (Whisper.net, model `small`), the language
+model in an `ollama` container (default `gemma3:4b`). No audio, transcript or client data leaves the machine.
+Developers can switch to Google Gemini at run time (see [Gemini and the developer menu](#gemini-and-the-developer-menu)).
 
 1. Put this line in `.env` (see [`.env.example`](.env.example)):
 
@@ -212,7 +214,25 @@ models such as `qwen3` should run with `Assistant__Ollama__Think=false` (their "
 times slower on a CPU).
 
 The microphone works only on `localhost` or over HTTPS (browser rule). Dictation never uses the Web Speech API,
-because Chrome would send the audio to Google.
+because Chrome would send the audio to Google without anybody choosing it.
+
+### Gemini and the developer menu
+
+Workers with the `Developer` role (demo account `developer`) open a hidden page in the admin panel by tapping the
+version line under the menu seven times. There they switch the assistant on or off, choose who reads notes (Ollama or
+Gemini) and who recognizes dictation (off, Whisper or Gemini), set the model of each provider and test the saved
+choice (a sample note and, for dictation, Whisper's readiness or a second of silence through Gemini). Changes apply
+without a restart ([ADR 0014](docs/adr/0014-gemini-provider-and-developer-settings.md)).
+
+Gemini needs an API key from Google AI Studio with billing enabled (on the paid tier Google does not use the data for
+training). The key is configuration only – it cannot be entered in the panel and is never stored or logged:
+
+```dotenv
+GEMINI_API_KEY=...
+```
+
+With Gemini selected, notes – clients' names, phones and addresses – and recordings are sent to Google; the panel says so
+next to the assistant. Whisper's model is downloaded only once Whisper is chosen.
 
 ## Running without Docker
 
@@ -247,6 +267,9 @@ dotnet user-secrets --project src/Kamada.Api set "RouteOptimization:Google:ApiKe
 | `Assistant:Ollama:BaseUrl` / `Model` | `http://localhost:11434/`, `gemma3:4b` | Language model server and model |
 | `Assistant:Ollama:Think` | not set | `false` turns off reasoning of models like `qwen3` |
 | `Assistant:Whisper:Model` / `ModelPath` | `small`, `models/ggml-small.bin` | Speech model (downloaded on first start) |
+| `Assistant:Provider` / `SpeechProvider` | `Ollama`, `Whisper` | Starting values of the developer settings (then changed in the hidden menu) |
+| `Assistant:Gemini:ApiKey` | not set | Google AI Studio key (secrets/env only, `GEMINI_API_KEY` in compose); without it Gemini cannot be chosen |
+| `Assistant:Gemini:Model` | `gemini-3.5-flash-lite` | Starting Gemini model of the developer settings |
 | `RateLimiting:Assistant:PermitLimit` | `20` per minute | Per-user limit on assistant requests |
 
 ## Tests
@@ -302,7 +325,7 @@ flowchart LR
         Ordering["Ordering<br/>orders, lifecycle,<br/>payments (simulated provider)"]
         Delivery["Delivery<br/>locations, runs, stops"]
         RouteOpt["RouteOptimization<br/>matrix + solvers + Maps links"]
-        Assistant["Assistant<br/>order drafts (local AI)"]
+        Assistant["Assistant<br/>order drafts (local AI or Gemini),<br/>developer settings"]
     end
 
     Admin -- "HTTP/JSON + JWT" --> Host
@@ -324,6 +347,7 @@ flowchart LR
     Customers -. geocoding .-> Nominatim["Nominatim (OSM)"]
     Delivery -. geocoding .-> Nominatim
     Assistant -. "chat (JSON schema)" .-> Ollama["Ollama<br/>(local LLM)"]
+    Assistant -. "generateContent<br/>(optional)" .-> Gemini["Google Gemini API"]
 ```
 
 ```
@@ -618,6 +642,16 @@ docker compose --profile ai exec ollama ollama pull qwen3:4b   # any model to co
 dotnet run -c Release --project benchmarks/Kamada.Assistant.Evals -- --model qwen3:4b --out results.md
 ```
 
+The same suite runs against Gemini with `--provider gemini` (default model `gemini-3.5-flash-lite`, any other with
+`--model`). The key is read only from the environment, never from the command line; the notes of the demo data go to
+Google. The evals select the provider and model in the developer settings of their own database on every run.
+
+```bash
+GEMINI_API_KEY=... dotnet run -c Release --project benchmarks/Kamada.Assistant.Evals -- --provider gemini --out results.md
+```
+
+Gemini has not been measured yet: its row goes into the table above after the first run with a paid key.
+
 ## Design decisions
 
 | ADR | Decision |
@@ -635,6 +669,7 @@ dotnet run -c Release --project benchmarks/Kamada.Assistant.Evals -- --model qwe
 | [0011](docs/adr/0011-two-factor-authentication.md) | Two-factor authentication with TOTP, recovery codes and a stateless sign-in challenge |
 | [0012](docs/adr/0012-least-privilege-database-role.md) | The API connects with a data-only database role; migrations run as the schema owner |
 | [0013](docs/adr/0013-security-baseline-asvs-level-2.md) | Security baseline: OWASP ASVS 4.0.3 level 2, reviewed in [docs/security.md](docs/security.md) |
+| [0014](docs/adr/0014-gemini-provider-and-developer-settings.md) | Gemini as an optional assistant provider, chosen by developers at run time |
 
 ## Possible improvements
 

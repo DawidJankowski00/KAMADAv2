@@ -10,9 +10,7 @@ internal sealed class FakeSpeechToText : ISpeechToText
 {
     public const string Text = "Zamówienie dla Jana Kowalskiego: dwie kawy ziarniste";
 
-    public bool IsReady => true;
-
-    public Task PrepareAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+    public ValueTask<bool> IsReadyAsync(CancellationToken cancellationToken) => ValueTask.FromResult(true);
 
     public Task<Result<Transcription>> TranscribeAsync(ReadOnlyMemory<byte> wav, AssistantLanguage language, CancellationToken cancellationToken) =>
         Task.FromResult<Result<Transcription>>(new Transcription(Text, language == AssistantLanguage.Auto ? "pl" : language.ToCode()));

@@ -1,4 +1,5 @@
 using Kamada.Modules.Assistant.Application.Abstractions;
+using Kamada.Modules.Assistant.Domain.Settings;
 using Kamada.Shared.Infrastructure.Email;
 using Kamada.Shared.Infrastructure.Geocoding;
 using Microsoft.AspNetCore.Hosting;
@@ -57,9 +58,14 @@ public sealed class KamadaApiFactory : WebApplicationFactory<Program>, IAsyncLif
         {
             services.Replace(ServiceDescriptor.Singleton<IGeocodingService, FakeGeocodingService>());
             services.Replace(ServiceDescriptor.Singleton<IEmailSender>(Emails));
-            services.Replace(ServiceDescriptor.Singleton<IOrderExtractor>(OrderExtractor));
-            services.Replace(ServiceDescriptor.Singleton<ILanguageModelProbe, FakeLanguageModelProbe>());
-            services.Replace(ServiceDescriptor.Singleton<ISpeechToText, FakeSpeechToText>());
+            // The local providers (the defaults of the developer settings) are faked; selecting them still goes through
+            // the real provider selection.
+            services.RemoveAllKeyed<IOrderExtractor>(TextProvider.Ollama);
+            services.AddKeyedSingleton<IOrderExtractor>(TextProvider.Ollama, OrderExtractor);
+            services.RemoveAllKeyed<ILanguageModelProbe>(TextProvider.Ollama);
+            services.AddKeyedSingleton<ILanguageModelProbe, FakeLanguageModelProbe>(TextProvider.Ollama);
+            services.RemoveAllKeyed<ISpeechToText>(SpeechProvider.Whisper);
+            services.AddKeyedSingleton<ISpeechToText, FakeSpeechToText>(SpeechProvider.Whisper);
         });
     }
 
@@ -74,6 +80,14 @@ public sealed class KamadaApiFactory : WebApplicationFactory<Program>, IAsyncLif
         WithWebHostBuilder(builder => builder
             .UseSetting("ConnectionStrings:Kamada", new NpgsqlConnectionStringBuilder(_postgres.GetConnectionString()) { Database = database }.ConnectionString)
             .UseSetting("Database:SeedDemoData", "true"));
+
+    /// <summary>
+    /// A second host on its own (new, empty) database in the same container, for tests that change global state such as
+    /// the assistant's developer settings.
+    /// </summary>
+    public WebApplicationFactory<Program> WithOwnDatabase(string database) =>
+        WithWebHostBuilder(builder => builder
+            .UseSetting("ConnectionStrings:Kamada", AdminConnectionString(database)));
 
     /// <summary>Superuser connection string of the test container, optionally for another database in it.</summary>
     public string AdminConnectionString(string? database = null) =>

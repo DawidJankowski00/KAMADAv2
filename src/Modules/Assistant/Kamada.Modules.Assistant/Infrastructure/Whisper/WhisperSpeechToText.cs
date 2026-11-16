@@ -23,6 +23,7 @@ internal sealed partial class WhisperSpeechToText(
     IOptions<AssistantOptions> options,
     IHostEnvironment environment,
     IHttpClientFactory httpClientFactory,
+    IHostApplicationLifetime lifetime,
     ILogger<WhisperSpeechToText> logger) : ISpeechToText, IDisposable
 {
     public const string DownloadHttpClient = "assistant-whisper-download";
@@ -33,11 +34,40 @@ internal sealed partial class WhisperSpeechToText(
     private readonly SemaphoreSlim _gate = new(options.Value.Whisper.MaxConcurrency);
     private WhisperFactory? _factory;
 
-    public bool IsReady => Volatile.Read(ref _factory) is not null;
+    private int _preparing;
+
+    /// <summary>The first call starts downloading and loading the model in the background (once per process).</summary>
+    public ValueTask<bool> IsReadyAsync(CancellationToken cancellationToken)
+    {
+        if (Volatile.Read(ref _factory) is not null)
+        {
+            return ValueTask.FromResult(true);
+        }
+
+        if (Interlocked.Exchange(ref _preparing, 1) == 0)
+        {
+            // Model loading is partly synchronous: keep it off the request path.
+            _ = Task.Run(() => PrepareInBackgroundAsync(lifetime.ApplicationStopping), CancellationToken.None);
+        }
+
+        return ValueTask.FromResult(false);
+    }
 
     private int Threads => _settings.Threads > 0 ? _settings.Threads : Math.Clamp(Environment.ProcessorCount / 2, 1, 8);
 
-    public async Task PrepareAsync(CancellationToken cancellationToken)
+    private async Task PrepareInBackgroundAsync(CancellationToken stoppingToken)
+    {
+        try
+        {
+            await PrepareAsync(stoppingToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException || !stoppingToken.IsCancellationRequested)
+        {
+            LogPreparationFailed(ex);
+        }
+    }
+
+    private async Task PrepareAsync(CancellationToken cancellationToken)
     {
         var path = Path.GetFullPath(_settings.ModelPath, environment.ContentRootPath);
         if (!File.Exists(path))
@@ -134,6 +164,9 @@ internal sealed partial class WhisperSpeechToText(
         File.Move(temporary, path, overwrite: true);
         LogDownloaded(path);
     }
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Speech model could not be prepared – Whisper dictation is unavailable until the API restarts")]
+    private partial void LogPreparationFailed(Exception exception);
 
     /// <summary>Whisper marks silence or noise as "[BLANK_AUDIO]", "(muzyka)" and the like.</summary>
     [GeneratedRegex(@"^[\[\(\*].*[\]\)\*]$")]

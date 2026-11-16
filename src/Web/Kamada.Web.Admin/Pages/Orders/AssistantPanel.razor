@@ -15,12 +15,20 @@
             <MudIcon Icon="@Icons.Material.Filled.AutoAwesome" Color="Color.Info" />
             <MudText Typo="Typo.h6">Asystent</MudText>
             <MudSpacer />
-            <MudText Typo="Typo.caption" Class="mud-text-secondary">Lokalny model: @_status.Model</MudText>
+            <MudText Typo="Typo.caption" Class="mud-text-secondary">
+                @(_status.Provider == AssistantTextProvider.Gemini ? $"Gemini (Google): {_status.Model}" : $"Lokalny model: {_status.Model}")
+            </MudText>
         </div>
         <MudText Typo="Typo.body2" Class="mud-text-secondary mb-2">
             Podyktuj albo wpisz zamówienie własnymi słowami (po polsku lub angielsku). Asystent wypełni formularz – nic nie
             zostanie zapisane, dopóki nie sprawdzisz danych i nie złożysz zamówienia.
         </MudText>
+        @if (_status.Provider == AssistantTextProvider.Gemini || _status.SpeechProvider == AssistantSpeechProvider.Gemini)
+        {
+            <MudText Typo="Typo.caption" Class="mud-text-secondary d-block mb-2">
+                Treść zamówienia@(_status.SpeechProvider == AssistantSpeechProvider.Gemini ? " i nagrania" : string.Empty) trafiają do Google Gemini.
+            </MudText>
+        }
 
         <VoiceRecorder @bind-Language="_language" Available="_status.SpeechToText" Disabled="_busy" OnRecorded="TranscribeAsync"
                        UnavailableText="Model rozpoznawania mowy jest jeszcze pobierany lub wyłączony – możesz wpisać tekst." />

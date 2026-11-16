@@ -9,10 +9,11 @@ using Kamada.Shared.Contracts.Customers;
 namespace Kamada.Assistant.Evals;
 
 /// <summary>
-/// Measures the order assistant end to end (real Ollama model + real matching against the seeded demo database):
+/// Measures the order assistant end to end (real model + real matching against the seeded demo database):
 ///   docker compose up -d postgres; docker compose --profile ai up -d ollama
 ///   dotnet run -c Release --project benchmarks/Kamada.Assistant.Evals -- --model gemma3:4b [--out results.md]
-/// The model must be pulled first (ollama pull MODEL). Notes are sent as typed text – speech recognition is not part of it.
+///   GEMINI_API_KEY=... dotnet run -c Release --project benchmarks/Kamada.Assistant.Evals -- --provider gemini [--model gemini-3.5-flash-lite]
+/// An Ollama model must be pulled first (ollama pull MODEL). Notes are sent as typed text – speech recognition is not part of it.
 /// </summary>
 /// <remarks>No top-level statements: the API's <c>Program</c> is the host type of <see cref="EvalHost"/>.</remarks>
 internal static class AssistantEvals
@@ -23,9 +24,11 @@ internal static class AssistantEvals
         var json = new JsonSerializerOptions(JsonSerializerDefaults.Web) { Converters = { new JsonStringEnumConverter() } };
         var cases = JsonSerializer.Deserialize<List<EvalCase>>(await File.ReadAllTextAsync(options.CasesPath), json)!;
 
-        Console.WriteLine($"Model {options.Model} via {options.OllamaUrl} – {cases.Count} cases; starting the API (first run seeds the demo database)…");
+        var via = options.IsGemini ? "the Gemini API" : options.OllamaUrl.ToString();
+        Console.WriteLine($"Model {options.Model} via {via} – {cases.Count} cases; starting the API (first run seeds the demo database)…");
         await using var host = new EvalHost(options);
         using var http = host.CreateClient();
+        await host.SelectProviderAsync();
         http.Timeout = TimeSpan.FromMinutes(6);
 
         // Demo administrator from the seed data (WorkforceSeeder). Signed in again before every case: a run with a slow
@@ -68,7 +71,7 @@ internal static class AssistantEvals
             Console.WriteLine($"{(result.AllCorrect ? "ok  " : "FAIL")} {evalCase.Id,-40} {stopwatch.ElapsedMilliseconds,6} ms");
         }
 
-        var report = EvalReport.Build(options.NoThink ? $"{options.Model} (think off)" : options.Model, results);
+        var report = EvalReport.Build(options.Label, results);
         Console.WriteLine();
         Console.WriteLine(report);
         if (options.OutputPath is not null)

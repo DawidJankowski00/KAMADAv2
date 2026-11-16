@@ -16,6 +16,7 @@ internal sealed class WorkforceSeeder(WorkforceDbContext db, IPasswordHasher<Wor
     public const string CourierPassword = "Kurier123!";
     public const string ManagerPassword = "Kierownik123!";
     public const string SellerPassword = "Sprzedawca123!";
+    public const string DeveloperPassword = "Deweloper123!";
 
     public int Order => SeedOrder.Workforce;
 
@@ -38,6 +39,9 @@ internal sealed class WorkforceSeeder(WorkforceDbContext db, IPasswordHasher<Wor
 
         // A worker with every role, for switching roles in the phone app.
         Add("kierownik", "kierownik@kamada.test", ManagerPassword, "Marek", "Zieliński", "+48 604 444 444", WorkerRole.Admin, WorkerRole.Courier, WorkerRole.Seller);
+
+        // An admin who also sees the hidden developer menu (assistant provider settings).
+        Add("developer", "developer@kamada.test", DeveloperPassword, "Tomasz", "Kamiński", "+48 606 666 666", WorkerRole.Admin, WorkerRole.Developer);
 
         await db.SaveChangesAsync(cancellationToken);
         seedData.AdminId = admin.Id;

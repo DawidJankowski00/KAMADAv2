@@ -5,10 +5,12 @@
 useDefault = true
 
 [[allowlists]]
-description = "Placeholder JWT signing keys of tests, evals and local development"
+description = "Placeholder JWT signing keys and fake Gemini API keys of tests, evals and local development"
 regexes = [
     '''integration-tests-signing-key-0123456789''',
     '''token-algorithm-tests-signing-key-0123456789-0123456789-01234567''',
     '''assistant-evals-only-signing-key-0123456789''',
     '''development-only-signing-key-change-me-0123456789''',
+    '''integration-tests-gemini-placeholder''',
+    '''test-gemini-key''',
 ]

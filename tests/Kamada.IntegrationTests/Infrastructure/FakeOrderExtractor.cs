@@ -4,7 +4,6 @@ using Kamada.Modules.Assistant.Application.Abstractions;
 using Kamada.Modules.Assistant.Domain;
 using Kamada.Shared.Matching.Drafts;
 using Kamada.Shared.Kernel.Results;
-using Kamada.Shared.Matching.Drafts;
 
 namespace Kamada.IntegrationTests.Infrastructure;
 
@@ -27,5 +26,5 @@ internal sealed class FakeOrderExtractor : IOrderExtractor
 internal sealed class FakeLanguageModelProbe : ILanguageModelProbe
 {
     public Task<LanguageModelProbeResult> ProbeAsync(CancellationToken cancellationToken) =>
-        Task.FromResult(new LanguageModelProbeResult(true, true, "fake-model"));
+        Task.FromResult(new LanguageModelProbeResult(true, true, "fake-model", "Fake"));
 }

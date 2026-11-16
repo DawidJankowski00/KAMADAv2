@@ -1,5 +1,7 @@
 using Kamada.Modules.Assistant.Application;
 using Kamada.Modules.Assistant.Application.Abstractions;
+using Kamada.Modules.Assistant.Domain.Settings;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -7,33 +9,34 @@ using Microsoft.Extensions.Options;
 namespace Kamada.Modules.Assistant.Infrastructure.Whisper;
 
 /// <summary>
-/// Prepares the speech model in the background after startup, so the API is available immediately; until it is ready,
-/// <c>GET /api/assistant/status</c> reports <c>speechToText: false</c> and typing still works.
+/// Starts preparing the Whisper model right after startup when the developer settings select it, so the first dictation
+/// does not wait for the download. When Whisper is selected later, the first status or dictation request starts it.
+/// Until it is ready, <c>GET /api/assistant/status</c> reports <c>speechToText: false</c> and typing still works.
 /// </summary>
 internal sealed partial class SpeechModelWarmUp(
-    ISpeechToText speechToText,
+    IAssistantSettings settings,
     IOptions<AssistantOptions> options,
+    [FromKeyedServices(SpeechProvider.Whisper)] ISpeechToText whisper,
     ILogger<SpeechModelWarmUp> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var settings = options.Value;
-        if (!settings.Enabled || !settings.Whisper.Enabled)
-        {
-            return;
-        }
-
         try
         {
-            // Model loading is partly synchronous: keep it off the startup path.
-            await Task.Run(() => speechToText.PrepareAsync(stoppingToken), stoppingToken);
+            var current = await settings.GetAsync(stoppingToken);
+            if (AssistantProviders.IsEnabled(options.Value, current)
+                && current.SpeechProvider == SpeechProvider.Whisper
+                && AssistantProviders.IsSpeechAllowed(options.Value, current))
+            {
+                await whisper.IsReadyAsync(stoppingToken);
+            }
         }
         catch (Exception ex) when (ex is not OperationCanceledException || !stoppingToken.IsCancellationRequested)
         {
-            LogPreparationFailed(ex);
+            LogSettingsUnavailable(ex);
         }
     }
 
-    [LoggerMessage(Level = LogLevel.Error, Message = "Speech model could not be prepared – dictation is unavailable until the API restarts")]
-    private partial void LogPreparationFailed(Exception exception);
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Assistant settings could not be read at startup – Whisper is prepared on first use")]
+    private partial void LogSettingsUnavailable(Exception exception);
 }

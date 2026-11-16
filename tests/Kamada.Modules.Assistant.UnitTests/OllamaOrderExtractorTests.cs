@@ -14,7 +14,7 @@ public sealed class OllamaOrderExtractorTests
     private const string Answer = """{"client":{"name":"Jan","surname":"Kowalski","phone":null,"email":null},"address":null,"items":[{"product":"kawa","quantity":2}],"notes":null}""";
 
     [Fact]
-    public async Task Extract_ValidAnswer_ReturnsMentionsAndAsksForDeterministicStructuredOutput()
+    public async Task Extract_ValidAnswer_ReturnsMentionsAndAsksTheSelectedModelForDeterministicStructuredOutput()
     {
         var chat = new StubChatClient(_ => Answer);
 
@@ -23,6 +23,7 @@ public sealed class OllamaOrderExtractorTests
         result.Value.Client.Surname.ShouldBe("Kowalski");
         result.Value.Lines.Single().ShouldBe(new ExtractedLine("kawa", 2));
         chat.Options!.Temperature.ShouldBe(0);
+        chat.Options.ModelId.ShouldBe("qwen3:4b");
         chat.Options.ResponseFormat.ShouldBeOfType<ChatResponseFormatJson>().Schema.ShouldNotBeNull();
         chat.Options.RawRepresentationFactory.ShouldBeNull();
     }
@@ -70,6 +71,7 @@ public sealed class OllamaOrderExtractorTests
     private static OllamaOrderExtractor Extractor(IChatClient chat, bool? think = null) => new(
         chat,
         MsOptions.Create(new AssistantOptions { Enabled = true, Ollama = new OllamaOptions { Think = think } }),
+        new StaticAssistantSettings(ollamaModel: "qwen3:4b"),
         NullLogger<OllamaOrderExtractor>.Instance);
 
     private sealed class StubChatClient(Func<IEnumerable<ChatMessage>, string> answer) : IChatClient

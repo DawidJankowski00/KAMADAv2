@@ -10,4 +10,7 @@ public static class AuthorizationPolicies
 
     /// <summary>Taking orders: admins and sellers.</summary>
     public const string SalesAccess = nameof(SalesAccess);
+
+    /// <summary>Developer settings (assistant provider and models).</summary>
+    public const string DeveloperOnly = nameof(DeveloperOnly);
 }

@@ -18,6 +18,7 @@ public sealed class EndpointAuthorizationTests(KamadaApiFactory factory)
         AuthorizationPolicies.AdminOnly,
         AuthorizationPolicies.CourierOnly,
         AuthorizationPolicies.SalesAccess,
+        AuthorizationPolicies.DeveloperOnly,
     ];
 
     private static readonly string[] AnonymousEndpoints =

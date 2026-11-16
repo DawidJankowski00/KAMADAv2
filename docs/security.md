@@ -14,7 +14,7 @@ Only the requirements that apply to this system are listed; the numbers are ASVS
 
 | Req. | Status | How / decision |
 |---|---|---|
-| 1.1.2 Threat modelling | Gap | Trust boundaries are clear (browser apps → API → PostgreSQL, outbound to OSRM/Nominatim/Google/Ollama/SMTP), but there is no written threat model. G8. |
+| 1.1.2 Threat modelling | Gap | Trust boundaries are clear (browser apps → API → PostgreSQL, outbound to OSRM/Nominatim/Google/Ollama/Gemini/SMTP), but there is no written threat model. G8. |
 | 1.2.2 Communication between components authenticated | Partial | API → PostgreSQL with a data-only role ([ADR 0012](adr/0012-least-privilege-database-role.md)). Inside one Docker network there is no TLS between containers; production TLS is stage 5. |
 | 1.4.1 Access control enforced on a trusted service | Met | Every decision is made by the API; the apps only hide what the API would refuse. |
 | 1.4.4 One access control mechanism | Met | ASP.NET Core authorization policies (`SignedIn`, `AdminOnly`, `CourierOnly`, `SalesAccess`) plus ownership checks in handlers. |
@@ -65,6 +65,7 @@ Only the requirements that apply to this system are listed; the numbers are ASVS
 | Req. | Status | How / decision |
 |---|---|---|
 | 4.1.1 / 4.1.3 Enforced on the server, least privilege | Met | Policies per endpoint; a test fails for any endpoint without a named policy or a deliberate `AllowAnonymous`, and for any unexpected anonymous one. |
+| 4.1.4 Separation of duties for configuration | Met | Assistant provider settings need the separate `Developer` role (`DeveloperOnly`); an administrator without it gets 403. Secrets (the Gemini key) cannot be set through the API at all. |
 | 4.1.5 Deny by default | Met | Fallback policy requires authentication; unknown routes 404. |
 | 4.2.1 No direct object reference abuse | Met | Sellers see only their own orders (404 otherwise), couriers only their own runs, workers only their own sessions. |
 | 4.2.2 CSRF | N/A | No cookies; bearer tokens are not sent automatically by the browser. |
@@ -78,7 +79,7 @@ Only the requirements that apply to this system are listed; the numbers are ASVS
 | 5.1.5 No open redirects | Met | The login page follows only local return URLs. |
 | 5.2.x Sanitization of HTML | N/A | No user-supplied HTML is rendered (no `MarkupString`); Blazor encodes output. |
 | 5.3.4 / 5.3.5 Parameterized queries | Met | EF Core LINQ only; `ILIKE` patterns escape `%`, `_`, `\` (`LikePattern`). |
-| 5.2.6 SSRF | Met | Outbound requests go only to configured hosts (OSRM, Nominatim/Google, Ollama, SMTP); no user-supplied URLs are fetched. |
+| 5.2.6 SSRF | Met | Outbound requests go only to configured hosts (OSRM, Nominatim/Google, Ollama, Gemini, SMTP); no user-supplied URLs are fetched. Model names from the developer settings are validated and escaped into the Gemini path; the base URL is configuration only. |
 | 5.5.x Deserialization | Met | See 1.5.2. |
 
 ## V6 Stored cryptography
@@ -105,6 +106,7 @@ Only the requirements that apply to this system are listed; the numbers are ASVS
 | 8.1.1 Sensitive data not cached | Met | API responses default to `Cache-Control: no-store`; the phone's ETag lookups keep `private, no-cache` (revalidated every time). Closed G4. |
 | 8.2.1 / 8.2.2 Browser storage | Partial | The phone keeps clients and products offline for sellers only, wiped on sign-out ([ADR 0009](adr/0009-offline-ordering-on-the-phone.md)); IndexedDB is not encrypted. |
 | 8.3.1 Sensitive data in the body, not the URL | Met | Search terms in query strings are names, not credentials. |
+| 8.3.x Personal data sent to third parties | Partial | Only when a developer selects Gemini for the assistant ([ADR 0014](adr/0014-gemini-provider-and-developer-settings.md)): notes (client names, phones, addresses) and recordings go to Google. Default is local (Ollama/Whisper); the developer page and the assistant panel say when data leaves; a paid key is required for no-training terms. Notes, answers and audio are not logged. |
 | 8.3.4 Personal data identified | Partial | Clients (name, address, phone, e-mail) and workers; no retention or deletion policy yet (clients are deactivated, not deleted, because orders reference them). |
 
 ## V9 Communications

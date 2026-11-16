@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Kamada.Modules.Assistant.Domain.Settings;
 
 namespace Kamada.Modules.Assistant.Application;
 
@@ -6,8 +7,17 @@ internal sealed class AssistantOptions : IValidatableObject
 {
     public const string SectionName = "Assistant";
 
-    /// <summary>Switches the whole feature off: endpoints answer 503 and the admin panel hides the assistant.</summary>
+    /// <summary>
+    /// Hard switch of the whole feature: when off, endpoints answer 503 and the admin panel hides the assistant whatever the
+    /// developer settings say. When on, the settings stored in the database decide (they can switch it off too).
+    /// </summary>
     public bool Enabled { get; init; }
+
+    /// <summary>Starting value of the developer settings (used once, when the settings row is created).</summary>
+    public TextProvider Provider { get; init; } = TextProvider.Ollama;
+
+    /// <summary>Starting value of the developer settings (used once, when the settings row is created).</summary>
+    public SpeechProvider SpeechProvider { get; init; } = SpeechProvider.Whisper;
 
     [Range(100, 10_000)]
     public int MaxTextLength { get; init; } = 2000;
@@ -22,11 +32,24 @@ internal sealed class AssistantOptions : IValidatableObject
 
     public WhisperOptions Whisper { get; init; } = new();
 
+    public GeminiOptions Gemini { get; init; } = new();
+
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         if (string.IsNullOrWhiteSpace(Ollama.Model))
         {
             yield return new ValidationResult("Assistant:Ollama:Model is required.", [nameof(Ollama)]);
+        }
+
+        if (string.IsNullOrWhiteSpace(Gemini.Model))
+        {
+            yield return new ValidationResult("Assistant:Gemini:Model is required.", [nameof(Gemini)]);
+        }
+
+        if (Gemini.AttemptTimeout <= TimeSpan.Zero || Gemini.TotalTimeout < Gemini.AttemptTimeout)
+        {
+            yield return new ValidationResult(
+                "Assistant:Gemini needs a positive AttemptTimeout and a TotalTimeout at least as long.", [nameof(Gemini)]);
         }
 
         if (Ollama.RequestTimeout <= TimeSpan.Zero)
@@ -98,4 +121,26 @@ internal sealed class WhisperOptions
 
     /// <summary>0 = half of the CPU cores (at most 8).</summary>
     public int Threads { get; init; }
+}
+
+internal sealed class GeminiOptions
+{
+    /// <summary>
+    /// Google AI Studio API key (paid tier: prompts and audio are not used to train Google's models). Only from user
+    /// secrets or the environment (<c>Assistant__Gemini__ApiKey</c>) – never stored in the database, shown in the
+    /// panel or logged. Without it Gemini cannot be selected.
+    /// </summary>
+    public string? ApiKey { get; init; }
+
+    public Uri BaseUrl { get; init; } = new("https://generativelanguage.googleapis.com/");
+
+    /// <summary>Starting model of the developer settings; a stable, inexpensive model with audio input.</summary>
+    public string Model { get; init; } = "gemini-3.5-flash-lite";
+
+    /// <summary>One attempt; transient failures (429, 5xx) are retried twice within <see cref="TotalTimeout"/>.</summary>
+    public TimeSpan AttemptTimeout { get; init; } = TimeSpan.FromSeconds(30);
+
+    public TimeSpan TotalTimeout { get; init; } = TimeSpan.FromSeconds(75);
+
+    public bool IsConfigured => !string.IsNullOrWhiteSpace(ApiKey);
 }

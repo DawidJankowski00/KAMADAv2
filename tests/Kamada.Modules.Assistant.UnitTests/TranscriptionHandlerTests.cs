@@ -3,6 +3,7 @@ using Kamada.Modules.Assistant.Application;
 using Kamada.Modules.Assistant.Application.Abstractions;
 using Kamada.Modules.Assistant.Application.Transcriptions;
 using Kamada.Modules.Assistant.Domain;
+using Kamada.Modules.Assistant.Domain.Settings;
 using Kamada.Shared.Matching.Drafts;
 using Kamada.Shared.Kernel.Results;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -13,6 +14,7 @@ namespace Kamada.Modules.Assistant.UnitTests;
 public sealed class TranscriptionHandlerTests
 {
     private readonly StubSpeechToText _speech = new();
+    private readonly StaticAssistantSettings _settings = new();
 
     [Fact]
     public async Task Transcribe_ValidRecording_ReturnsTextLanguageAndDuration()
@@ -78,6 +80,17 @@ public sealed class TranscriptionHandlerTests
         var result = await TranscribeAsync(Wav(seconds: 2, amplitude: 50));
 
         result.Error.ShouldBe(AssistantErrors.SilentRecording);
+        _speech.Calls.ShouldBe(0);
+    }
+
+    [Fact]
+    public async Task Transcribe_DictationOffInSettings_FailsWithoutTouchingTheModel()
+    {
+        _settings.Snapshot = _settings.Snapshot with { SpeechProvider = SpeechProvider.Off };
+
+        var result = await TranscribeAsync(Wav(seconds: 1));
+
+        result.Error.ShouldBe(AssistantErrors.SpeechToTextDisabled);
         _speech.Calls.ShouldBe(0);
     }
 
@@ -161,7 +174,7 @@ public sealed class TranscriptionHandlerTests
     }
 
     private TranscriptionHandler Handler(Microsoft.Extensions.Options.IOptions<AssistantOptions> options) =>
-        new(_speech, options, NullLogger<TranscriptionHandler>.Instance);
+        new(_speech, options, _settings, NullLogger<TranscriptionHandler>.Instance);
 
     private Task<Result<Kamada.Shared.Contracts.Assistant.TranscriptionDto>> TranscribeAsync(
         byte[] audio, string? language = null, int maxBytes = 2 * 1024 * 1024) =>
@@ -187,7 +200,7 @@ public sealed class TranscriptionHandlerTests
 
         public AssistantLanguage? LastLanguage { get; private set; }
 
-        public Task PrepareAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+        public ValueTask<bool> IsReadyAsync(CancellationToken cancellationToken) => ValueTask.FromResult(IsReady);
 
         public Task<Result<Transcription>> TranscribeAsync(ReadOnlyMemory<byte> wav, AssistantLanguage language, CancellationToken cancellationToken)
         {

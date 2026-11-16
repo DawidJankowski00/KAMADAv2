@@ -5,10 +5,13 @@ namespace Kamada.Modules.Assistant.Application;
 internal static class AssistantErrors
 {
     public static readonly Error Disabled = Error.Unavailable(
-        "Assistant.Disabled", "The order assistant is switched off (Assistant:Enabled).");
+        "Assistant.Disabled", "The order assistant is switched off (Assistant:Enabled or the developer settings).");
 
     public static readonly Error ModelUnavailable = Error.Unavailable(
-        "Assistant.ModelUnavailable", "The local language model is not reachable or not loaded. Try again in a moment.");
+        "Assistant.ModelUnavailable", "The language model is not reachable or not loaded. Try again in a moment.");
+
+    public static readonly Error GeminiNotConfigured = Error.Validation(
+        "Assistant.GeminiNotConfigured", "Gemini needs an API key in the server configuration (Assistant:Gemini:ApiKey).");
 
     public static readonly Error ExtractionFailed = Error.Validation(
         "Assistant.ExtractionFailed", "The language model returned an answer that is not a valid order.");
@@ -17,10 +20,13 @@ internal static class AssistantErrors
         "Assistant.NothingRecognized", "No client, address or product was recognized in the text.");
 
     public static readonly Error SpeechToTextDisabled = Error.Unavailable(
-        "Assistant.SpeechToTextDisabled", "Dictation is switched off (Assistant:Whisper:Enabled).");
+        "Assistant.SpeechToTextDisabled", "Dictation is switched off (developer settings or Assistant:Whisper:Enabled).");
 
     public static readonly Error SpeechToTextNotReady = Error.Unavailable(
         "Assistant.SpeechToTextNotReady", "The speech model is still being downloaded or loaded. Try again in a moment.");
+
+    public static readonly Error SpeechToTextUnavailable = Error.Unavailable(
+        "Assistant.SpeechToTextUnavailable", "The speech recognition service is not reachable. Try again in a moment or type the note.");
 
     public static readonly Error AudioMissing = Error.Validation(
         "Assistant.AudioMissing", "Send the recording as the multipart field 'audio'.");
