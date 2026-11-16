@@ -49,9 +49,9 @@ services:
       Email__Smtp__Security: ${SMTP_SECURITY:-None}
       Email__Smtp__Username: ${SMTP_USERNAME:-}
       Email__Smtp__Password: ${SMTP_PASSWORD:-}
-      # Browser origins of the two apps: the only sites allowed to call the API (a trailing slash is ignored).
+      # Browser origin of the admin panel: the only site allowed to call the API (a trailing slash is ignored). The
+      # native phone app calls the API from .NET, not from the WebView, so CORS does not apply to it.
       Cors__AllowedOrigins__0: ${PUBLIC_ADMIN_URL:-http://localhost:5081/}
-      Cors__AllowedOrigins__1: ${PUBLIC_MOBILE_URL:-http://localhost:5082/}
       # Page of the admin panel that sets a new password; the reset e-mail links to it.
       Auth__PasswordReset__Url: ${PUBLIC_ADMIN_URL:-http://localhost:5081/}reset-password
     ports:
@@ -81,17 +81,6 @@ services:
       API_BASE_URL: ${PUBLIC_API_URL:-http://localhost:5080/}
     ports:
       - "5081:80"
-    depends_on:
-      - api
-
-  mobile:
-    build:
-      context: .
-      dockerfile: src/Web/Kamada.MobileApp/Dockerfile
-    environment:
-      API_BASE_URL: ${PUBLIC_API_URL:-http://localhost:5080/}
-    ports:
-      - "5082:80"
     depends_on:
       - api
 

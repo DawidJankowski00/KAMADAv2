@@ -1,6 +1,6 @@
 # 0005. Two Blazor WebAssembly frontends with a shared UI library
 
-- **Status:** Accepted
+- **Status:** Accepted; the phone PWA superseded by [0015](0015-native-phone-app-with-maui-blazor-hybrid.md) (native .NET MAUI app)
 - **Date:** 2026-09-28
 
 ## Context

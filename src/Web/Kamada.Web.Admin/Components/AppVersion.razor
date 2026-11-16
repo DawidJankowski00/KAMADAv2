@@ -25,9 +25,13 @@
     private int _taps;
     private DateTimeOffset _lastTap;
 
-    /// <summary>Informational version of the app without the build metadata ("1.0.0+3f2a…" → "1.0.0").</summary>
+    /// <summary>
+    /// Informational version of the app without the build metadata ("1.0.0+3f2a…" → "1.0.0"). A native host has no
+    /// entry assembly (Android starts the app), so this library's own version stands in – every project shares one.
+    /// </summary>
     internal static string Version =>
-        (Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "?")
+        ((Assembly.GetEntryAssembly() ?? typeof(AppVersion).Assembly)
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "?")
         .Split('+')[0];
 
     private void OnTap()

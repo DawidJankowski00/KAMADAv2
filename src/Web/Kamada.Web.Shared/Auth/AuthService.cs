@@ -84,8 +84,15 @@ public sealed class AuthService(IHttpClientFactory httpClientFactory, TokenStore
         return await SignInAsync(tokens, cancellationToken);
     }
 
+    /// <summary>
+    /// The last sign-out was the worker's own (not an expired session): the next sign-in starts at the app's home, not
+    /// on the page they left – the next worker on a shared phone may not have its role.
+    /// </summary>
+    public bool SignedOutByUser { get; private set; }
+
     public async Task LogoutAsync(CancellationToken cancellationToken = default)
     {
+        SignedOutByUser = true;
         var session = await store.GetAsync();
         if (session is not null)
         {
@@ -258,6 +265,7 @@ public sealed class AuthService(IHttpClientFactory httpClientFactory, TokenStore
             return ApiResult<AuthenticatedUserDto>.Fail(new ApiProblem(403, "To konto nie ma dostępu do tej aplikacji."));
         }
 
+        SignedOutByUser = false;
         await store.SetAsync(tokens);
         SessionChanged?.Invoke();
         return ApiResult<AuthenticatedUserDto>.Ok(tokens.User);

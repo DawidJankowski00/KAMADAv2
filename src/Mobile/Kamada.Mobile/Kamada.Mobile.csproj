@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <!-- The phone app: .NET MAUI (Android) hosting the Razor pages of Kamada.Web.Mobile in a BlazorWebView.
+       Needs the "android" workload, so it lives in Kamada.Mobile.slnx, not in Kamada.slnx. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-android</TargetFramework>
+    <SupportedOSPlatformVersion>26.0</SupportedOSPlatformVersion>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Kamada.Mobile</RootNamespace>
+    <UseMaui>true</UseMaui>
+    <SingleProject>true</SingleProject>
+    <EnableDefaultCssItems>false</EnableDefaultCssItems>
+    <MauiXamlInflator>SourceGen</MauiXamlInflator>
+
+    <ApplicationTitle>KAMADA</ApplicationTitle>
+    <ApplicationId>pl.kamada.mobile</ApplicationId>
+    <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+    <ApplicationVersion>1</ApplicationVersion>
+  </PropertyGroup>
+
+  <!-- API address baked into the build. The emulator reaches the host computer as 10.0.2.2; for a phone in the LAN:
+       dotnet build ... -p:KamadaApiBaseUrl=http://192.168.1.10:5080/ (plain HTTP is allowed only in Debug builds). -->
+  <PropertyGroup>
+    <KamadaApiBaseUrl Condition="'$(KamadaApiBaseUrl)' == '' And '$(Configuration)' == 'Debug'">http://10.0.2.2:5080/</KamadaApiBaseUrl>
+  </PropertyGroup>
+  <Target Name="RequireApiBaseUrl" BeforeTargets="Build" Condition="'$(KamadaApiBaseUrl)' == ''">
+    <Error Text="Set the API address for this build: -p:KamadaApiBaseUrl=https://api.example.com/" />
+  </Target>
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>KamadaApiBaseUrl</_Parameter1>
+      <_Parameter2>$(KamadaApiBaseUrl)</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
+    <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#0D47A1" />
+    <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#0D47A1" BaseSize="128,128" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Maui.Controls" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Kamada.Mobile.Storage\Kamada.Mobile.Storage.csproj" />
+    <ProjectReference Include="..\..\Web\Kamada.Web.Mobile\Kamada.Web.Mobile.csproj" />
+    <ProjectReference Include="..\..\Web\Kamada.Web.Shared\Kamada.Web.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

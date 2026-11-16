@@ -1,3 +1,4 @@
+using Kamada.Web.Shared.Platform;
 using Kamada.Shared.Contracts.Auth;
 using Kamada.Web.Shared.Auth;
 
@@ -21,7 +22,7 @@ public sealed class RoleContextTests : IDisposable
             AllowedRoles = [Seller, Roles.Courier, Roles.Admin],
             StorageKey = "kamada.test.session",
         };
-        _auth = new AuthService(_api, new TokenStore(_js, _options), _options, TimeProvider.System);
+        _auth = new AuthService(_api, new TokenStore(new BrowserSessionStorage(_js), _options), _options, TimeProvider.System);
     }
 
     [Fact]
@@ -185,7 +186,7 @@ public sealed class RoleContextTests : IDisposable
         _api.Dispose();
     }
 
-    private RoleContext NewRoleContext() => new(_auth, _js, _options);
+    private RoleContext NewRoleContext() => new(_auth, new BrowserSessionStorage(_js), _options);
 
     private async Task<AuthenticatedUserDto> SignInAsync(params string[] roles)
     {

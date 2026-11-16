@@ -6,14 +6,14 @@ namespace Kamada.ArchitectureTests;
 /// </summary>
 public sealed class FrontendTests
 {
-    private static readonly string[] AllowedFrontendReferences = ["Kamada.Shared.Contracts", "Kamada.Web.Shared", "Kamada.Web.Admin"];
+    private static readonly string[] AllowedFrontendReferences = ["Kamada.Shared.Contracts", "Kamada.Web.Shared", "Kamada.Web.Admin", "Kamada.Web.Mobile", "Kamada.Mobile.Storage"];
 
     [Theory]
-    [InlineData("Kamada.AdminPanel")]
-    [InlineData("Kamada.MobileApp")]
-    public void Frontend_ReferencesOnlyContractsAndSharedUi(string project)
+    [InlineData("Web", "Kamada.AdminPanel")]
+    [InlineData("Mobile", "Kamada.Mobile")]
+    public void Frontend_ReferencesOnlyContractsAndSharedUi(string folder, string project)
     {
-        var path = Path.Combine(RepositoryPaths.Root, "src", "Web", project, $"{project}.csproj");
+        var path = Path.Combine(RepositoryPaths.Root, "src", folder, project, $"{project}.csproj");
 
         ProjectReferences.Of(path).ShouldAllBe(reference => AllowedFrontendReferences.Contains(reference));
     }
@@ -32,6 +32,22 @@ public sealed class FrontendTests
         var path = Path.Combine(RepositoryPaths.Root, "src", "Web", "Kamada.Web.Admin", "Kamada.Web.Admin.csproj");
 
         ProjectReferences.Of(path).ShouldBe(["Kamada.Shared.Contracts", "Kamada.Web.Shared"], ignoreOrder: true);
+    }
+
+    [Fact]
+    public void SharedPhonePages_ReferenceOnlyHttpContractsAndSharedUi()
+    {
+        var path = Path.Combine(RepositoryPaths.Root, "src", "Web", "Kamada.Web.Mobile", "Kamada.Web.Mobile.csproj");
+
+        ProjectReferences.Of(path).ShouldBe(["Kamada.Shared.Contracts", "Kamada.Web.Shared", "Kamada.Web.Admin"], ignoreOrder: true);
+    }
+
+    [Fact]
+    public void PhoneStorage_ReferencesOnlySharedUi()
+    {
+        var path = Path.Combine(RepositoryPaths.Root, "src", "Mobile", "Kamada.Mobile.Storage", "Kamada.Mobile.Storage.csproj");
+
+        ProjectReferences.Of(path).ShouldBe(["Kamada.Web.Shared"]);
     }
 
     [Fact]

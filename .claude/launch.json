@@ -6,12 +6,6 @@
       "runtimeExecutable": "dotnet",
       "runtimeArgs": ["run", "--project", "src/Web/Kamada.AdminPanel", "--launch-profile", "http"],
       "port": 5081
-    },
-    {
-      "name": "mobile-app",
-      "runtimeExecutable": "dotnet",
-      "runtimeArgs": ["run", "--project", "src/Web/Kamada.MobileApp", "--launch-profile", "http"],
-      "port": 5082
     }
   ]
 }

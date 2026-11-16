@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Mobile\Kamada.Mobile.Storage\Kamada.Mobile.Storage.csproj" />
+  </ItemGroup>
+
+</Project>

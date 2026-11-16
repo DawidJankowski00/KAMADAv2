@@ -61,6 +61,7 @@ public sealed class WavEncoderTests
 
     [Theory]
     [InlineData("permission")]
+    [InlineData("permission-app")]
     [InlineData("insecure")]
     [InlineData("no-device")]
     [InlineData("unsupported")]

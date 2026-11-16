@@ -1,4 +1,4 @@
-using Microsoft.JSInterop;
+using Kamada.Web.Shared.Platform;
 
 namespace Kamada.Web.Shared.Auth;
 
@@ -8,21 +8,21 @@ namespace Kamada.Web.Shared.Auth;
 /// </summary>
 /// <remarks>
 /// Available roles = the user's roles the app supports (<see cref="KamadaClientOptions.AllowedRoles"/>, in that order).
-/// The active role is remembered per user in <c>localStorage</c>. Default: the only role, otherwise the last used one,
+/// The active role is remembered per user on the device (<see cref="ISessionStorage"/>; kept after sign-out, it is only a role name). Default: the only role, otherwise the last used one,
 /// otherwise the first available in the app's order.
 /// </remarks>
 public sealed class RoleContext : IDisposable
 {
     private readonly AuthService _auth;
-    private readonly IJSRuntime _js;
+    private readonly ISessionStorage _storage;
     private readonly KamadaClientOptions _options;
 
     private Guid? _userId;
 
-    public RoleContext(AuthService auth, IJSRuntime js, KamadaClientOptions options)
+    public RoleContext(AuthService auth, ISessionStorage storage, KamadaClientOptions options)
     {
         _auth = auth;
-        _js = js;
+        _storage = storage;
         _options = options;
         _auth.SessionChanged += OnSessionChanged;
     }
@@ -91,27 +91,7 @@ public sealed class RoleContext : IDisposable
 
     private string StorageKey(Guid userId) => $"{_options.StorageKey}.role.{userId:N}";
 
-    private async ValueTask<string?> ReadRememberedRoleAsync(Guid userId)
-    {
-        try
-        {
-            return await _js.InvokeAsync<string?>("localStorage.getItem", StorageKey(userId));
-        }
-        catch (JSException)
-        {
-            return null;
-        }
-    }
+    private ValueTask<string?> ReadRememberedRoleAsync(Guid userId) => _storage.GetAsync(StorageKey(userId));
 
-    private async ValueTask RememberRoleAsync(Guid userId, string role)
-    {
-        try
-        {
-            await _js.InvokeVoidAsync("localStorage.setItem", StorageKey(userId), role);
-        }
-        catch (JSException)
-        {
-            // The choice lasts until the page is reloaded.
-        }
-    }
+    private ValueTask RememberRoleAsync(Guid userId, string role) => _storage.SetAsync(StorageKey(userId), role);
 }

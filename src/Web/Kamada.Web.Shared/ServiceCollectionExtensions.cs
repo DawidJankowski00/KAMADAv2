@@ -2,8 +2,10 @@ using Kamada.Web.Shared.Api;
 using Kamada.Web.Shared.Assistant;
 using Kamada.Web.Shared.Auth;
 using Kamada.Web.Shared.Connectivity;
+using Kamada.Web.Shared.Platform;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using MudBlazor;
 using MudBlazor.Services;
 
@@ -23,7 +25,10 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<RoleContext>();
         services.AddTransient<AuthorizingHandler>();
         services.AddSingleton<ConnectionMonitor>();
-        services.AddSingleton<BrowserNetworkEvents>();
+        // Browser implementations of the platform services; a native host registers its own first. INetworkEvents has no
+        // browser implementation: only the native phone app watches the network.
+        services.TryAddSingleton<ISessionStorage, BrowserSessionStorage>();
+        services.TryAddSingleton<IAudioRecorder, BrowserAudioRecorder>();
         services.AddTransient<IOrderAssistant, ServerOrderAssistant>();
 
         services.AddHttpClient(AuthService.AnonymousClientName, http => http.BaseAddress = options.ApiBaseUrl);

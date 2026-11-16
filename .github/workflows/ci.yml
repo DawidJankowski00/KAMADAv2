@@ -77,14 +77,94 @@ jobs:
 
       # --pull: scan what a fresh build ships, not a cached base image.
       - name: Build images
-        run: docker compose build --pull api admin mobile
+        run: docker compose build --pull api admin
 
       # Grype CLI image (pinned). Fails on high or critical vulnerabilities that already have a fix.
       - name: Scan images
         run: |
-          for image in kamada-api kamada-admin kamada-mobile; do
+          for image in kamada-api kamada-admin; do
             echo "::group::$image"
             docker run --rm -v /var/run/docker.sock:/var/run/docker.sock anchore/grype:v0.121.0 \
               "$image:latest" --only-fixed --fail-on high
             echo "::endgroup::"
           done
+
+  android:
+    name: Android app
+    runs-on: ubuntu-latest
+    env:
+      # Keystore (base64) and passwords from repository secrets; without them the APK gets the build machine's debug key
+      # (a build check only, not for installing on workers' phones).
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      # Production API address (repository variable); builds that are not releases only need a placeholder.
+      KAMADA_API_BASE_URL: ${{ vars.KAMADA_API_BASE_URL }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: microsoft
+          java-version: "21"
+
+      - name: Install the Android workload
+        run: dotnet workload install maui-android
+
+      - name: Build the APK
+        run: |
+          set -euo pipefail
+          api="${KAMADA_API_BASE_URL:-}"
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            [[ -n "$api" ]] || { echo "::error::Set the repository variable KAMADA_API_BASE_URL for releases"; exit 1; }
+            [[ -n "$ANDROID_KEYSTORE_BASE64" ]] || { echo "::error::Release builds must be signed (ANDROID_KEYSTORE_* secrets)"; exit 1; }
+            version="${GITHUB_REF_NAME#v}"
+          else
+            api="${api:-https://api.example.invalid/}"
+            version="0.0.0"
+          fi
+
+          args=(-f net10.0-android -c Release -p:AndroidPackageFormats=apk -p:KamadaApiBaseUrl="$api"
+                -p:ApplicationDisplayVersion="$version" -p:ApplicationVersion="$GITHUB_RUN_NUMBER" -o out)
+          if [[ -n "$ANDROID_KEYSTORE_BASE64" ]]; then
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/kamada.keystore"
+            # env: makes the Android build read the passwords from the environment (never on the command line).
+            args+=(-p:AndroidKeyStore=true -p:AndroidSigningKeyStore="$RUNNER_TEMP/kamada.keystore"
+                   -p:AndroidSigningKeyAlias="$ANDROID_KEY_ALIAS"
+                   -p:AndroidSigningStorePass=env:ANDROID_KEYSTORE_PASSWORD -p:AndroidSigningKeyPass=env:ANDROID_KEY_PASSWORD)
+          fi
+
+          dotnet publish src/Mobile/Kamada.Mobile/Kamada.Mobile.csproj "${args[@]}"
+          rm -f "$RUNNER_TEMP/kamada.keystore"
+          ls -la out/*.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kamada-android
+          path: out/*-Signed.apk
+          if-no-files-found: error
+
+  android-release:
+    name: Android release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: android
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # attach the APK to the GitHub release
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: kamada-android
+
+      - name: Attach the signed APK to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mv ./*-Signed.apk "kamada-${GITHUB_REF_NAME}.apk"
+          gh release create "$GITHUB_REF_NAME" "kamada-${GITHUB_REF_NAME}.apk" --repo "$GITHUB_REPOSITORY" --generate-notes \
+            || gh release upload "$GITHUB_REF_NAME" "kamada-${GITHUB_REF_NAME}.apk" --repo "$GITHUB_REPOSITORY" --clobber

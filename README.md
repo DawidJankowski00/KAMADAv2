@@ -3,7 +3,8 @@
 [![CI](https://github.com/DawidJankowski00/KAMADAv2/actions/workflows/ci.yml/badge.svg)](https://github.com/DawidJankowski00/KAMADAv2/actions/workflows/ci.yml)
 
 Order management and courier delivery platform with **route optimization**. It is a .NET 10 modular monolith with
-a Blazor WebAssembly admin panel and a Blazor PWA for workers (couriers, sellers and administrators).
+a Blazor WebAssembly admin panel and a native Android app for workers (couriers, sellers and administrators), built with
+.NET MAUI Blazor Hybrid on the same Razor components.
 
 This is not a portfolio piece: it is a close copy of a system I built to improve the work of a local business.
 
@@ -31,7 +32,7 @@ This is not a portfolio piece: it is a close copy of a system I built to improve
   - see it on a Leaflet map with Google Maps navigation links.
 - **Dashboard.** Order counts per status and today's runs.
 
-**Phone app** (installable PWA for workers):
+**Phone app** (Android, .NET MAUI Blazor Hybrid – [ADR 0015](docs/adr/0015-native-phone-app-with-maui-blazor-hybrid.md)):
 
 - **Role-based views.** A worker signs in once and lands in the view of their role. A worker with several roles
   (demo account `kierownik`) switches between them from the app bar without signing in again; each role has its own
@@ -99,7 +100,6 @@ docker compose up --build
 | Service | URL |
 |---|---|
 | Admin panel | http://localhost:5081 |
-| Phone app (PWA; use a phone or a narrow window) | http://localhost:5082 |
 | API docs (Scalar) | http://localhost:5080/scalar |
 | API health | http://localhost:5080/health |
 | Mailpit: e-mails sent by the API (password resets) | http://localhost:8025 |
@@ -242,8 +242,9 @@ Requirements: .NET SDK 10.0.401+ and Docker (for PostgreSQL and the integration 
 docker compose up -d postgres mailpit             # database + e-mail catcher (http://localhost:8025)
 dotnet run --project src/Kamada.Api               # http://localhost:5080
 dotnet run --project src/Web/Kamada.AdminPanel    # http://localhost:5081
-dotnet run --project src/Web/Kamada.MobileApp     # http://localhost:5082
 ```
+
+The phone app runs on an Android emulator or phone, see [Phone app](#phone-app-android).
 
 The API applies migrations and seeds demo data on startup (`Database:*` in `appsettings.Development.json`).
 Each module has one `Initial` migration (squashed on 2026-11-14): a database created before that will not migrate,
@@ -271,6 +272,42 @@ dotnet user-secrets --project src/Kamada.Api set "RouteOptimization:Google:ApiKe
 | `Assistant:Gemini:ApiKey` | not set | Google AI Studio key (secrets/env only, `GEMINI_API_KEY` in compose); without it Gemini cannot be chosen |
 | `Assistant:Gemini:Model` | `gemini-3.5-flash-lite` | Starting Gemini model of the developer settings |
 | `RateLimiting:Assistant:PermitLimit` | `20` per minute | Per-user limit on assistant requests |
+
+## Phone app (Android)
+
+The phone app is a .NET MAUI Blazor Hybrid app ([ADR 0015](docs/adr/0015-native-phone-app-with-maui-blazor-hybrid.md)):
+the Razor pages of `Kamada.Web.Mobile` in a `BlazorWebView`, with native session storage (Android Keystore), SQLite for
+the offline copy, the platform network state, the microphone and the Maps app. It needs the Android workload (the
+.NET MAUI workload of Visual Studio, or `dotnet workload install maui-android`), a JDK and the Android SDK. It builds
+from `Kamada.Mobile.slnx`, so `Kamada.slnx` and Docker do not need any of it.
+
+On the emulator (the API on this computer is `10.0.2.2` there; Debug builds use it by default):
+
+```bash
+docker compose up -d postgres mailpit && dotnet run --project src/Kamada.Api
+```
+
+```bash
+dotnet build src/Mobile/Kamada.Mobile -t:Run -f net10.0-android
+```
+
+On a phone in the same network, pass the address of this computer (plain HTTP is allowed only in Debug builds) and let
+the API listen on it (`ASPNETCORE_URLS=http://0.0.0.0:5080`):
+
+```bash
+dotnet build src/Mobile/Kamada.Mobile -t:Run -f net10.0-android -p:KamadaApiBaseUrl=http://192.168.1.10:5080/
+```
+
+Release builds need the production address and are trimmed, so check new pages in a Release build too:
+
+```bash
+dotnet publish src/Mobile/Kamada.Mobile -f net10.0-android -c Release -p:AndroidPackageFormats=apk -p:KamadaApiBaseUrl=https://api.example.com/
+```
+
+CI builds the APK on every push; a tag `v*` signs it with the keystore from the repository secrets
+(`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`), uses the
+repository variable `KAMADA_API_BASE_URL` and attaches the APK to a GitHub release. Debug builds include the WebView
+developer tools (`chrome://inspect` on the computer).
 
 ## Tests
 
@@ -315,7 +352,10 @@ contracts: plain interfaces called in-process, sharing one database transaction 
 flowchart LR
     subgraph Browser
         Admin["Admin panel<br/>Blazor WASM + MudBlazor"]
-        MobileApp["Phone PWA<br/>Blazor WASM + MudBlazor"]
+    end
+
+    subgraph Phone["Android phone"]
+        MobileApp["Phone app<br/>.NET MAUI Blazor Hybrid"]
     end
 
     subgraph Host["Kamada.Api (ASP.NET Core Minimal APIs)"]
@@ -365,7 +405,10 @@ src/
     Kamada.Web.Shared/              # shared Blazor library: API client, auth, map, labels
     Kamada.Web.Admin/               # admin pages and menu, shared by the admin SPA and the phone app
     Kamada.AdminPanel/              # admin SPA (host: login, layout)
-    Kamada.MobileApp/               # phone PWA for workers (courier and admin views)
+    Kamada.Web.Mobile/              # phone app pages, layout and role areas (Razor class library)
+  Mobile/
+    Kamada.Mobile/                  # Android app (.NET MAUI, BlazorWebView), in Kamada.Mobile.slnx
+    Kamada.Mobile.Storage/          # SQLite local store of the phone app (plain .NET, unit tested)
 tests/                              # unit tests per module, integration tests, architecture tests
 benchmarks/Kamada.Benchmarks/       # solver speed and heuristic quality
 benchmarks/Kamada.Assistant.Evals/  # order assistant accuracy and latency against a real model
@@ -670,6 +713,7 @@ Gemini has not been measured yet: its row goes into the table above after the fi
 | [0012](docs/adr/0012-least-privilege-database-role.md) | The API connects with a data-only database role; migrations run as the schema owner |
 | [0013](docs/adr/0013-security-baseline-asvs-level-2.md) | Security baseline: OWASP ASVS 4.0.3 level 2, reviewed in [docs/security.md](docs/security.md) |
 | [0014](docs/adr/0014-gemini-provider-and-developer-settings.md) | Gemini as an optional assistant provider, chosen by developers at run time |
+| [0015](docs/adr/0015-native-phone-app-with-maui-blazor-hybrid.md) | Native phone app with .NET MAUI Blazor Hybrid instead of the PWA |
 
 ## Possible improvements
 
@@ -678,7 +722,8 @@ Gemini has not been measured yet: its row goes into the table above after the fi
   routing problem (VRP), e.g. with OR-Tools.
 - **Live courier location**: position tracking on the admin map and ETAs updated from real progress.
 - **Customer notifications**: SMS or e-mail when the run starts and when the courier is close.
-- **Offline outbox** in the courier PWA: queue stop outcomes without signal and sync them later.
+- **Offline outbox for couriers**: queue stop outcomes without signal and sync them later (sellers already have one).
+- **iOS build** of the phone app: the same MAUI project, needs a Mac build agent and an Apple developer account.
 - **Traffic-aware times**: Google Routes with `TRAFFIC_AWARE` for the planned departure time.
 - **Proof of delivery**: photo or signature on the stop.
 - **Messaging between modules**: domain events through an outbox, once some reactions no longer need to be

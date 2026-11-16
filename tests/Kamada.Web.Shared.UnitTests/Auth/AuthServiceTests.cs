@@ -1,3 +1,4 @@
+using Kamada.Web.Shared.Platform;
 using System.Text.Json;
 using Kamada.Shared.Contracts.Auth;
 using Kamada.Web.Shared.Api;
@@ -21,7 +22,7 @@ public sealed class AuthServiceTests : IDisposable
             AllowedRoles = [Roles.Courier],
             StorageKey = StorageKey,
         };
-        _auth = new AuthService(_api, new TokenStore(_js, options), options, TimeProvider.System);
+        _auth = new AuthService(_api, new TokenStore(new BrowserSessionStorage(_js), options), options, TimeProvider.System);
     }
 
     [Fact]
@@ -47,6 +48,20 @@ public sealed class AuthServiceTests : IDisposable
         result.Problem!.Status.ShouldBe(403);
         _api.RequestedPaths.ShouldContain("/api/auth/logout");
         (await _auth.GetCurrentUserAsync()).ShouldBeNull();
+    }
+
+    [Fact]
+    public async Task LogoutAsync_ByTheWorker_IsRememberedUntilTheNextSignIn()
+    {
+        _api.LoginResponse = StubApi.Tokens(Roles.Courier);
+        await _auth.LoginAsync("anna", "secret", TestContext.Current.CancellationToken);
+        _auth.SignedOutByUser.ShouldBeFalse();
+
+        await _auth.LogoutAsync(TestContext.Current.CancellationToken);
+        _auth.SignedOutByUser.ShouldBeTrue();
+
+        await _auth.LoginAsync("anna", "secret", TestContext.Current.CancellationToken);
+        _auth.SignedOutByUser.ShouldBeFalse();
     }
 
     [Fact]

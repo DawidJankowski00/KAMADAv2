@@ -8,7 +8,7 @@ Short records of decisions that shape the codebase ([format](https://adr.github.
 | [0002](0002-schema-and-dbcontext-per-module.md) | One database, one schema and one DbContext per module | Accepted |
 | [0003](0003-jwt-with-rotating-refresh-tokens.md) | JWT access tokens with rotating refresh tokens | Accepted |
 | [0004](0004-travel-time-matrix-and-local-solver.md) | Route optimization: travel-time matrix + local solver, no Google Maps scraping | Accepted |
-| [0005](0005-blazor-wasm-frontends.md) | Two Blazor WebAssembly frontends with a shared UI library | Accepted |
+| [0005](0005-blazor-wasm-frontends.md) | Two Blazor WebAssembly frontends with a shared UI library | Accepted, phone PWA superseded by 0015 |
 | [0006](0006-geocoding-never-blocks-saving.md) | Geocoding with Nominatim that never blocks saving an address | Accepted |
 | [0007](0007-demo-data-through-real-use-cases.md) | Demo data seeded through the real use cases | Accepted |
 | [0008](0008-local-ai-assistant-suggests-only.md) | Local AI order assistant: the model extracts, C# resolves, the admin accepts | Accepted |
@@ -18,3 +18,4 @@ Short records of decisions that shape the codebase ([format](https://adr.github.
 | [0012](0012-least-privilege-database-role.md) | The API connects with a data-only database role; migrations run as the schema owner | Accepted |
 | [0013](0013-security-baseline-asvs-level-2.md) | Security baseline: OWASP ASVS 4.0.3 level 2, reviewed in docs/security.md | Accepted |
 | [0014](0014-gemini-provider-and-developer-settings.md) | Gemini as an optional assistant provider, chosen in developer settings stored in the database | Accepted |
+| [0015](0015-native-phone-app-with-maui-blazor-hybrid.md) | Native phone app with .NET MAUI Blazor Hybrid instead of the PWA | Accepted |

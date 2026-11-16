@@ -52,7 +52,7 @@ Only the requirements that apply to this system are listed; the numbers are ASVS
 | 3.1.1 No session tokens in URLs | Met | Bearer header only. The password reset link carries a one-time recovery token, not a session. |
 | 3.2.1 New session on sign-in | Met | New refresh token family per sign-in (and per 2FA sign-in). |
 | 3.2.2 ≥ 64 bits of entropy | Met | Refresh tokens: 512 random bits; stored as SHA-256. |
-| 3.2.3 Tokens stored securely in the browser | Partial | `localStorage` (Blazor WebAssembly, no server to keep a cookie). Exposed to XSS, which the CSP (`script-src` without `unsafe-inline`) and Blazor's output encoding mitigate. The MAUI app (stage 4) moves the phone to platform secure storage. G11. |
+| 3.2.3 Tokens stored securely in the browser | Partial | Admin panel: `localStorage` (Blazor WebAssembly, no server to keep a cookie), exposed to XSS, which the CSP (`script-src` without `unsafe-inline`) and Blazor's output encoding mitigate. Phone app: Android Keystore-backed `SecureStorage` ([ADR 0015](adr/0015-native-phone-app-with-maui-blazor-hybrid.md)). G11. |
 | 3.3.1 Sign-out invalidates the session | Partial | The refresh token is revoked at once; the access token stays valid until it expires (≤ 15 min), the accepted trade-off of stateless tokens ([ADR 0003](adr/0003-jwt-with-rotating-refresh-tokens.md)). |
 | 3.3.2 Re-authentication (L2: 12 h or 30 min idle) | Gap | Refresh tokens are valid for 14 days and slide with use; there is no absolute session lifetime. G2. |
 | 3.3.3 Sign out other sessions after a password change | Met | Automatic (change, reset and admin reset revoke every session). |
@@ -104,7 +104,7 @@ Only the requirements that apply to this system are listed; the numbers are ASVS
 | Req. | Status | How / decision |
 |---|---|---|
 | 8.1.1 Sensitive data not cached | Met | API responses default to `Cache-Control: no-store`; the phone's ETag lookups keep `private, no-cache` (revalidated every time). Closed G4. |
-| 8.2.1 / 8.2.2 Browser storage | Partial | The phone keeps clients and products offline for sellers only, wiped on sign-out ([ADR 0009](adr/0009-offline-ordering-on-the-phone.md)); IndexedDB is not encrypted. |
+| 8.2.1 / 8.2.2 Browser storage | Partial | The phone keeps clients and products offline for sellers only, wiped on sign-out ([ADR 0009](adr/0009-offline-ordering-on-the-phone.md)), in a SQLite file in the app's private storage (not encrypted beyond Android's file-based encryption; backups of the app are disabled). |
 | 8.3.1 Sensitive data in the body, not the URL | Met | Search terms in query strings are names, not credentials. |
 | 8.3.x Personal data sent to third parties | Partial | Only when a developer selects Gemini for the assistant ([ADR 0014](adr/0014-gemini-provider-and-developer-settings.md)): notes (client names, phones, addresses) and recordings go to Google. Default is local (Ollama/Whisper); the developer page and the assistant panel say when data leaves; a paid key is required for no-training terms. Notes, answers and audio are not logged. |
 | 8.3.4 Personal data identified | Partial | Clients (name, address, phone, e-mail) and workers; no retention or deletion policy yet (clients are deactivated, not deleted, because orders reference them). |
@@ -168,6 +168,6 @@ Only the requirements that apply to this system are listed; the numbers are ASVS
 | G8 | 1.1.2 | A short threat model (data flows, trust boundaries, abuse cases) in `docs/`. | small |
 | G9 | 2.1.8, 2.1.12 | "Show password" toggle and a strength hint on the password forms. | small |
 | G10 | 2.1.7 | Ship or configure a large breached-password list (licence to check, e.g. SecLists – MIT). | small |
-| G11 | 3.2.3 | Accepted for the web apps (CSP mitigates); resolved for the phone by MAUI secure storage (stage 4). | stage 4 |
+| ~~G11~~ | 3.2.3 | Phone: done 2026-11-16 (MAUI secure storage). Accepted for the web admin panel (CSP mitigates). | done |
 | ~~G12~~ | 3.5.3 | Done 2026-11-14: only HS256 accepted. | – |
 | G13 | 3.7.1 | Ask for the admin's password or code before resetting another worker's password or 2FA. | medium |
