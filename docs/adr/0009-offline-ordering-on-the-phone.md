@@ -1,6 +1,6 @@
 # 0009. Offline ordering on the phone
 
-- **Status:** Accepted
+- **Status:** Accepted; device storage amended by [0015](0015-native-phone-app-with-maui-blazor-hybrid.md) (SQLite and secure storage instead of IndexedDB and localStorage)
 - **Date:** 2026-10-11
 
 ## Context
