@@ -19,7 +19,7 @@ internal sealed class JwtTokenService(IOptions<JwtOptions> options, TimeProvider
 
     public TimeSpan RefreshTokenLifetime => _options.RefreshTokenLifetime;
 
-    public AccessToken CreateAccessToken(Worker worker)
+    public AccessToken CreateAccessToken(Worker worker, Guid sessionId, bool twoFactorSetupRequired = false)
     {
         var now = clock.GetUtcNow();
         var expiresAt = now + _options.AccessTokenLifetime;
@@ -36,7 +36,9 @@ internal sealed class JwtTokenService(IOptions<JwtOptions> options, TimeProvider
                 new Claim(KamadaClaimTypes.Name, worker.Username),
                 new Claim(KamadaClaimTypes.GivenName, worker.Name),
                 new Claim(KamadaClaimTypes.FamilyName, worker.Surname),
+                new Claim(KamadaClaimTypes.SessionId, sessionId.ToString()),
                 .. worker.Roles.Select(role => new Claim(KamadaClaimTypes.Role, role.ToRoleName())),
+                .. (twoFactorSetupRequired ? [new Claim(KamadaClaimTypes.TwoFactorSetupRequired, "true")] : Array.Empty<Claim>()),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             ]),
             SigningCredentials = new SigningCredentials(
@@ -47,15 +49,15 @@ internal sealed class JwtTokenService(IOptions<JwtOptions> options, TimeProvider
         return new AccessToken(_handler.CreateToken(descriptor), expiresAt);
     }
 
-    public GeneratedRefreshToken GenerateRefreshToken()
+    public GeneratedToken GenerateOpaqueToken()
     {
         var token = Base64Url.EncodeToString(RandomNumberGenerator.GetBytes(64));
-        return new GeneratedRefreshToken(token, HashRefreshToken(token));
+        return new GeneratedToken(token, HashOpaqueToken(token));
     }
 
     /// <summary>
     /// SHA-256 is sufficient here (unlike for passwords): the token has 512 bits of entropy, so it cannot be brute-forced.
     /// </summary>
-    public string HashRefreshToken(string token) =>
+    public string HashOpaqueToken(string token) =>
         Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
 }

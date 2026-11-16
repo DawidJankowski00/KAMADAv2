@@ -14,7 +14,7 @@
 <MudPaper Class="pa-4 mb-4" Elevation="1">
     <MudGrid Spacing="2">
         <MudItem xs="12" md="6">
-            <MudTextField T="string" Value="_search" ValueChanged="OnSearchChanged" Label="Szukaj (login, imię, nazwisko)"
+            <MudTextField T="string" Value="_search" ValueChanged="OnSearchChanged" Label="Szukaj (login, e-mail, imię, nazwisko)"
                           Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" DebounceInterval="300" Clearable="true" />
         </MudItem>
         <MudItem xs="6" md="3">
@@ -39,6 +39,7 @@
         <MudTh>Pracownik</MudTh>
         <MudTh>Login</MudTh>
         <MudTh>Role</MudTh>
+        <MudTh>E-mail</MudTh>
         <MudTh>Telefon</MudTh>
         <MudTh>Status</MudTh>
         <MudTh Style="text-align:right">Akcje</MudTh>
@@ -52,6 +53,7 @@
                 <MudChip T="string" Size="Size.Small" Color="@Labels.ColorOf(role)">@Labels.Of(role)</MudChip>
             }
         </MudTd>
+        <MudTd DataLabel="E-mail" HideSmall="true">@context.Email</MudTd>
         <MudTd DataLabel="Telefon">@context.PhoneNumber</MudTd>
         <MudTd DataLabel="Status">
             @if (context.IsActive)
@@ -62,10 +64,30 @@
             {
                 <MudChip T="string" Size="Size.Small">Nieaktywny</MudChip>
             }
+            @if (context.TwoFactorEnabled)
+            {
+                <MudTooltip Text="Logowanie dwuetapowe włączone">
+                    <MudChip T="string" Size="Size.Small" Color="Color.Info" Icon="@Icons.Material.Filled.VerifiedUser">2FA</MudChip>
+                </MudTooltip>
+            }
+            @if (IsLocked(context))
+            {
+                <MudTooltip Text="@($"Za dużo błędnych haseł. Logowanie zablokowane do {Labels.DateTime(context.LockedUntil!.Value)}.")">
+                    <MudChip T="string" Size="Size.Small" Color="Color.Warning" Icon="@Icons.Material.Filled.Lock">Zablokowany</MudChip>
+                </MudTooltip>
+            }
         </MudTd>
         <MudTd Style="text-align:right; white-space:nowrap">
             <MudTooltip Text="Edytuj"><MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="() => EditAsync(context)" /></MudTooltip>
             <MudTooltip Text="Resetuj hasło"><MudIconButton Icon="@Icons.Material.Filled.LockReset" Size="Size.Small" OnClick="() => ResetPasswordAsync(context)" /></MudTooltip>
+            @if (context.TwoFactorEnabled)
+            {
+                <MudTooltip Text="Wyłącz logowanie dwuetapowe (zgubiony telefon)"><MudIconButton Icon="@Icons.Material.Filled.PhonelinkErase" Size="Size.Small" OnClick="() => ResetTwoFactorAsync(context)" /></MudTooltip>
+            }
+            @if (IsLocked(context))
+            {
+                <MudTooltip Text="Odblokuj logowanie"><MudIconButton Icon="@Icons.Material.Filled.LockOpen" Size="Size.Small" OnClick="() => UnlockAsync(context)" /></MudTooltip>
+            }
             @if (context.IsActive)
             {
                 <MudTooltip Text="Dezaktywuj"><MudIconButton Icon="@Icons.Material.Filled.PersonOff" Size="Size.Small" OnClick="() => SetActiveAsync(context, false)" /></MudTooltip>
@@ -134,6 +156,31 @@
     {
         var parameters = new DialogParameters<ResetPasswordDialog> { { d => d.Worker, worker } };
         await Dialogs.ShowForResultAsync<ResetPasswordDialog, bool>($"Nowe hasło: {worker.Username}", parameters, MaxWidth.ExtraSmall);
+    }
+
+    private async Task ResetTwoFactorAsync(WorkerDto worker)
+    {
+        if (!await Dialogs.ConfirmAsync("Wyłączenie logowania dwuetapowego", $"Wyłączyć logowanie dwuetapowe dla {worker.Username}? Użyj tego, gdy pracownik zgubił telefon i kody zapasowe. Pracownik zostanie wylogowany i zaloguje się samym hasłem.", "Wyłącz", Color.Warning))
+        {
+            return;
+        }
+
+        var result = await Api.PostAsync($"api/workers/{worker.Id}/reset-two-factor");
+        if (Snackbar.Report(result, "Logowanie dwuetapowe wyłączone."))
+        {
+            await _table!.ReloadServerData();
+        }
+    }
+
+    private static bool IsLocked(WorkerDto worker) => worker.LockedUntil > DateTimeOffset.UtcNow;
+
+    private async Task UnlockAsync(WorkerDto worker)
+    {
+        var result = await Api.PostAsync($"api/workers/{worker.Id}/unlock");
+        if (Snackbar.Report(result, "Logowanie odblokowane."))
+        {
+            await _table!.ReloadServerData();
+        }
     }
 
     private async Task SetActiveAsync(WorkerDto worker, bool active)

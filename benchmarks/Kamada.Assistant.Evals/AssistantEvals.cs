@@ -34,7 +34,7 @@ internal static class AssistantEvals
         {
             var login = await http.PostAsJsonAsync("/api/auth/login", new LoginRequest("admin", "Admin123!"), json);
             login.EnsureSuccessStatusCode();
-            var tokens = (await login.Content.ReadFromJsonAsync<TokenResponse>(json))!;
+            var tokens = (await login.Content.ReadFromJsonAsync<LoginResponse>(json))!.Tokens!;
             http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", tokens.AccessToken);
         }
 

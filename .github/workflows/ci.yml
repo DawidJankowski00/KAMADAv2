@@ -3,6 +3,12 @@ name: CI
 on:
   push:
   pull_request:
+  # Weekly, so vulnerabilities published after the last change are found without a new commit.
+  schedule:
+    - cron: "0 5 * * 1"
+
+permissions:
+  contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -29,11 +35,56 @@ jobs:
       - name: Test
         run: dotnet test --solution Kamada.slnx -c Release --no-build
 
+  dependencies:
+    name: Vulnerable packages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore Kamada.slnx
+
+      # Direct and transitive NuGet packages against the GitHub Advisory Database; any advisory fails the job.
+      - name: Check packages
+        run: |
+          dotnet list Kamada.slnx package --vulnerable --include-transitive --format json > vulnerable.json
+          jq -r '.projects[] | .path as $project | (.frameworks // [])[] | ((.topLevelPackages // []) + (.transitivePackages // []))[]
+                 | select(.vulnerabilities) | "\($project): \(.id) \(.resolvedVersion) \([.vulnerabilities[].severity] | join(","))"' vulnerable.json \
+            | tee findings.txt
+          if [ -s findings.txt ]; then echo "::error::Vulnerable NuGet packages found"; exit 1; fi
+
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # the whole history, not only the last commit
+
+      # gitleaks CLI image (pinned); placeholders of tests and local development are allowed in .gitleaks.toml.
+      - name: gitleaks
+        run: docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.30.0 git /repo --config /repo/.gitleaks.toml --redact --no-banner
+
   docker:
     name: Docker images
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
 
+      # --pull: scan what a fresh build ships, not a cached base image.
       - name: Build images
-        run: docker compose build
+        run: docker compose build --pull api admin mobile
+
+      # Grype CLI image (pinned). Fails on high or critical vulnerabilities that already have a fix.
+      - name: Scan images
+        run: |
+          for image in kamada-api kamada-admin kamada-mobile; do
+            echo "::group::$image"
+            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock anchore/grype:v0.121.0 \
+              "$image:latest" --only-fixed --fail-on high
+            echo "::endgroup::"
+          done

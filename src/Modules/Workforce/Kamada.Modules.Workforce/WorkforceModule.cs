@@ -11,6 +11,7 @@ using Kamada.Modules.Workforce.Infrastructure.Persistence;
 using Kamada.Modules.Workforce.Infrastructure.Seeding;
 using Kamada.Shared.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
@@ -31,6 +32,9 @@ public static class WorkforceModule
         ArgumentNullException.ThrowIfNull(configuration);
 
         services.AddModuleDbContext<WorkforceDbContext>(WorkforceDbContext.Schema);
+        services.AddDataProtection()
+            .SetApplicationName("kamada")
+            .PersistKeysToDbContext<WorkforceDbContext>();
         services.AddScoped<IWorkforceDbContext>(sp => sp.GetRequiredService<WorkforceDbContext>());
 
         services.AddSingleton<IPasswordHasher<Worker>, PasswordHasher<Worker>>();
@@ -38,8 +42,28 @@ public static class WorkforceModule
 
         services.AddScoped<AuthSessionFactory>();
         services.AddScoped<LoginHandler>();
+        services.AddScoped<ChangePasswordHandler>();
+        services.AddScoped<ForgotPasswordHandler>();
+        services.AddScoped<ResetPasswordHandler>();
+        services.AddOptions<AccountLockoutOptions>()
+            .Bind(configuration.GetSection(AccountLockoutOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+        services.AddOptions<PasswordResetOptions>()
+            .Bind(configuration.GetSection(PasswordResetOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
         services.AddScoped<RefreshTokenHandler>();
         services.AddScoped<LogoutHandler>();
+        services.AddScoped<AccountSessions>();
+        services.AddSingleton<ITwoFactorService, TotpTwoFactorService>();
+        services.AddSingleton<TwoFactorPolicy>();
+        services.AddSingleton<PasswordPolicy>();
+        services.AddOptions<PasswordPolicyOptions>().Bind(configuration.GetSection(PasswordPolicyOptions.SectionName));
+        services.AddOptions<TwoFactorPolicyOptions>().Bind(configuration.GetSection(TwoFactorPolicyOptions.SectionName));
+        services.AddScoped<TwoFactorCodes>();
+        services.AddScoped<TwoFactorSetup>();
+        services.AddScoped<TwoFactorLoginHandler>();
         services.AddScoped<WorkerQueries>();
         services.AddScoped<WorkerCommands>();
         services.AddScoped<ICourierDirectory, CourierDirectory>();

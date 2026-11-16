@@ -5,10 +5,19 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.DataProtection.EntityFrameworkCore" />
+    <PackageReference Include="Otp.NET" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Kamada.Modules.Workforce.Contracts\Kamada.Modules.Workforce.Contracts.csproj" />
     <ProjectReference Include="..\..\..\Shared\Kamada.Shared.Kernel\Kamada.Shared.Kernel.csproj" />
     <ProjectReference Include="..\..\..\Shared\Kamada.Shared.Infrastructure\Kamada.Shared.Infrastructure.csproj" />
     <ProjectReference Include="..\..\..\Shared\Kamada.Shared.Contracts\Kamada.Shared.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Application/Auth/common-passwords.txt" LogicalName="Kamada.Modules.Workforce.Application.Auth.common-passwords.txt" />
   </ItemGroup>
 
   <ItemGroup>

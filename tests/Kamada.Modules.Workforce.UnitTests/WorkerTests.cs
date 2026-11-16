@@ -5,7 +5,7 @@ namespace Kamada.Modules.Workforce.UnitTests;
 public sealed class WorkerTests
 {
     private static Worker CreateWorker(params WorkerRole[] roles) =>
-        Worker.Create("  Kurier1 ", "hash", " Jan ", " Kowalski ", " +48 600 000 000 ", roles).Value;
+        Worker.Create("  Kurier1 ", " Jan.Kowalski@Kamada.TEST ", "hash", " Jan ", " Kowalski ", " +48 600 000 000 ", roles).Value;
 
     [Fact]
     public void Create_NormalizesUsernameAndTrimsFields()
@@ -13,6 +13,7 @@ public sealed class WorkerTests
         var worker = CreateWorker(WorkerRole.Courier);
 
         worker.Username.ShouldBe("kurier1");
+        worker.Email.ShouldBe("jan.kowalski@kamada.test");
         worker.Name.ShouldBe("Jan");
         worker.Surname.ShouldBe("Kowalski");
         worker.PhoneNumber.ShouldBe("+48 600 000 000");
@@ -33,7 +34,7 @@ public sealed class WorkerTests
     [Fact]
     public void Create_WithoutRoles_Fails()
     {
-        var result = Worker.Create("kurier1", "hash", "Jan", "Kowalski", "+48 600 000 000", []);
+        var result = Worker.Create("kurier1", "jan@kamada.test", "hash", "Jan", "Kowalski", "+48 600 000 000", []);
 
         result.Error.ShouldBe(WorkerErrors.RolesRequired);
     }
@@ -41,7 +42,7 @@ public sealed class WorkerTests
     [Fact]
     public void Create_WithDuplicateRoles_Fails()
     {
-        var result = Worker.Create("kurier1", "hash", "Jan", "Kowalski", "+48 600 000 000", [WorkerRole.Courier, WorkerRole.Courier]);
+        var result = Worker.Create("kurier1", "jan@kamada.test", "hash", "Jan", "Kowalski", "+48 600 000 000", [WorkerRole.Courier, WorkerRole.Courier]);
 
         result.Error.ShouldBe(WorkerErrors.DuplicateRoles);
     }
@@ -118,6 +119,57 @@ public sealed class WorkerTests
         worker.SetRoles([WorkerRole.Admin, WorkerRole.Courier], changedBy: worker.Id).IsSuccess.ShouldBeTrue();
 
         worker.Roles.ShouldBe([WorkerRole.Admin, WorkerRole.Courier]);
+    }
+
+    [Fact]
+    public void RegisterFailedLogin_ReachingTheLimit_LocksForTheDurationAndRestartsCounting()
+    {
+        var worker = CreateWorker(WorkerRole.Courier);
+        var now = new DateTimeOffset(2026, 11, 14, 12, 0, 0, TimeSpan.Zero);
+
+        for (var attempt = 1; attempt < 5; attempt++)
+        {
+            worker.RegisterFailedLogin(now, maxAttempts: 5, TimeSpan.FromMinutes(15));
+        }
+
+        worker.IsLockedOut(now).ShouldBeFalse();
+        worker.RegisterFailedLogin(now, maxAttempts: 5, TimeSpan.FromMinutes(15));
+
+        worker.IsLockedOut(now.AddMinutes(14)).ShouldBeTrue();
+        worker.IsLockedOut(now.AddMinutes(15)).ShouldBeFalse();
+        worker.FailedLoginCount.ShouldBe(0);
+    }
+
+    [Fact]
+    public void RegisterFailedLogin_WhileLocked_IsNotCounted()
+    {
+        var worker = CreateWorker(WorkerRole.Courier);
+        var now = new DateTimeOffset(2026, 11, 14, 12, 0, 0, TimeSpan.Zero);
+        worker.RegisterFailedLogin(now, maxAttempts: 3, TimeSpan.FromMinutes(15));
+        worker.RegisterFailedLogin(now, maxAttempts: 3, TimeSpan.FromMinutes(15));
+        worker.RegisterFailedLogin(now, maxAttempts: 3, TimeSpan.FromMinutes(15));
+        var lockedUntil = worker.LockedUntil;
+
+        worker.RegisterFailedLogin(now.AddMinutes(5), maxAttempts: 3, TimeSpan.FromMinutes(15));
+
+        worker.LockedUntil.ShouldBe(lockedUntil);
+        worker.FailedLoginCount.ShouldBe(0);
+    }
+
+    [Fact]
+    public void ClearFailedLogins_LiftsTheLockout()
+    {
+        var worker = CreateWorker(WorkerRole.Courier);
+        var now = new DateTimeOffset(2026, 11, 14, 12, 0, 0, TimeSpan.Zero);
+        for (var attempt = 0; attempt < 3; attempt++)
+        {
+            worker.RegisterFailedLogin(now, maxAttempts: 3, TimeSpan.FromMinutes(15));
+        }
+
+        worker.ClearFailedLogins();
+
+        worker.IsLockedOut(now).ShouldBeFalse();
+        worker.LockedUntil.ShouldBeNull();
     }
 
     [Fact]

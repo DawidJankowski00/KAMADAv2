@@ -31,9 +31,9 @@
             <Authorized>
                 @* On a phone the role switcher takes the place of the name. *@
                 <MudText Typo="Typo.body2" Class="@(RoleContext.AvailableRoles.Count > 1 ? "ml-2 mr-1 d-none d-sm-flex" : "mr-1")">
-                    @context.User.FindFirst("given_name")?.Value @context.User.FindFirst("family_name")?.Value
+                    @AccountMenu.FullName(context.User)
                 </MudText>
-                <MudIconButton Icon="@Icons.Material.Filled.Logout" Color="Color.Inherit" OnClick="LogoutAsync" aria-label="Wyloguj" />
+                <AccountMenu Name="@AccountMenu.FullName(context.User)" OnLogout="LogoutAsync" />
             </Authorized>
         </AuthorizeView>
     </MudAppBar>
@@ -64,7 +64,9 @@
                     }
                     else
                     {
-                        @Body
+                        <TwoFactorGate>
+                            @Body
+                        </TwoFactorGate>
                     }
                 </ChildContent>
                 <ErrorContent>

@@ -33,6 +33,8 @@ public static class AuthServiceCollectionExtensions
                     ValidIssuer = jwt.Issuer,
                     ValidAudience = jwt.Audience,
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.SigningKey)),
+                    // Only the algorithm the API signs with; a token's own "alg" header never chooses another.
+                    ValidAlgorithms = [SecurityAlgorithms.HmacSha256],
                     NameClaimType = KamadaClaimTypes.Name,
                     RoleClaimType = KamadaClaimTypes.Role,
                     ClockSkew = TimeSpan.FromSeconds(30),
@@ -41,6 +43,7 @@ public static class AuthServiceCollectionExtensions
 
         services.AddAuthorizationBuilder()
             .SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build())
+            .AddPolicy(AuthorizationPolicies.SignedIn, policy => policy.RequireAuthenticatedUser())
             .AddPolicy(AuthorizationPolicies.AdminOnly, policy => policy.RequireRole(Roles.Admin))
             .AddPolicy(AuthorizationPolicies.CourierOnly, policy => policy.RequireRole(Roles.Courier))
             .AddPolicy(AuthorizationPolicies.SalesAccess, policy => policy.RequireRole(Roles.Admin, Roles.Seller));

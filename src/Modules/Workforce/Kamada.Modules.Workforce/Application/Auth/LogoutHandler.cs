@@ -12,7 +12,7 @@ internal sealed class LogoutHandler(IWorkforceDbContext db, ITokenService tokens
     /// </summary>
     public async Task HandleAsync(Guid workerId, LogoutRequest request, CancellationToken cancellationToken)
     {
-        var hash = tokens.HashRefreshToken(request.RefreshToken);
+        var hash = tokens.HashOpaqueToken(request.RefreshToken);
         var token = await db.RefreshTokens.SingleOrDefaultAsync(
             t => t.TokenHash == hash && t.WorkerId == workerId,
             cancellationToken);

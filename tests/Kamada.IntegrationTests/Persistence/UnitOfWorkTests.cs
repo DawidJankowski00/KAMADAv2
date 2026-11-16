@@ -38,7 +38,7 @@ public sealed class UnitOfWorkTests(KamadaApiFactory factory)
                     (await catalog.Products.SingleAsync(p => p.Id == product.Id, ct)).SetStock(1);
                     await catalog.SaveChangesAsync(ct);
 
-                    (await workforce.Workers.SingleAsync(w => w.Id == worker.Id, ct)).UpdateProfile("Zmienione", "Nazwisko", "+48 600 000 001");
+                    (await workforce.Workers.SingleAsync(w => w.Id == worker.Id, ct)).UpdateProfile($"{Guid.NewGuid():N}@kamada.test", "Zmienione", "Nazwisko", "+48 600 000 001");
                     await workforce.SaveChangesAsync(ct);
 
                     return succeed ? Result.Success() : Error.Failure("Test.Failure", "Simulated failure after both saves.");

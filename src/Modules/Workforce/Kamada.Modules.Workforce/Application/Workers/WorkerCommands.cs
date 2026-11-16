@@ -1,4 +1,5 @@
 using Kamada.Modules.Workforce.Application.Abstractions;
+using Kamada.Modules.Workforce.Application.Auth;
 using Kamada.Modules.Workforce.Domain.Workers;
 using Kamada.Shared.Contracts.Workforce;
 using Kamada.Shared.Infrastructure.Auth;
@@ -25,8 +26,14 @@ internal sealed class WorkerCommands(
             return WorkerErrors.UsernameTaken;
         }
 
+        if (await EmailTakenAsync(request.Email, workerId: null, cancellationToken))
+        {
+            return WorkerErrors.EmailTaken;
+        }
+
         var created = Worker.Create(
             username,
+            request.Email,
             passwordHash: string.Empty,
             request.Name,
             request.Surname,
@@ -53,13 +60,18 @@ internal sealed class WorkerCommands(
             return WorkerErrors.NotFound;
         }
 
+        if (await EmailTakenAsync(request.Email, worker.Id, cancellationToken))
+        {
+            return WorkerErrors.EmailTaken;
+        }
+
         var roleChange = worker.SetRoles([.. request.Roles.Select(r => r.ToDomain())], currentUser.Id);
         if (roleChange.IsFailure)
         {
             return roleChange.Error;
         }
 
-        worker.UpdateProfile(request.Name, request.Surname, request.PhoneNumber);
+        worker.UpdateProfile(request.Email, request.Name, request.Surname, request.PhoneNumber);
         await db.SaveChangesAsync(cancellationToken);
         return worker.ToDto();
     }
@@ -73,7 +85,41 @@ internal sealed class WorkerCommands(
         }
 
         worker.ChangePasswordHash(passwordHasher.HashPassword(worker, request.NewPassword));
-        await RevokeSessionsAsync(worker.Id, cancellationToken);
+        worker.ClearFailedLogins();
+        await db.RevokeAllSessionsAsync(worker.Id, clock.GetUtcNow(), cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Turns 2FA off for a worker who lost both the phone and the recovery codes, and signs them out everywhere; they
+    /// sign in with the password and may set 2FA up again.
+    /// </summary>
+    public async Task<Result> ResetTwoFactorAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var worker = await db.Workers.SingleOrDefaultAsync(w => w.Id == id, cancellationToken);
+        if (worker is null)
+        {
+            return WorkerErrors.NotFound;
+        }
+
+        worker.DisableTwoFactor();
+        db.RecoveryCodes.RemoveRange(await db.RecoveryCodes.Where(c => c.WorkerId == id).ToListAsync(cancellationToken));
+        await db.RevokeAllSessionsAsync(worker.Id, clock.GetUtcNow(), cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
+        return Result.Success();
+    }
+
+    /// <summary>Lifts a lockout after repeated wrong passwords (the worker may sign in again at once).</summary>
+    public async Task<Result> UnlockAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var worker = await db.Workers.SingleOrDefaultAsync(w => w.Id == id, cancellationToken);
+        if (worker is null)
+        {
+            return WorkerErrors.NotFound;
+        }
+
+        worker.ClearFailedLogins();
         await db.SaveChangesAsync(cancellationToken);
         return Result.Success();
     }
@@ -92,7 +138,7 @@ internal sealed class WorkerCommands(
             return result;
         }
 
-        await RevokeSessionsAsync(worker.Id, cancellationToken);
+        await db.RevokeAllSessionsAsync(worker.Id, clock.GetUtcNow(), cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
         return Result.Success();
     }
@@ -110,17 +156,9 @@ internal sealed class WorkerCommands(
         return Result.Success();
     }
 
-    /// <summary>Signs the worker out everywhere (their access tokens expire within minutes).</summary>
-    private async Task RevokeSessionsAsync(Guid workerId, CancellationToken cancellationToken)
+    private Task<bool> EmailTakenAsync(string email, Guid? workerId, CancellationToken cancellationToken)
     {
-        var now = clock.GetUtcNow();
-        var active = await db.RefreshTokens
-            .Where(t => t.WorkerId == workerId && t.RevokedAt == null)
-            .ToListAsync(cancellationToken);
-
-        foreach (var token in active)
-        {
-            token.Revoke(now);
-        }
+        var normalized = Worker.NormalizeEmail(email);
+        return db.Workers.AnyAsync(w => w.Email == normalized && w.Id != workerId, cancellationToken);
     }
 }

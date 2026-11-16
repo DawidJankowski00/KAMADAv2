@@ -12,9 +12,13 @@
                     </MudItem>
                     <MudItem xs="12" sm="6">
                         <MudTextField @bind-Value="_password" Label="Hasło" Required="true" InputType="InputType.Password" MaxLength="128"
-                                      HelperText="Min. 8 znaków, mała i wielka litera, cyfra" Validation="@(new Func<string, string?>(PasswordRules.Validate))" />
+                                      HelperText="@PasswordRules.Hint" Validation="@(new Func<string, string?>(PasswordRules.Validate))" />
                     </MudItem>
                 }
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="_email" Label="E-mail" Required="true" MaxLength="254" InputType="InputType.Email"
+                                  HelperText="Na ten adres przyjdzie link do resetu hasła" />
+                </MudItem>
                 <MudItem xs="12" sm="6">
                     <MudTextField @bind-Value="_name" Label="Imię" Required="true" MaxLength="100" />
                 </MudItem>
@@ -49,6 +53,7 @@
     private bool _busy;
     private string _username = string.Empty;
     private string _password = string.Empty;
+    private string _email = string.Empty;
     private string _name = string.Empty;
     private string _surname = string.Empty;
     private string _phone = string.Empty;
@@ -62,6 +67,7 @@
     {
         if (Worker is not null)
         {
+            _email = Worker.Email;
             _name = Worker.Name;
             _surname = Worker.Surname;
             _phone = Worker.PhoneNumber;
@@ -79,8 +85,8 @@
 
         _busy = true;
         var result = Worker is null
-            ? await Api.PostAsync<WorkerDto>("api/workers", new CreateWorkerRequest(_username, _password, _name, _surname, _phone, [.. _roles.Order()]))
-            : await Api.PutAsync<WorkerDto>($"api/workers/{Worker.Id}", new UpdateWorkerRequest(_name, _surname, _phone, [.. _roles.Order()]));
+            ? await Api.PostAsync<WorkerDto>("api/workers", new CreateWorkerRequest(_username, _email, _password, _name, _surname, _phone, [.. _roles.Order()]))
+            : await Api.PutAsync<WorkerDto>($"api/workers/{Worker.Id}", new UpdateWorkerRequest(_email, _name, _surname, _phone, [.. _roles.Order()]));
         _busy = false;
 
         if (Snackbar.Report(result, Worker is null ? "Konto zostało utworzone." : "Zmiany zapisane."))

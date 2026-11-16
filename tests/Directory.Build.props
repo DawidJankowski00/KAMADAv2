@@ -14,6 +14,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Tests load the API's assemblies: use the shared ASP.NET Core framework (serviced with the runtime) instead of
+         NuGet copies of its parts, which otherwise come in as old transitive packages (e.g. via Data Protection). -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Using Include="Xunit" />
     <Using Include="Shouldly" />
   </ItemGroup>

@@ -16,6 +16,8 @@ internal sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<Refre
         builder.Property(t => t.TokenHash).HasMaxLength(64).IsRequired();
         builder.HasIndex(t => t.TokenHash).IsUnique();
         builder.HasIndex(t => t.FamilyId);
+        builder.Property(t => t.UserAgent).HasMaxLength(SessionClient.UserAgentMaxLength);
+        builder.Property(t => t.IpAddress).HasMaxLength(SessionClient.IpAddressMaxLength);
 
         builder.HasOne<Worker>()
             .WithMany()

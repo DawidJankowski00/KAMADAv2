@@ -1,0 +1,80 @@
+@using Kamada.Shared.Contracts.Auth
+@inject AuthService Auth
+
+@* Second sign-in step on the login pages of both apps (accounts with two-factor authentication). *@
+<EditForm Model="_model" OnValidSubmit="VerifyAsync">
+    <MudText Typo="Typo.body2" Class="mb-4">
+        @if (_useRecoveryCode)
+        {
+            <text>Wpisz jeden z kodów zapasowych zapisanych przy włączaniu logowania dwuetapowego. Każdy działa tylko raz.</text>
+        }
+        else
+        {
+            <text>Wpisz 6-cyfrowy kod z aplikacji uwierzytelniającej w telefonie.</text>
+        }
+    </MudText>
+
+    <MudTextField @bind-Value="_model.Code" Label="@(_useRecoveryCode ? "Kod zapasowy" : "Kod z aplikacji")" Variant="Variant.Outlined"
+                  Required="true" RequiredError="Podaj kod." MaxLength="20" AutoFocus="true"
+                  InputMode="@(_useRecoveryCode ? InputMode.text : InputMode.numeric)"
+                  UserAttributes="@(new Dictionary<string, object?> { ["autocomplete"] = "one-time-code" })" />
+
+    @if (_error is not null)
+    {
+        <MudAlert Severity="Severity.Error" Dense="true" Class="mt-4">@_error</MudAlert>
+    }
+
+    <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" FullWidth="true"
+               Size="Size.Large" Class="mt-6" Disabled="_busy">Potwierdź</MudButton>
+
+    <div class="d-flex justify-space-between mt-4">
+        <MudLink Typo="Typo.body2" OnClick="OnCancel">Wróć</MudLink>
+        <MudLink Typo="Typo.body2" OnClick="ToggleRecovery">
+            @(_useRecoveryCode ? "Mam dostęp do aplikacji" : "Nie mam telefonu – użyj kodu zapasowego")
+        </MudLink>
+    </div>
+</EditForm>
+
+@code {
+    private readonly CodeModel _model = new();
+    private bool _busy;
+    private bool _useRecoveryCode;
+    private string? _error;
+
+    [Parameter, EditorRequired] public TwoFactorChallengeDto Challenge { get; set; } = default!;
+
+    /// <summary>Raised after the session is stored.</summary>
+    [Parameter] public EventCallback OnSignedIn { get; set; }
+
+    /// <summary>Back to the password step (also needed once the challenge expired).</summary>
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private void ToggleRecovery()
+    {
+        _useRecoveryCode = !_useRecoveryCode;
+        _model.Code = string.Empty;
+        _error = null;
+    }
+
+    private async Task VerifyAsync()
+    {
+        _busy = true;
+        _error = null;
+        var result = await Auth.CompleteTwoFactorLoginAsync(Challenge.ChallengeToken, _model.Code.Trim());
+        _busy = false;
+
+        if (result.IsSuccess)
+        {
+            await OnSignedIn.InvokeAsync();
+        }
+        else
+        {
+            _error = result.Problem!.Message;
+        }
+    }
+
+    private sealed class CodeModel
+    {
+        public string Code { get; set; } = string.Empty;
+    }
+}

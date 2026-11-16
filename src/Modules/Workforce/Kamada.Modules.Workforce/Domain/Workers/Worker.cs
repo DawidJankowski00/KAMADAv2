@@ -10,10 +10,11 @@ internal sealed class Worker : Entity, IAuditable
 {
     private List<WorkerRole> _roles = [];
 
-    private Worker(Guid id, string username, string passwordHash, string name, string surname, string phoneNumber)
+    private Worker(Guid id, string username, string email, string passwordHash, string name, string surname, string phoneNumber)
         : base(id)
     {
         Username = username;
+        Email = email;
         PasswordHash = passwordHash;
         Name = name;
         Surname = surname;
@@ -22,6 +23,9 @@ internal sealed class Worker : Entity, IAuditable
     }
 
     public string Username { get; private set; }
+
+    /// <summary>Unique, stored normalized (trimmed, lower case); used for password reset e-mails.</summary>
+    public string Email { get; private set; }
 
     public string PasswordHash { get; private set; }
 
@@ -36,6 +40,24 @@ internal sealed class Worker : Entity, IAuditable
 
     public bool IsActive { get; private set; }
 
+    /// <summary>Wrong passwords since the last successful login or lockout.</summary>
+    public int FailedLoginCount { get; private set; }
+
+    /// <summary>Sign-in is refused until then (after too many wrong passwords).</summary>
+    public DateTimeOffset? LockedUntil { get; private set; }
+
+    /// <summary>Sign-in also needs a code from an authenticator app (TOTP).</summary>
+    public bool TwoFactorEnabled { get; private set; }
+
+    /// <summary>The TOTP secret, encrypted with Data Protection; never stored or logged in plain text.</summary>
+    public string? TwoFactorSecret { get; private set; }
+
+    /// <summary>A secret being set up: becomes <see cref="TwoFactorSecret"/> once the worker confirms a code from it.</summary>
+    public string? PendingTwoFactorSecret { get; private set; }
+
+    /// <summary>Time step of the last accepted code; a code from the same or an earlier step is a replay.</summary>
+    public long? TwoFactorLastStep { get; private set; }
+
     public DateTimeOffset CreatedAt { get; private set; }
 
     public DateTimeOffset? UpdatedAt { get; private set; }
@@ -45,8 +67,11 @@ internal sealed class Worker : Entity, IAuditable
     /// <summary>Usernames are case-insensitive; they are stored normalized.</summary>
     public static string NormalizeUsername(string username) => username.Trim().ToLowerInvariant();
 
+    public static string NormalizeEmail(string email) => email.Trim().ToLowerInvariant();
+
     public static Result<Worker> Create(
         string username,
+        string email,
         string passwordHash,
         string name,
         string surname,
@@ -59,7 +84,7 @@ internal sealed class Worker : Entity, IAuditable
             return validation.Error;
         }
 
-        var worker = new Worker(Guid.CreateVersion7(), NormalizeUsername(username), passwordHash, name.Trim(), surname.Trim(), phoneNumber.Trim())
+        var worker = new Worker(Guid.CreateVersion7(), NormalizeUsername(username), NormalizeEmail(email), passwordHash, name.Trim(), surname.Trim(), phoneNumber.Trim())
         {
             _roles = [.. roles.Order()],
         };
@@ -68,8 +93,9 @@ internal sealed class Worker : Entity, IAuditable
 
     public bool HasRole(WorkerRole role) => _roles.Contains(role);
 
-    public void UpdateProfile(string name, string surname, string phoneNumber)
+    public void UpdateProfile(string email, string name, string surname, string phoneNumber)
     {
+        Email = NormalizeEmail(email);
         Name = name.Trim();
         Surname = surname.Trim();
         PhoneNumber = phoneNumber.Trim();
@@ -101,6 +127,89 @@ internal sealed class Worker : Entity, IAuditable
     }
 
     public void ChangePasswordHash(string passwordHash) => PasswordHash = passwordHash;
+
+    public bool IsLockedOut(DateTimeOffset now) => LockedUntil > now;
+
+    /// <summary>
+    /// Counts a wrong password; the <paramref name="maxAttempts"/>-th one locks the account for
+    /// <paramref name="lockout"/> and starts counting again. Attempts while locked are not counted.
+    /// </summary>
+    public void RegisterFailedLogin(DateTimeOffset now, int maxAttempts, TimeSpan lockout)
+    {
+        if (IsLockedOut(now))
+        {
+            return;
+        }
+
+        FailedLoginCount++;
+        if (FailedLoginCount >= maxAttempts)
+        {
+            LockedUntil = now + lockout;
+            FailedLoginCount = 0;
+        }
+    }
+
+    /// <summary>Starts (or restarts) setting up 2FA with a new encrypted secret; 2FA stays off until confirmed.</summary>
+    public Result BeginTwoFactorSetup(string protectedSecret)
+    {
+        if (TwoFactorEnabled)
+        {
+            return WorkerErrors.TwoFactorAlreadyEnabled;
+        }
+
+        PendingTwoFactorSecret = protectedSecret;
+        return Result.Success();
+    }
+
+    /// <summary>Turns 2FA on with the pending secret, after the worker proved it with a code from step <paramref name="step"/>.</summary>
+    public Result EnableTwoFactor(long step)
+    {
+        if (TwoFactorEnabled)
+        {
+            return WorkerErrors.TwoFactorAlreadyEnabled;
+        }
+
+        if (PendingTwoFactorSecret is null)
+        {
+            return WorkerErrors.TwoFactorNotSetUp;
+        }
+
+        TwoFactorSecret = PendingTwoFactorSecret;
+        PendingTwoFactorSecret = null;
+        TwoFactorEnabled = true;
+        TwoFactorLastStep = step;
+        return Result.Success();
+    }
+
+    public void DisableTwoFactor()
+    {
+        TwoFactorEnabled = false;
+        TwoFactorSecret = null;
+        PendingTwoFactorSecret = null;
+        TwoFactorLastStep = null;
+    }
+
+    /// <summary>
+    /// Accepts a code's time step once: false for the step of an already accepted code or an earlier one (a replay of a
+    /// code seen by someone else, e.g. over the worker's shoulder).
+    /// </summary>
+    public bool AcceptTwoFactorStep(long step)
+    {
+        if (step <= TwoFactorLastStep)
+        {
+            return false;
+        }
+
+        TwoFactorLastStep = step;
+        return true;
+    }
+
+    /// <summary>After a successful login, an admin unlock or a password reset: no lockout, counting from zero.</summary>
+    public void ClearFailedLogins()
+    {
+        FailedLoginCount = 0;
+        LockedUntil = null;
+    }
 
     public Result Deactivate(Guid deactivatedBy)
     {

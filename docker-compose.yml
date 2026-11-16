@@ -7,10 +7,15 @@ services:
       POSTGRES_DB: kamada
       POSTGRES_USER: ${POSTGRES_USER:-kamada}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kamada_dev}
+      # The API's own role (data only); created on the first start of an empty volume, see deploy/postgres.
+      POSTGRES_APP_USER: ${POSTGRES_APP_USER:-kamada_app}
+      POSTGRES_APP_PASSWORD: ${POSTGRES_APP_PASSWORD:-kamada_app_dev}
     ports:
       - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
+      - ./deploy/postgres/initdb:/docker-entrypoint-initdb.d:ro
+      - ./deploy/postgres/app-role.sql:/kamada/app-role.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
@@ -23,7 +28,9 @@ services:
       dockerfile: src/Kamada.Api/Dockerfile
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
-      ConnectionStrings__Kamada: Host=postgres;Port=5432;Database=kamada;Username=${POSTGRES_USER:-kamada};Password=${POSTGRES_PASSWORD:-kamada_dev};Gss Encryption Mode=Disable
+      # Least privilege: the API reads and writes data as POSTGRES_APP_USER; only migrations connect as the owner.
+      ConnectionStrings__Kamada: Host=postgres;Port=5432;Database=kamada;Username=${POSTGRES_APP_USER:-kamada_app};Password=${POSTGRES_APP_PASSWORD:-kamada_app_dev};Gss Encryption Mode=Disable
+      ConnectionStrings__KamadaMigrations: Host=postgres;Port=5432;Database=kamada;Username=${POSTGRES_USER:-kamada};Password=${POSTGRES_PASSWORD:-kamada_dev};Gss Encryption Mode=Disable
       RouteOptimization__MatrixProvider: ${ROUTE_MATRIX_PROVIDER:-Osrm}
       RouteOptimization__Osrm__BaseUrl: ${OSRM_BASE_URL:-https://router.project-osrm.org/}
       RouteOptimization__Osrm__MinDelayBetweenRequests: ${OSRM_MIN_DELAY:-00:00:01}
@@ -34,6 +41,18 @@ services:
       Assistant__Ollama__Model: ${OLLAMA_MODEL:-gemma3:4b}
       Assistant__Whisper__Model: ${WHISPER_MODEL:-small}
       Assistant__Whisper__ModelPath: /app/models/ggml-${WHISPER_MODEL:-small}.bin
+      # E-mail (password reset links). Default: the Mailpit container below catches everything (UI on port 8025).
+      Email__FromAddress: ${EMAIL_FROM_ADDRESS:-no-reply@kamada.test}
+      Email__Smtp__Host: ${SMTP_HOST:-mailpit}
+      Email__Smtp__Port: ${SMTP_PORT:-1025}
+      Email__Smtp__Security: ${SMTP_SECURITY:-None}
+      Email__Smtp__Username: ${SMTP_USERNAME:-}
+      Email__Smtp__Password: ${SMTP_PASSWORD:-}
+      # Browser origins of the two apps: the only sites allowed to call the API (a trailing slash is ignored).
+      Cors__AllowedOrigins__0: ${PUBLIC_ADMIN_URL:-http://localhost:5081/}
+      Cors__AllowedOrigins__1: ${PUBLIC_MOBILE_URL:-http://localhost:5082/}
+      # Page of the admin panel that sets a new password; the reset e-mail links to it.
+      Auth__PasswordReset__Url: ${PUBLIC_ADMIN_URL:-http://localhost:5081/}reset-password
     ports:
       - "5080:8080"
     volumes:
@@ -42,6 +61,15 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      mailpit:
+        condition: service_started
+
+  # Catches every e-mail the API sends (development only): web UI http://localhost:8025, SMTP on port 1025.
+  mailpit:
+    image: axllent/mailpit:v1.32.0
+    ports:
+      - "8025:8025"
+      - "1025:1025"
 
   admin:
     build:

@@ -25,9 +25,10 @@ public sealed class JwtTokenServiceTests
     [Fact]
     public void CreateAccessToken_ContainsIdentityAndRoleClaims()
     {
-        var worker = Worker.Create("admin", "hash", "Anna", "Nowak", "+48 600 000 000", [WorkerRole.Admin]).Value;
+        var worker = Worker.Create("admin", "jan@kamada.test", "hash", "Anna", "Nowak", "+48 600 000 000", [WorkerRole.Admin]).Value;
 
-        var accessToken = CreateService().CreateAccessToken(worker);
+        var sessionId = Guid.NewGuid();
+        var accessToken = CreateService().CreateAccessToken(worker, sessionId);
 
         accessToken.ExpiresAt.ShouldBe(_clock.GetUtcNow() + Options.AccessTokenLifetime);
         var jwt = new JsonWebToken(accessToken.Token);
@@ -36,29 +37,30 @@ public sealed class JwtTokenServiceTests
         jwt.Subject.ShouldBe(worker.Id.ToString());
         jwt.GetClaim(KamadaClaimTypes.Role).Value.ShouldBe("Admin");
         jwt.GetClaim(KamadaClaimTypes.Name).Value.ShouldBe("admin");
+        jwt.GetClaim(KamadaClaimTypes.SessionId).Value.ShouldBe(sessionId.ToString());
     }
 
     [Fact]
     public void CreateAccessToken_SeveralRoles_ContainsOneRoleClaimPerRole()
     {
-        var worker = Worker.Create("anna", "hash", "Anna", "Nowak", "+48 600 000 000", [WorkerRole.Courier, WorkerRole.Admin]).Value;
+        var worker = Worker.Create("anna", "jan@kamada.test", "hash", "Anna", "Nowak", "+48 600 000 000", [WorkerRole.Courier, WorkerRole.Admin]).Value;
 
-        var accessToken = CreateService().CreateAccessToken(worker);
+        var accessToken = CreateService().CreateAccessToken(worker, Guid.NewGuid());
 
         var jwt = new JsonWebToken(accessToken.Token);
         jwt.Claims.Where(c => c.Type == KamadaClaimTypes.Role).Select(c => c.Value).ShouldBe(["Admin", "Courier"]);
     }
 
     [Fact]
-    public void GenerateRefreshToken_ReturnsUniqueTokenWithMatchingHash()
+    public void GenerateOpaqueToken_ReturnsUniqueTokenWithMatchingHash()
     {
         var service = CreateService();
 
-        var first = service.GenerateRefreshToken();
-        var second = service.GenerateRefreshToken();
+        var first = service.GenerateOpaqueToken();
+        var second = service.GenerateOpaqueToken();
 
         first.Token.ShouldNotBe(second.Token);
-        service.HashRefreshToken(first.Token).ShouldBe(first.Hash);
+        service.HashOpaqueToken(first.Token).ShouldBe(first.Hash);
         first.Hash.ShouldNotBe(first.Token);
         first.Hash.Length.ShouldBe(64);
     }

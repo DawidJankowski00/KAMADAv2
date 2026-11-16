@@ -60,6 +60,16 @@ internal static class WorkerEndpoints
                 (await commands.ActivateAsync(id, ct)).ToHttpResult(TypedResults.NoContent))
             .ProducesProblem(StatusCodes.Status404NotFound);
 
+        group.MapPost("/{id:guid}/reset-two-factor", async (Guid id, WorkerCommands commands, CancellationToken ct) =>
+                (await commands.ResetTwoFactorAsync(id, ct)).ToHttpResult(TypedResults.NoContent))
+            .WithSummary("Turn off 2FA of a worker who lost the phone and the recovery codes (signs them out)")
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
+        group.MapPost("/{id:guid}/unlock", async (Guid id, WorkerCommands commands, CancellationToken ct) =>
+                (await commands.UnlockAsync(id, ct)).ToHttpResult(TypedResults.NoContent))
+            .WithSummary("Lift a lockout after repeated failed logins")
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
         return endpoints;
     }
 }

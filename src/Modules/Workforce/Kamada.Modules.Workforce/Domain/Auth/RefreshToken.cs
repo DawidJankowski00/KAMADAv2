@@ -30,29 +30,39 @@ internal sealed class RefreshToken : Entity, IAuditable
 
     public Guid? ReplacedByTokenId { get; private set; }
 
+    /// <summary>User-Agent of the request that issued this token (the device of the session).</summary>
+    public string? UserAgent { get; private set; }
+
+    /// <summary>Client IP of the request that issued this token.</summary>
+    public string? IpAddress { get; private set; }
+
     public DateTimeOffset CreatedAt { get; private set; }
 
     public DateTimeOffset? UpdatedAt { get; private set; }
 
     public bool IsRevoked => RevokedAt is not null;
 
-    public static RefreshToken Issue(Guid workerId, string tokenHash, DateTimeOffset now, TimeSpan lifetime)
+    public static RefreshToken Issue(Guid workerId, string tokenHash, DateTimeOffset now, TimeSpan lifetime, SessionClient? client = null)
     {
         var id = Guid.CreateVersion7();
-        return new RefreshToken(id, workerId, familyId: id, tokenHash, now + lifetime);
+        return new RefreshToken(id, workerId, familyId: id, tokenHash, now + lifetime) { UserAgent = client?.UserAgent, IpAddress = client?.IpAddress };
     }
 
     public bool IsActive(DateTimeOffset now) => !IsRevoked && now < ExpiresAt;
 
     /// <summary>Revokes this token and returns its successor in the same family.</summary>
-    public RefreshToken Rotate(string newTokenHash, DateTimeOffset now, TimeSpan lifetime)
+    public RefreshToken Rotate(string newTokenHash, DateTimeOffset now, TimeSpan lifetime, SessionClient? client = null)
     {
         if (!IsActive(now))
         {
             throw new InvalidOperationException("Only an active refresh token can be rotated.");
         }
 
-        var successor = new RefreshToken(Guid.CreateVersion7(), WorkerId, FamilyId, newTokenHash, now + lifetime);
+        var successor = new RefreshToken(Guid.CreateVersion7(), WorkerId, FamilyId, newTokenHash, now + lifetime)
+        {
+            UserAgent = client?.UserAgent,
+            IpAddress = client?.IpAddress,
+        };
         RevokedAt = now;
         ReplacedByTokenId = successor.Id;
         return successor;

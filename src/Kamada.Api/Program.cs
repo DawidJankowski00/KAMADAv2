@@ -7,6 +7,7 @@ using Kamada.Modules.Ordering;
 using Kamada.Modules.RouteOptimization;
 using Kamada.Modules.Workforce;
 using Kamada.Shared.Infrastructure.Auth;
+using Kamada.Shared.Infrastructure.Email;
 using Kamada.Shared.Infrastructure.Geocoding;
 using Kamada.Shared.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -14,6 +15,9 @@ using Serilog;
 using Serilog.Events;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// No "Server: Kestrel" header: it tells an attacker which stack to probe (ASVS 14.3.3).
+builder.WebHost.ConfigureKestrel(kestrel => kestrel.AddServerHeader = false);
 
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services
@@ -24,7 +28,8 @@ builder.Services
     .AddKamadaRateLimiting(builder.Configuration)
     .AddKamadaAuthentication(builder.Configuration)
     .AddKamadaPersistence(builder.Configuration)
-    .AddKamadaGeocoding(builder.Configuration);
+    .AddKamadaGeocoding(builder.Configuration)
+    .AddKamadaEmail(builder.Configuration);
 
 builder.Services
     .AddWorkforceModule(builder.Configuration)
@@ -46,10 +51,17 @@ app.UseSerilogRequestLogging(options => options.GetLevel = (context, _, exceptio
     exception is not null || context.Response.StatusCode >= 500 ? LogEventLevel.Error
     : context.Request.Path.StartsWithSegments("/health/ping") ? LogEventLevel.Verbose
     : LogEventLevel.Information);
+app.UseKamadaSecurityHeaders();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHsts();
+}
+
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseCors(HostingExtensions.FrontendsCorsPolicy);
 app.UseAuthentication();
+app.UseTwoFactorSetupGate();
 app.UseRateLimiter();
 app.UseAuthorization();
 

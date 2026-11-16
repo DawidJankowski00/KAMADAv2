@@ -10,11 +10,23 @@ internal static class WorkerErrors
     public static readonly Error UsernameTaken =
         Error.Conflict("Workers.UsernameTaken", "A worker with this username already exists.");
 
+    public static readonly Error EmailTaken =
+        Error.Conflict("Workers.EmailTaken", "A worker with this e-mail address already exists.");
+
     public static readonly Error CannotDeactivateSelf =
         Error.Conflict("Workers.CannotDeactivateSelf", "You cannot deactivate your own account.");
 
     public static readonly Error CannotRemoveOwnAdminRole =
         Error.Conflict("Workers.CannotRemoveOwnAdminRole", "You cannot remove the Admin role from your own account.");
+
+    public static readonly Error TwoFactorAlreadyEnabled =
+        Error.Conflict("Workers.TwoFactorAlreadyEnabled", "Two-factor authentication is already enabled.");
+
+    public static readonly Error TwoFactorNotSetUp =
+        Error.Conflict("Workers.TwoFactorNotSetUp", "Start setting up two-factor authentication first.");
+
+    public static readonly Error TwoFactorNotEnabled =
+        Error.Conflict("Workers.TwoFactorNotEnabled", "Two-factor authentication is not enabled.");
 
     public static readonly Error RolesRequired =
         Error.Validation("Workers.RolesRequired", "A worker must have at least one role.");

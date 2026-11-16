@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace Kamada.Shared.Infrastructure.Persistence;
 
@@ -12,7 +13,11 @@ public interface IModuleDatabase
 
     DbContext Context { get; }
 
-    Task MigrateAsync(CancellationToken cancellationToken);
+    /// <param name="ownerConnectionString">
+    /// When set, migrations run on a connection of the schema owner instead of the application's own (which may only
+    /// read and write data); the context must not have been used yet.
+    /// </param>
+    Task MigrateAsync(string? ownerConnectionString, CancellationToken cancellationToken);
 }
 
 internal sealed class ModuleDatabase<TContext>(TContext context, string schema) : IModuleDatabase
@@ -22,5 +27,13 @@ internal sealed class ModuleDatabase<TContext>(TContext context, string schema) 
 
     public DbContext Context => context;
 
-    public Task MigrateAsync(CancellationToken cancellationToken) => context.Database.MigrateAsync(cancellationToken);
+    public Task MigrateAsync(string? ownerConnectionString, CancellationToken cancellationToken)
+    {
+        if (!string.IsNullOrWhiteSpace(ownerConnectionString))
+        {
+            context.Database.SetDbConnection(new NpgsqlConnection(ownerConnectionString), contextOwnsConnection: true);
+        }
+
+        return context.Database.MigrateAsync(cancellationToken);
+    }
 }

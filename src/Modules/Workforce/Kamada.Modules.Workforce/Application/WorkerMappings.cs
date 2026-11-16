@@ -11,15 +11,18 @@ internal static class WorkerMappings
     public static WorkerDto ToDto(this Worker worker) => new(
         worker.Id,
         worker.Username,
+        worker.Email,
         worker.Name,
         worker.Surname,
         worker.PhoneNumber,
         [.. worker.Roles.Select(r => r.ToContract())],
         worker.IsActive,
+        worker.LockedUntil,
+        worker.TwoFactorEnabled,
         worker.CreatedAt);
 
-    public static AuthenticatedUserDto ToAuthenticatedUser(this Worker worker) =>
-        new(worker.Id, worker.Username, worker.Name, worker.Surname, [.. worker.Roles.Select(r => r.ToRoleName())]);
+    public static AuthenticatedUserDto ToAuthenticatedUser(this Worker worker, bool twoFactorSetupRequired) =>
+        new(worker.Id, worker.Username, worker.Name, worker.Surname, [.. worker.Roles.Select(r => r.ToRoleName())], twoFactorSetupRequired);
 
     public static ContractRole ToContract(this DomainRole role) => role switch
     {

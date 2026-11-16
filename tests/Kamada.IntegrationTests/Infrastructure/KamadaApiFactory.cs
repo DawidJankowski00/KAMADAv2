@@ -1,4 +1,5 @@
 using Kamada.Modules.Assistant.Application.Abstractions;
+using Kamada.Shared.Infrastructure.Email;
 using Kamada.Shared.Infrastructure.Geocoding;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -13,11 +14,16 @@ namespace Kamada.IntegrationTests.Infrastructure;
 /// <summary>
 /// Boots the whole API against a throwaway PostgreSQL container. Shared by all tests in the assembly,
 /// so tests must not depend on global row counts – each test creates the data it needs.
-/// External services (geocoding, the language and speech models) are replaced with deterministic fakes.
+/// External services (geocoding, e-mail, the language and speech models) are replaced with deterministic fakes.
 /// </summary>
 public sealed class KamadaApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:17-alpine").Build();
+
+    /// <summary>E-mails the API sent instead of delivering them (shared by all tests: filter by recipient).</summary>
+    public FakeEmailSender Emails { get; } = new();
+
+    public const string ResetPasswordUrl = "http://admin.test/reset-password";
 
     public async ValueTask InitializeAsync()
     {
@@ -39,6 +45,10 @@ public sealed class KamadaApiFactory : WebApplicationFactory<Program>, IAsyncLif
         builder.UseSetting("Jwt:SigningKey", "integration-tests-signing-key-0123456789");
         builder.UseSetting("RateLimiting:Login:PermitLimit", "100000");
         builder.UseSetting("Geocoding:Provider", "None");
+        builder.UseSetting("Email:Smtp:Host", "localhost");
+        builder.UseSetting("Auth:PasswordReset:Url", ResetPasswordUrl);
+        // Most tests sign in as admins without 2FA; TwoFactorRequirementTests turns the requirement on in its own host.
+        builder.UseSetting("Auth:TwoFactor:RequiredForAdmins", "false");
         builder.UseSetting("RouteOptimization:MatrixProvider", "Haversine");
         builder.UseSetting("Assistant:Enabled", "true");
         builder.UseSetting("RateLimiting:Assistant:PermitLimit", "100000");
@@ -46,6 +56,7 @@ public sealed class KamadaApiFactory : WebApplicationFactory<Program>, IAsyncLif
         builder.ConfigureTestServices(services =>
         {
             services.Replace(ServiceDescriptor.Singleton<IGeocodingService, FakeGeocodingService>());
+            services.Replace(ServiceDescriptor.Singleton<IEmailSender>(Emails));
             services.Replace(ServiceDescriptor.Singleton<IOrderExtractor>(OrderExtractor));
             services.Replace(ServiceDescriptor.Singleton<ILanguageModelProbe, FakeLanguageModelProbe>());
             services.Replace(ServiceDescriptor.Singleton<ISpeechToText, FakeSpeechToText>());
@@ -63,6 +74,12 @@ public sealed class KamadaApiFactory : WebApplicationFactory<Program>, IAsyncLif
         WithWebHostBuilder(builder => builder
             .UseSetting("ConnectionStrings:Kamada", new NpgsqlConnectionStringBuilder(_postgres.GetConnectionString()) { Database = database }.ConnectionString)
             .UseSetting("Database:SeedDemoData", "true"));
+
+    /// <summary>Superuser connection string of the test container, optionally for another database in it.</summary>
+    public string AdminConnectionString(string? database = null) =>
+        database is null
+            ? _postgres.GetConnectionString()
+            : new NpgsqlConnectionStringBuilder(_postgres.GetConnectionString()) { Database = database }.ConnectionString;
 
     public override async ValueTask DisposeAsync()
     {

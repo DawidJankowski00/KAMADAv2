@@ -111,6 +111,72 @@ public sealed class AuthServiceTests : IDisposable
         _api.Dispose();
     }
 
+    [Fact]
+    public async Task ChangePasswordAsync_Success_StoresTheNewSession()
+    {
+        _api.LoginResponse = StubApi.Tokens(Roles.Courier);
+        await _auth.LoginAsync("anna", "secret", TestContext.Current.CancellationToken);
+        _api.ChangePasswordResponse = StubApi.Tokens(Roles.Courier);
+
+        var result = await _auth.ChangePasswordAsync("secret", "Nowe-haslo-do-testow", TestContext.Current.CancellationToken);
+
+        result.IsSuccess.ShouldBeTrue();
+        GetStoredAccessToken().ShouldBe(_api.ChangePasswordResponse.AccessToken);
+    }
+
+    [Fact]
+    public async Task ChangePasswordAsync_WrongCurrentPassword_KeepsSessionAndReturnsProblem()
+    {
+        _api.LoginResponse = StubApi.Tokens(Roles.Courier);
+        await _auth.LoginAsync("anna", "secret", TestContext.Current.CancellationToken);
+
+        var result = await _auth.ChangePasswordAsync("wrong", "Nowe-haslo-do-testow", TestContext.Current.CancellationToken);
+
+        result.IsSuccess.ShouldBeFalse();
+        result.Problem!.Code.ShouldBe("Auth.CurrentPasswordInvalid");
+        GetStoredAccessToken().ShouldBe(_api.LoginResponse.AccessToken);
+    }
+
+    [Fact]
+    public async Task RequestPasswordResetAsync_Accepted_SucceedsWithoutSession()
+    {
+        var result = await _auth.RequestPasswordResetAsync("anna@kamada.test", TestContext.Current.CancellationToken);
+
+        result.IsSuccess.ShouldBeTrue();
+        _api.RequestedPaths.ShouldBe(["/api/auth/forgot-password"]);
+    }
+
+    [Fact]
+    public async Task LoginAsync_AccountWithTwoFactor_ReturnsTheChallengeWithoutSigningIn()
+    {
+        _api.LoginChallenge = new TwoFactorChallengeDto("challenge", DateTimeOffset.UtcNow.AddMinutes(5));
+
+        var result = await _auth.LoginAsync("anna", "secret", TestContext.Current.CancellationToken);
+
+        result.Value.NeedsCode.ShouldBeTrue();
+        (await _auth.GetCurrentUserAsync()).ShouldBeNull();
+    }
+
+    [Fact]
+    public async Task CompleteTwoFactorLoginAsync_ValidCode_SignsIn()
+    {
+        _api.TwoFactorResponse = StubApi.Tokens(Roles.Courier);
+
+        var result = await _auth.CompleteTwoFactorLoginAsync("challenge", "123456", TestContext.Current.CancellationToken);
+
+        result.IsSuccess.ShouldBeTrue();
+        GetStoredAccessToken().ShouldBe(_api.TwoFactorResponse.AccessToken);
+    }
+
+    [Fact]
+    public async Task CompleteTwoFactorLoginAsync_WrongCode_StaysSignedOut()
+    {
+        var result = await _auth.CompleteTwoFactorLoginAsync("challenge", "000000", TestContext.Current.CancellationToken);
+
+        result.IsSuccess.ShouldBeFalse();
+        (await _auth.GetCurrentUserAsync()).ShouldBeNull();
+    }
+
     private string GetStoredAccessToken() =>
         JsonSerializer.Deserialize<TokenResponse>(_js.LocalStorage[StorageKey], KamadaJson.Options)!.AccessToken;
 }

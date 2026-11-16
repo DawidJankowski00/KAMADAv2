@@ -30,6 +30,8 @@ be atomic – most notably placing an order (Ordering) and decrementing stock (C
 - Optimistic concurrency uses PostgreSQL `xmin` as a shadow property on every entity.
 - On startup (dev, docker demo, tests) the host migrates all module contexts
   (`Database:ApplyMigrationsOnStartup`); in production migrations would be applied by the deployment pipeline.
+  Migrations may use the schema owner's connection (`ConnectionStrings:KamadaMigrations`) while the API itself
+  connects with a data-only role ([ADR 0012](0012-least-privilege-database-role.md)).
 
 ## Alternatives considered
 

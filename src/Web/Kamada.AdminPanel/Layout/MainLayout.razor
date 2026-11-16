@@ -15,12 +15,10 @@
         <MudSpacer />
         <AuthorizeView>
             <Authorized>
-                <MudText Typo="Typo.body2" Class="mr-3 d-none d-sm-flex">
-                    @context.User.FindFirst("given_name")?.Value @context.User.FindFirst("family_name")?.Value
+                <MudText Typo="Typo.body2" Class="mr-1 d-none d-sm-flex">
+                    @AccountMenu.FullName(context.User)
                 </MudText>
-                <MudTooltip Text="Wyloguj">
-                    <MudIconButton Icon="@Icons.Material.Filled.Logout" Color="Color.Inherit" OnClick="LogoutAsync" aria-label="Wyloguj" />
-                </MudTooltip>
+                <AccountMenu Name="@AccountMenu.FullName(context.User)" OnLogout="LogoutAsync" />
             </Authorized>
         </AuthorizeView>
     </MudAppBar>
@@ -31,7 +29,9 @@
         <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="py-6">
             <ErrorBoundary @ref="_errorBoundary">
                 <ChildContent>
-                    @Body
+                    <TwoFactorGate>
+                        @Body
+                    </TwoFactorGate>
                 </ChildContent>
                 <ErrorContent>
                     <MudAlert Severity="Severity.Error" Class="mb-4">

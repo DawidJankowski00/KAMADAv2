@@ -44,6 +44,27 @@ public sealed class RefreshTokenTests
     }
 
     [Fact]
+    public void Rotate_StoresTheDeviceOfTheRefreshingRequest()
+    {
+        var token = RefreshToken.Issue(Guid.NewGuid(), "hash-1", Now, Lifetime, new SessionClient("Firefox", "10.0.0.1"));
+
+        var successor = token.Rotate("hash-2", Now.AddHours(1), Lifetime, new SessionClient("Firefox", "10.0.0.2"));
+
+        token.IpAddress.ShouldBe("10.0.0.1");
+        successor.UserAgent.ShouldBe("Firefox");
+        successor.IpAddress.ShouldBe("10.0.0.2");
+    }
+
+    [Fact]
+    public void SessionClient_TrimsCutsAndDropsBlankValues()
+    {
+        var client = new SessionClient(" " + new string('a', 300) + " ", "   ");
+
+        client.UserAgent!.Length.ShouldBe(SessionClient.UserAgentMaxLength);
+        client.IpAddress.ShouldBeNull();
+    }
+
+    [Fact]
     public void Rotate_RevokedToken_Throws()
     {
         var token = RefreshToken.Issue(Guid.NewGuid(), "hash", Now, Lifetime);

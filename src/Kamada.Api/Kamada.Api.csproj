@@ -23,4 +23,8 @@
     <ProjectReference Include="..\Modules\Assistant\Kamada.Modules.Assistant\Kamada.Modules.Assistant.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Kamada.IntegrationTests" />
+  </ItemGroup>
+
 </Project>

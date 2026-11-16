@@ -1,4 +1,5 @@
 using FluentValidation;
+using Kamada.Modules.Workforce.Application.Auth;
 using Kamada.Shared.Contracts.Common;
 using Kamada.Shared.Contracts.Workforce;
 
@@ -6,10 +7,15 @@ namespace Kamada.Modules.Workforce.Application.Workers;
 
 internal sealed class CreateWorkerRequestValidator : AbstractValidator<CreateWorkerRequest>
 {
-    public CreateWorkerRequestValidator()
+    public CreateWorkerRequestValidator(PasswordPolicy passwordPolicy)
     {
         RuleFor(r => r.Username).ValidUsername();
-        RuleFor(r => r.Password).StrongPassword();
+        RuleFor(r => r.Email).WorkerEmail();
+        RuleFor(r => r.Password)
+            .NewPassword(passwordPolicy)
+            .Must((request, password) => string.IsNullOrEmpty(request.Username) || !password.Contains(request.Username.Trim(), StringComparison.OrdinalIgnoreCase))
+            .WithErrorCode("Password.ContainsUsername")
+            .WithMessage("The password must not contain the username.");
         RuleFor(r => r.Name).PersonName();
         RuleFor(r => r.Surname).PersonName();
         RuleFor(r => r.PhoneNumber).PhoneNumber();
@@ -21,6 +27,7 @@ internal sealed class UpdateWorkerRequestValidator : AbstractValidator<UpdateWor
 {
     public UpdateWorkerRequestValidator()
     {
+        RuleFor(r => r.Email).WorkerEmail();
         RuleFor(r => r.Name).PersonName();
         RuleFor(r => r.Surname).PersonName();
         RuleFor(r => r.PhoneNumber).PhoneNumber();
@@ -30,7 +37,7 @@ internal sealed class UpdateWorkerRequestValidator : AbstractValidator<UpdateWor
 
 internal sealed class ResetPasswordRequestValidator : AbstractValidator<ResetPasswordRequest>
 {
-    public ResetPasswordRequestValidator() => RuleFor(r => r.NewPassword).StrongPassword();
+    public ResetPasswordRequestValidator(PasswordPolicy passwordPolicy) => RuleFor(r => r.NewPassword).NewPassword(passwordPolicy);
 }
 
 internal sealed class WorkerListQueryValidator : AbstractValidator<WorkerListQuery>

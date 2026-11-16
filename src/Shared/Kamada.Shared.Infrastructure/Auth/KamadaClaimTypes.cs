@@ -10,4 +10,10 @@ public static class KamadaClaimTypes
     public const string Role = "role";
     public const string GivenName = "given_name";
     public const string FamilyName = "family_name";
+
+    /// <summary>Present when the worker must set up two-factor authentication before using the API.</summary>
+    public const string TwoFactorSetupRequired = "2fa_setup";
+
+    /// <summary>Session (refresh token family) the access token belongs to.</summary>
+    public const string SessionId = "sid";
 }

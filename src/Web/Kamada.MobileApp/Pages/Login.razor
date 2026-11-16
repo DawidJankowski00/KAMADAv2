@@ -15,11 +15,20 @@
         </div>
     </div>
 
+    @if (_challenge is not null)
+    {
+        <TwoFactorLoginForm Challenge="_challenge" OnSignedIn="SignedIn" OnCancel="() => _challenge = null" />
+    }
+    else
+    {
     <EditForm Model="_model" OnValidSubmit="SignInAsync">
         <MudTextField @bind-Value="_model.Username" Label="Login" Variant="Variant.Outlined" Class="mb-4"
                       Required="true" RequiredError="Podaj login." autocomplete="username" AutoFocus="true" />
         <MudTextField @bind-Value="_model.Password" Label="Hasło" Variant="Variant.Outlined" InputType="InputType.Password"
                       Required="true" RequiredError="Podaj hasło." autocomplete="current-password" />
+        <div class="d-flex justify-end mt-1">
+            <MudLink Href="forgot-password" Typo="Typo.body2">Nie pamiętam hasła</MudLink>
+        </div>
 
         @if (_error is not null)
         {
@@ -35,6 +44,7 @@
             Zaloguj się
         </MudButton>
     </EditForm>
+    }
 
     <div class="mt-6">
         <MudText Typo="Typo.caption" Class="mud-text-secondary d-block">Konta demo:</MudText>
@@ -57,6 +67,7 @@
     private readonly LoginModel _model = new();
     private bool _busy;
     private string? _error;
+    private Kamada.Shared.Contracts.Auth.TwoFactorChallengeDto? _challenge;
 
     [SupplyParameterFromQuery] public string? ReturnUrl { get; set; }
 
@@ -75,15 +86,22 @@
         var result = await Auth.LoginAsync(_model.Username, _model.Password);
         _busy = false;
 
-        if (result.IsSuccess)
+        if (result.IsSuccess && result.Value.NeedsCode)
         {
-            Navigation.NavigateTo(SafeReturnUrl(), replace: true);
+            _challenge = result.Value.TwoFactor;
+            _model.Password = string.Empty;
+        }
+        else if (result.IsSuccess)
+        {
+            SignedIn();
         }
         else
         {
             _error = result.Problem!.Message;
         }
     }
+
+    private void SignedIn() => Navigation.NavigateTo(SafeReturnUrl(), replace: true);
 
     /// <summary>Only local paths – never redirect to another site after login.</summary>
     private string SafeReturnUrl() =>

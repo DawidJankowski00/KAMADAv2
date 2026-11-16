@@ -9,8 +9,11 @@ COPY src/Web/Kamada.Web.Admin/ src/Web/Kamada.Web.Admin/
 COPY src/Web/Kamada.MobileApp/ src/Web/Kamada.MobileApp/
 RUN dotnet publish src/Web/Kamada.MobileApp/Kamada.MobileApp.csproj -c Release -o /app/publish
 
-FROM nginx:1.29-alpine AS runtime
+FROM nginx:1.30-alpine AS runtime
+# Security fixes of Alpine packages released after the base image was built.
+RUN apk upgrade --no-cache
 COPY deploy/nginx/spa.conf /etc/nginx/conf.d/default.conf
+COPY deploy/nginx/security-headers.conf /etc/nginx/kamada/security-headers.conf
 COPY deploy/nginx/40-kamada-config.sh /docker-entrypoint.d/40-kamada-config.sh
 RUN chmod +x /docker-entrypoint.d/40-kamada-config.sh
 COPY --from=build /app/publish/wwwroot /usr/share/nginx/html

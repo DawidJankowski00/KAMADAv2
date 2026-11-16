@@ -67,7 +67,8 @@ This is not a portfolio piece: it is a close copy of a system I built to improve
   only extracts what was said; matching to the database is deterministic C#. Accuracy is measured by an
   evaluation suite.
 - **Tests:** unit, integration (Testcontainers) and architecture tests, plus BenchmarkDotNet for the solvers.
-  CI runs on GitHub Actions.
+  CI runs on GitHub Actions and also checks NuGet packages for known vulnerabilities, the git history for secrets
+  (gitleaks) and the Docker images for fixable vulnerabilities (Grype), on every push and weekly.
 - **Deployment:** one-command startup with Docker Compose and realistic demo data: real addresses in
   the Tricity and Szczecin, orders in every status, runs planned for today and one completed yesterday.
 
@@ -101,6 +102,7 @@ docker compose up --build
 | Phone app (PWA; use a phone or a narrow window) | http://localhost:5082 |
 | API docs (Scalar) | http://localhost:5080/scalar |
 | API health | http://localhost:5080/health |
+| Mailpit: e-mails sent by the API (password resets) | http://localhost:8025 |
 | Ollama (profile `ai` only) | http://localhost:11434 |
 
 Demo accounts (seeded in the Development environment):
@@ -111,6 +113,11 @@ Demo accounts (seeded in the Development environment):
 | Courier | `kurier1`, `kurier2`, `kurier3` | `Kurier123!` |
 | Seller | `sprzedawca1` | `Sprzedawca123!` |
 | All roles: administrator, courier and seller (switches roles in the phone app) | `kierownik` | `Kierownik123!` |
+
+Each demo account has the e-mail address `<username>@kamada.test` (`.test` is a reserved domain, nothing is delivered).
+"Nie pamiętam hasła" sends the reset link there; in Development every e-mail lands in Mailpit (http://localhost:8025).
+Outside Development administrators must turn on two-factor authentication before they can use the apps
+(`Auth__TwoFactor__RequiredForAdmins=true` turns this on locally; [ADR 0011](docs/adr/0011-two-factor-authentication.md)).
 
 ### Demo data
 
@@ -212,7 +219,7 @@ because Chrome would send the audio to Google.
 Requirements: .NET SDK 10.0.401+ and Docker (for PostgreSQL and the integration tests).
 
 ```bash
-docker compose up -d postgres
+docker compose up -d postgres mailpit             # database + e-mail catcher (http://localhost:8025)
 dotnet run --project src/Kamada.Api               # http://localhost:5080
 dotnet run --project src/Web/Kamada.AdminPanel    # http://localhost:5081
 dotnet run --project src/Web/Kamada.MobileApp     # http://localhost:5082
@@ -625,6 +632,9 @@ dotnet run -c Release --project benchmarks/Kamada.Assistant.Evals -- --model qwe
 | [0008](docs/adr/0008-local-ai-assistant-suggests-only.md) | Local AI order assistant: the model extracts, C# resolves, the admin accepts |
 | [0009](docs/adr/0009-offline-ordering-on-the-phone.md) | Offline ordering on the phone: local copy, outbox, idempotent creates |
 | [0010](docs/adr/0010-on-device-assistant-as-a-fallback.md) | ~~On-device assistant as a fallback~~ – superseded: removed, the phone uses the server's assistant |
+| [0011](docs/adr/0011-two-factor-authentication.md) | Two-factor authentication with TOTP, recovery codes and a stateless sign-in challenge |
+| [0012](docs/adr/0012-least-privilege-database-role.md) | The API connects with a data-only database role; migrations run as the schema owner |
+| [0013](docs/adr/0013-security-baseline-asvs-level-2.md) | Security baseline: OWASP ASVS 4.0.3 level 2, reviewed in [docs/security.md](docs/security.md) |
 
 ## Possible improvements
 
