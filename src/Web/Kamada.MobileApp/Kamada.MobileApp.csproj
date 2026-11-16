@@ -13,6 +13,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Shared\Kamada.Shared.Contracts\Kamada.Shared.Contracts.csproj" />
     <ProjectReference Include="..\Kamada.Web.Admin\Kamada.Web.Admin.csproj" />
+    <ProjectReference Include="..\Kamada.Web.Mobile\Kamada.Web.Mobile.csproj" />
     <ProjectReference Include="..\Kamada.Web.Shared\Kamada.Web.Shared.csproj" />
   </ItemGroup>
 

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <!-- The phone app's pages, layout and navigation, hosted by the .NET MAUI app (and, until it is removed, the PWA). -->
+  <ItemGroup>
+    <SupportedPlatform Include="browser" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Authorization" />
+    <PackageReference Include="MudBlazor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Shared\Kamada.Shared.Contracts\Kamada.Shared.Contracts.csproj" />
+    <ProjectReference Include="..\Kamada.Web.Admin\Kamada.Web.Admin.csproj" />
+    <ProjectReference Include="..\Kamada.Web.Shared\Kamada.Web.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

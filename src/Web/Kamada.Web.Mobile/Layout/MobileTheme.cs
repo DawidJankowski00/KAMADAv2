@@ -1,7 +1,7 @@
 using Kamada.Shared.Contracts.Auth;
 using MudBlazor;
 
-namespace Kamada.MobileApp.Layout;
+namespace Kamada.Web.Mobile.Layout;
 
 /// <summary>Each role has its own accent colour, so a worker with several roles always sees which one is active.</summary>
 internal static class MobileTheme

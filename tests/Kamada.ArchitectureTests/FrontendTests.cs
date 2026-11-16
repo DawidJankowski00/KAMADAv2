@@ -6,7 +6,7 @@ namespace Kamada.ArchitectureTests;
 /// </summary>
 public sealed class FrontendTests
 {
-    private static readonly string[] AllowedFrontendReferences = ["Kamada.Shared.Contracts", "Kamada.Web.Shared", "Kamada.Web.Admin"];
+    private static readonly string[] AllowedFrontendReferences = ["Kamada.Shared.Contracts", "Kamada.Web.Shared", "Kamada.Web.Admin", "Kamada.Web.Mobile"];
 
     [Theory]
     [InlineData("Kamada.AdminPanel")]
@@ -32,6 +32,14 @@ public sealed class FrontendTests
         var path = Path.Combine(RepositoryPaths.Root, "src", "Web", "Kamada.Web.Admin", "Kamada.Web.Admin.csproj");
 
         ProjectReferences.Of(path).ShouldBe(["Kamada.Shared.Contracts", "Kamada.Web.Shared"], ignoreOrder: true);
+    }
+
+    [Fact]
+    public void SharedPhonePages_ReferenceOnlyHttpContractsAndSharedUi()
+    {
+        var path = Path.Combine(RepositoryPaths.Root, "src", "Web", "Kamada.Web.Mobile", "Kamada.Web.Mobile.csproj");
+
+        ProjectReferences.Of(path).ShouldBe(["Kamada.Shared.Contracts", "Kamada.Web.Shared", "Kamada.Web.Admin"], ignoreOrder: true);
     }
 
     [Fact]

@@ -3,7 +3,7 @@ using Kamada.Shared.Contracts.Auth;
 using Microsoft.AspNetCore.Authorization;
 using MudBlazor;
 
-namespace Kamada.MobileApp;
+namespace Kamada.Web.Mobile;
 
 /// <summary>
 /// Every role has its own area of the app. A page belongs to the role named in its <c>[Authorize(Roles = ...)]</c>.

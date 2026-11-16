@@ -6,6 +6,7 @@ COPY global.json Directory.Build.props Directory.Packages.props ./
 COPY src/Shared/Kamada.Shared.Contracts/ src/Shared/Kamada.Shared.Contracts/
 COPY src/Web/Kamada.Web.Shared/ src/Web/Kamada.Web.Shared/
 COPY src/Web/Kamada.Web.Admin/ src/Web/Kamada.Web.Admin/
+COPY src/Web/Kamada.Web.Mobile/ src/Web/Kamada.Web.Mobile/
 COPY src/Web/Kamada.MobileApp/ src/Web/Kamada.MobileApp/
 RUN dotnet publish src/Web/Kamada.MobileApp/Kamada.MobileApp.csproj -c Release -o /app/publish
 

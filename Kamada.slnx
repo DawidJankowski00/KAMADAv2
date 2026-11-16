@@ -45,6 +45,7 @@
     <Project Path="src/Web/Kamada.AdminPanel/Kamada.AdminPanel.csproj" />
     <Project Path="src/Web/Kamada.MobileApp/Kamada.MobileApp.csproj" />
     <Project Path="src/Web/Kamada.Web.Admin/Kamada.Web.Admin.csproj" />
+    <Project Path="src/Web/Kamada.Web.Mobile/Kamada.Web.Mobile.csproj" />
     <Project Path="src/Web/Kamada.Web.Shared/Kamada.Web.Shared.csproj" />
   </Folder>
   <Folder Name="/tests/">
